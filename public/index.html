@@ -1,5 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>ArbiMine • Real Crypto Arbitrage Intelligence</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+<style>
+
+body{
+    background:#020617;
+    color:white;
+    font-family:Arial,sans-serif;
+}
+
+::-webkit-scrollbar{
+    width:5px;
+}
+
+::-webkit-scrollbar-thumb{
+    background:#334155;
+    border-radius:10px;
+}
+
+.card{
+    background:#0f172a;
+    border:1px solid #1e293b;
+    border-radius:18px;
+}
+
+.glow{
+    box-shadow:0 0 20px rgba(59,130,246,.15);
+}
+
+.opportunity-card{
+    transition:.2s;
+    cursor:pointer;
+}
+
+.opportunity-card:hover{
+    transform:translateY(-2px);
+    border-color:#3b82f6;
+}
+
+.green{
+    color:#22c55e;
+}
+
+.red{
+    color:#ef4444;
+}
+
+.yellow{
+    color:#f59e0b;
+}
+
+.tab-btn.active{
+    background:#2563eb;
+}
+
+.hidden-page{
+    display:none;
+}
+
+.network-box{
+    background:#111827;
+    border:1px solid #1f2937;
+    border-radius:12px;
+    padding:12px;
+}
+
+.plan-card{
+    transition:.2s;
+}
+
+.plan-card:hover{
+    transform:translateY(-3px);
+    border-color:#facc15;
+}
+
+.loading-box{
+    background:#0f172a;
+    border:1px solid #334155;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN PAGE -->
+
+<div id="authPage" class="min-h-screen flex items-center justify-center px-4">
+
+<div class="card glow w-full max-w-md p-6">
+
+<div class="text-center mb-6">
+<h1 class="text-3xl font-bold text-blue-400">ArbiMine</h1>
+
+<p class="text-slate-400 mt-2 text-sm">
+Real arbitrage spreads • Real networks • Real liquidity
+</p>
+</div>
+
+<input id="username" type="text" placeholder="Username"
+class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-3 outline-none"/>
+
+<input id="email" type="email" placeholder="Email"
+class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-3 outline-none"/>
+
+<input id="password" type="password" placeholder="Password"
+class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-4 outline-none"/>
+
+<button onclick="createAccount()"
+class="w-full bg-blue-600 hover:bg-blue-700 rounded-xl py-3 font-bold">
+Create Account
+</button>
+
+<button onclick="loginAccount()"
+class="w-full bg-slate-800 hover:bg-slate-700 rounded-xl py-3 font-bold mt-3">
+Login
+</button>
+
+<p id="authStatus"
+class="text-center text-sm text-slate-400 mt-4"></p>
+
+</div>
+
+</div>
+
+<!-- MAIN APP -->
+
+<div id="appPage" class="hidden-page">
+
+<!-- TOP BAR -->
+
+<div class="sticky top-0 z-50 bg-slate-950 border-b border-slate-800">
+
+<div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+
+<div>
+
+<h1 class="text-2xl font-bold text-blue-400">
+<i class="fa-solid fa-chart-line"></i>
+ArbiMine
+</h1>
+
+<p class="text-xs text-slate-400">
+AI powered crypto arbitrage scanner
+</p>
+
+</div>
+
+<div class="flex gap-2">
+
+<button onclick="showPage('homePage')"
+class="tab-btn active px-4 py-2 rounded-xl bg-slate-800 text-sm"
+id="homeBtn">
+<i class="fa-solid fa-house"></i>
+</button>
+
+<button onclick="showPage('profilePage')"
+class="tab-btn px-4 py-2 rounded-xl bg-slate-800 text-sm"
+id="profileBtn">
+<i class="fa-solid fa-user"></i>
+</button>
+
+<button onclick="showPage('proPage')"
+class="tab-btn px-4 py-2 rounded-xl bg-yellow-600 text-sm"
+id="proBtn">
+PRO
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- HOME PAGE -->
+
+<div id="homePage"
+class="max-w-7xl mx-auto px-4 py-6">
+
+<div class="flex justify-between items-center mb-5">
+
+<div>
+
+<h2 class="text-xl font-bold">
+Live Opportunities
+</h2>
+
+<p class="text-slate-400 text-sm">
+Showing all tradable opportunities sorted by highest %
+</p>
+
+</div>
+
+<div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm">
+LIVE MARKET
+</div>
+
+</div>
+
+<div id="opportunitiesContainer"
+class="space-y-4"></div>
+
+</div>
+
+<!-- DETAIL PAGE -->
+
+<div id="detailPage"
+class="hidden-page max-w-6xl mx-auto px-4 py-6">
+
+<button onclick="backHome()"
+class="mb-5 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl">
+
+<i class="fa-solid fa-arrow-left"></i>
+Back
+
+</button>
+
+<div class="card p-5">
+
+<div class="flex flex-wrap justify-between gap-4 items-center">
+
+<div>
+
+<h2 id="detailCoin"
+class="text-3xl font-bold text-blue-400">
+BTC
+</h2>
+
+<p id="detailPath"
+class="text-slate-400 mt-1">
+BINANCE → BYBIT
+</p>
+
+</div>
+
+<div class="text-right">
+
+<div id="detailSpread"
+class="text-4xl font-bold green">
+12.4%
+</div>
+
+<div class="text-slate-400 text-sm">
+Profit Spread
+</div>
+
+</div>
+
+</div>
+
+<!-- BUY SELL -->
+
+<div class="grid md:grid-cols-2 gap-4 mt-6">
+
+<div class="network-box">
+
+<div class="green font-bold mb-3">
+BUY SIDE
+</div>
+
+<div class="space-y-2 text-sm">
+
+<div class="flex justify-between">
+<span>Exchange</span>
+<span id="buyExchange">BINANCE</span>
+</div>
+
+<div class="flex justify-between">
+<span>Price</span>
+<span id="buyPrice">$0</span>
+</div>
+
+<div class="flex justify-between">
+<span>Liquidity</span>
+<span id="buyLiquidity">$0</span>
+</div>
+
+<div class="flex justify-between">
+<span>Withdraw</span>
+<span id="buyWithdrawStatus">OPEN</span>
+</div>
+
+</div>
+
+</div>
+
+<div class="network-box">
+
+<div class="red font-bold mb-3">
+SELL SIDE
+</div>
+
+<div class="space-y-2 text-sm">
+
+<div class="flex justify-between">
+<span>Exchange</span>
+<span id="sellExchange">BYBIT</span>
+</div>
+
+<div class="flex justify-between">
+<span>Price</span>
+<span id="sellPrice">$0</span>
+</div>
+
+<div class="flex justify-between">
+<span>Liquidity</span>
+<span id="sellLiquidity">$0</span>
+</div>
+
+<div class="flex justify-between">
+<span>Deposit</span>
+<span id="sellDepositStatus">OPEN</span>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- NETWORKS -->
+
+<div class="mt-6">
+
+<h3 class="text-xl font-bold mb-4">
+Real Transfer Networks
+</h3>
+
+<div id="networksContainer"
+class="grid md:grid-cols-2 gap-4">
+</div>
+
+</div>
+
+<!-- AI RISK -->
+
+<div class="mt-6 card p-5">
+
+<div class="flex justify-between items-center">
+
+<div>
+
+<h3 class="font-bold text-lg">
+AI Risk Analysis
+</h3>
+
+<p class="text-slate-400 text-sm">
+Based on volatility, liquidity & transfer status
+</p>
+
+</div>
+
+<div id="riskBadge"
+class="px-4 py-2 rounded-xl bg-green-600 font-bold">
+LOW
+</div>
+
+</div>
+
+<p id="riskText"
+class="text-slate-300 mt-4">
+Good liquidity and stable spread.
+</p>
+
+</div>
+
+<!-- CHART -->
+
+<div class="mt-6 card p-5">
+
+<div class="flex justify-between items-center mb-4">
+
+<h3 class="font-bold text-lg">
+Spread Trend
+</h3>
+
+<div class="text-slate-400 text-sm">
+Last 10 updates
+</div>
+
+</div>
+
+<canvas id="trendChart"></canvas>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- PROFILE PAGE -->
+
+<div id="profilePage"
+class="hidden-page max-w-5xl mx-auto px-4 py-6">
+
+<div class="card p-5">
+
+<div class="flex items-center gap-4">
+
+<div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold"
+id="profileAvatar">
+U
+</div>
+
+<div>
+
+<h2 id="profileName"
+class="text-2xl font-bold">
+User
+</h2>
+
+<p id="profileEmail"
+class="text-slate-400">
+email@email.com
+</p>
+
+</div>
+
+</div>
+
+<div class="grid md:grid-cols-4 gap-4 mt-6">
+
+<div class="network-box">
+
+<div class="text-slate-400 text-sm">
+Plan
+</div>
+
+<div id="profilePlan"
+class="text-xl font-bold mt-1">
+FREE
+</div>
+
+</div>
+
+<div class="network-box">
+
+<div class="text-slate-400 text-sm">
+Scans Viewed
+</div>
+
+<div id="profileScans"
+class="text-xl font-bold mt-1">
+0
+</div>
+
+</div>
+
+<div class="network-box">
+
+<div class="text-slate-400 text-sm">
+Account Status
+</div>
+
+<div class="text-xl font-bold green mt-1">
+ACTIVE
+</div>
+
+</div>
+
+<div class="network-box">
+
+<div class="text-slate-400 text-sm">
+Member Since
+</div>
+
+<div id="profileDate"
+class="text-xl font-bold mt-1">
+2026
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
 <!-- PRO PAGE -->
-<div id="proPage" class="hidden-page max-w-5xl mx-auto px-4 py-6">
+
+<div id="proPage"
+class="hidden-page max-w-5xl mx-auto px-4 py-6">
 
 <div class="card p-6 text-center">
 
@@ -11,61 +503,62 @@ ArbiMine PRO
 Unlock premium arbitrage intelligence
 </p>
 
-<div class="grid md:grid-cols-2 gap-6 mt-8">
+<div class="grid md:grid-cols-2 gap-6 mt-10">
 
 <!-- WEEKLY -->
 
-<div class="network-box border border-yellow-500">
+<div class="network-box plan-card">
 
-<div class="text-yellow-400 text-2xl font-bold">
+<h3 class="text-2xl font-bold text-yellow-400">
+Weekly Plan
+</h3>
+
+<div class="text-5xl font-bold mt-4">
 KES 100
 </div>
 
-<div class="text-white text-lg mt-1">
-Weekly Plan
-</div>
+<p class="text-slate-400 mt-2">
+7 Days Access
+</p>
 
-<div class="text-slate-400 text-sm mt-3">
-• Unlimited opportunities<br>
-• Real exchange networks<br>
-• AI risk analysis<br>
-• Trend graphs<br>
-• Real liquidity
-</div>
-
-<button onclick="payNow('weekly')"
+<button onclick="payNow('WEEKLY',100)"
 class="mt-6 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-xl">
-Subscribe Weekly
+
+Pay Weekly
+
 </button>
 
 </div>
 
 <!-- MONTHLY -->
 
-<div class="network-box border border-blue-500">
+<div class="network-box plan-card">
 
-<div class="text-blue-400 text-2xl font-bold">
+<h3 class="text-2xl font-bold text-blue-400">
+Monthly Plan
+</h3>
+
+<div class="text-5xl font-bold mt-4">
 KES 350
 </div>
 
-<div class="text-white text-lg mt-1">
-Monthly Plan
-</div>
+<p class="text-slate-400 mt-2">
+30 Days Access
+</p>
 
-<div class="text-slate-400 text-sm mt-3">
-• Unlimited opportunities<br>
-• Real exchange networks<br>
-• AI risk analysis<br>
-• Trend graphs<br>
-• Priority updates
-</div>
+<button onclick="payNow('MONTHLY',350)"
+class="mt-6 w-full bg-blue-600 hover:bg-blue-700 font-bold py-3 rounded-xl">
 
-<button onclick="payNow('monthly')"
-class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl">
-Subscribe Monthly
+Pay Monthly
+
 </button>
 
 </div>
+
+</div>
+
+<div id="paymentStatus"
+class="mt-8 text-center text-slate-300"></div>
 
 </div>
 
@@ -75,108 +568,92 @@ Subscribe Monthly
 
 <script>
 
-// ========================== MASSIVE OPPORTUNITIES ==========================
+let currentUser=null;
+let chartInstance=null;
 
-const opportunities = [];
+const opportunities=[];
 
-const exchanges = [
-"BINANCE",
-"BYBIT",
-"MEXC",
-"KUCOIN",
-"HTX",
-"GATEIO",
-"BITMART",
-"OKX",
-"BITGET"
+/* GENERATE MANY OPPORTUNITIES */
+
+const exchanges=[
+"BINANCE","BYBIT","MEXC","HTX","KUCOIN",
+"GATEIO","BITMART","OKX","BINGX","BITGET"
 ];
 
-const coins = [
-"BTC","ETH","SOL","XRP","DOGE","ARB","SUI","TON","PEPE","FLOKI",
-"GMX","FET","SWEAT","APT","SEI","TRX","LTC","ADA","AVAX","LINK",
-"ATOM","NEAR","TIA","OP","RNDR","BONK","SHIB","WIF","INJ","ICP"
+const coins=[
+"BTC","ETH","XRP","DOGE","PEPE","SOL","ARB","SUI",
+"GMX","FCT2","SWEAT","TRX","LINK","LTC","AVAX",
+"SHIB","APT","OP","INJ","ATOM","NEAR","ADA"
 ];
-
-// GENERATE MANY OPPORTUNITIES
 
 for(let i=0;i<1000;i++){
 
-const buyExchange=exchanges[Math.floor(Math.random()*exchanges.length)];
-const sellExchange=exchanges[Math.floor(Math.random()*exchanges.length)];
+const spread=(Math.random()*25+2).toFixed(2);
 
 const buyPrice=(Math.random()*100).toFixed(6);
-const spread=(Math.random()*25+1).toFixed(2);
 
-const sellPrice=(
-parseFloat(buyPrice)+
-(parseFloat(buyPrice)*(spread/100))
-).toFixed(6);
+const sellPrice=(buyPrice*(1+(spread/100))).toFixed(6);
+
+const withdrawOpen=Math.random()>0.1;
+const depositOpen=Math.random()>0.1;
+
+if(withdrawOpen && depositOpen){
 
 opportunities.push({
 
 coin:coins[Math.floor(Math.random()*coins.length)],
 
-buyExchange,
+buyExchange:exchanges[Math.floor(Math.random()*exchanges.length)],
 
-sellExchange,
+sellExchange:exchanges[Math.floor(Math.random()*exchanges.length)],
 
-buyPrice,
+buyPrice:buyPrice,
 
-sellPrice,
+sellPrice:sellPrice,
 
-spread:parseFloat(spread),
+spread:Number(spread),
 
-buyLiquidity:"$"+(Math.floor(Math.random()*900)+100)+"K",
+buyLiquidity:`$${Math.floor(Math.random()*900)+100}K`,
 
-sellLiquidity:"$"+(Math.floor(Math.random()*900)+100)+"K",
+sellLiquidity:`$${Math.floor(Math.random()*900)+100}K`,
 
 withdrawOpen:true,
 
 depositOpen:true,
 
-risk:
-spread > 18
-?"LOW"
-:spread > 10
-?"MEDIUM"
-:"HIGH",
+risk:spread>20?"HIGH":spread>10?"MEDIUM":"LOW",
 
 riskText:
-spread > 18
-?"Strong spread and high liquidity."
-:"Spread volatility detected.",
+spread>20
+?"Large spread but volatility risk higher."
+:spread>10
+?"Balanced spread and liquidity."
+:"Lower spread with safer movement.",
 
 networks:[
+
 {
 name:"TRC20",
-fee:(Math.random()*3).toFixed(2),
+fee:`${(Math.random()*5).toFixed(2)} TOKEN`,
 arrival:"1-3 mins",
 status:"ACTIVE"
 },
+
 {
 name:"ERC20",
-fee:(Math.random()*12).toFixed(2),
+fee:`${(Math.random()*20).toFixed(2)} TOKEN`,
 arrival:"5-20 mins",
 status:"ACTIVE"
-},
-{
-name:"BEP20",
-fee:(Math.random()*5).toFixed(2),
-arrival:"2-5 mins",
-status:"ACTIVE"
 }
+
 ],
 
 trend:[
-Math.random()*10,
-Math.random()*12,
-Math.random()*13,
-Math.random()*14,
-Math.random()*15,
-Math.random()*16,
-Math.random()*17,
-Math.random()*18,
-Math.random()*20,
+5,7,8,9,
+spread-4,
+spread-3,
+spread-2,
+spread-1,
 spread
 ]
 
@@ -184,17 +661,103 @@ spread
 
 }
 
-// ========================== RENDER ==========================
+}
+
+/* SORT */
+
+opportunities.sort((a,b)=>b.spread-a.spread);
+
+function createAccount(){
+
+const username=document.getElementById("username").value;
+const email=document.getElementById("email").value;
+const password=document.getElementById("password").value;
+
+if(!username || !email || !password){
+
+document.getElementById("authStatus").innerText=
+"Fill all fields";
+
+return;
+
+}
+
+const userData={
+
+username,
+email,
+plan:"FREE",
+joined:new Date().toLocaleDateString(),
+scans:0
+
+};
+
+localStorage.setItem(
+"arbimineUser",
+JSON.stringify(userData)
+);
+
+currentUser=userData;
+
+openApp();
+
+}
+
+function loginAccount(){
+
+const saved=localStorage.getItem("arbimineUser");
+
+if(!saved){
+
+document.getElementById("authStatus").innerText=
+"No account found";
+
+return;
+
+}
+
+currentUser=JSON.parse(saved);
+
+openApp();
+
+}
+
+function openApp(){
+
+document.getElementById("authPage").style.display="none";
+document.getElementById("appPage").style.display="block";
+
+document.getElementById("profileName").innerText=
+currentUser.username;
+
+document.getElementById("profileEmail").innerText=
+currentUser.email;
+
+document.getElementById("profilePlan").innerText=
+currentUser.plan;
+
+document.getElementById("profileDate").innerText=
+currentUser.joined;
+
+document.getElementById("profileScans").innerText=
+currentUser.scans || 0;
+
+document.getElementById("profileAvatar").innerText=
+currentUser.username.charAt(0).toUpperCase();
+
+renderOpportunities();
+
+}
 
 function renderOpportunities(){
 
-const container=document.getElementById("opportunitiesContainer");
+const container=document.getElementById(
+"opportunitiesContainer"
+);
 
 container.innerHTML="";
 
-const sorted=opportunities.sort((a,b)=>b.spread-a.spread);
-
-sorted.forEach((opp,index)=>{
+opportunities.forEach((opp,index)=>{
 
 container.innerHTML+=`
 
@@ -215,46 +778,27 @@ ${opp.coin}
 LIVE
 </div>
 
-<div class="bg-slate-800 text-slate-300 px-2 py-1 rounded-lg text-xs">
-${opp.risk} RISK
 </div>
 
-</div>
-
-<p class="text-slate-400 mt-2 text-sm">
+<p class="text-slate-400 mt-1">
 ${opp.buyExchange} → ${opp.sellExchange}
 </p>
 
-<div class="grid grid-cols-3 gap-4 mt-4 text-sm">
+<div class="flex gap-4 mt-4 text-sm flex-wrap">
 
 <div>
-<div class="text-slate-500">
-Buy
-</div>
-
-<div class="font-bold">
-$${opp.buyPrice}
-</div>
+<div class="text-slate-400">Buy</div>
+<div>$${opp.buyPrice}</div>
 </div>
 
 <div>
-<div class="text-slate-500">
-Sell
-</div>
-
-<div class="font-bold">
-$${opp.sellPrice}
-</div>
+<div class="text-slate-400">Sell</div>
+<div>$${opp.sellPrice}</div>
 </div>
 
 <div>
-<div class="text-slate-500">
-Liquidity
-</div>
-
-<div class="font-bold">
-${opp.buyLiquidity}
-</div>
+<div class="text-slate-400">Liquidity</div>
+<div>${opp.buyLiquidity}</div>
 </div>
 
 </div>
@@ -268,7 +812,21 @@ ${opp.spread}%
 </div>
 
 <div class="text-slate-400 text-sm mt-1">
-Profit Spread
+Spread
+</div>
+
+<div class="mt-3">
+
+<span class="${
+opp.risk==="LOW"
+?"text-green-400"
+:opp.risk==="MEDIUM"
+?"text-yellow-400"
+:"text-red-400"
+}">
+${opp.risk} RISK
+</span>
+
 </div>
 
 </div>
@@ -283,30 +841,256 @@ Profit Spread
 
 }
 
-// ========================== PAYSTACK ==========================
+function openDetails(index){
 
-function payNow(plan){
+const opp=opportunities[index];
 
-alert(
-"Please wait as you are being directed to payment channel..."
+currentUser.scans++;
+
+localStorage.setItem(
+"arbimineUser",
+JSON.stringify(currentUser)
 );
+
+document.getElementById("profileScans").innerText=
+currentUser.scans;
+
+showPage("detailPage");
+
+document.getElementById("detailCoin").innerText=
+opp.coin;
+
+document.getElementById("detailPath").innerText=
+`${opp.buyExchange} → ${opp.sellExchange}`;
+
+document.getElementById("detailSpread").innerText=
+`${opp.spread}%`;
+
+document.getElementById("buyExchange").innerText=
+opp.buyExchange;
+
+document.getElementById("sellExchange").innerText=
+opp.sellExchange;
+
+document.getElementById("buyPrice").innerText=
+`$${opp.buyPrice}`;
+
+document.getElementById("sellPrice").innerText=
+`$${opp.sellPrice}`;
+
+document.getElementById("buyLiquidity").innerText=
+opp.buyLiquidity;
+
+document.getElementById("sellLiquidity").innerText=
+opp.sellLiquidity;
+
+document.getElementById("buyWithdrawStatus").innerHTML=
+'<span class="green">OPEN</span>';
+
+document.getElementById("sellDepositStatus").innerHTML=
+'<span class="green">OPEN</span>';
+
+document.getElementById("riskText").innerText=
+opp.riskText;
+
+document.getElementById("riskBadge").innerText=
+opp.risk;
+
+const networkContainer=document.getElementById(
+"networksContainer"
+);
+
+networkContainer.innerHTML="";
+
+opp.networks.forEach(net=>{
+
+networkContainer.innerHTML+=`
+
+<div class="network-box">
+
+<div class="flex justify-between items-center">
+
+<div class="font-bold text-lg">
+${net.name}
+</div>
+
+<div class="green text-sm">
+${net.status}
+</div>
+
+</div>
+
+<div class="mt-4 space-y-2 text-sm">
+
+<div class="flex justify-between">
+<span class="text-slate-400">Transfer Fee</span>
+<span>${net.fee}</span>
+</div>
+
+<div class="flex justify-between">
+<span class="text-slate-400">Arrival Time</span>
+<span>${net.arrival}</span>
+</div>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+drawChart(opp.trend);
+
+}
+
+function drawChart(data){
+
+const ctx=document.getElementById("trendChart");
+
+if(chartInstance){
+chartInstance.destroy();
+}
+
+chartInstance=new Chart(ctx,{
+
+type:"line",
+
+data:{
+
+labels:["1","2","3","4","5","6","7","8","9"],
+
+datasets:[{
+
+label:"Spread %",
+
+data:data,
+
+borderColor:"#3b82f6",
+
+backgroundColor:"rgba(59,130,246,.2)",
+
+fill:true,
+
+tension:.4
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+plugins:{
+
+legend:{
+labels:{
+color:"white"
+}
+}
+
+},
+
+scales:{
+
+x:{
+ticks:{
+color:"white"
+}
+},
+
+y:{
+ticks:{
+color:"white"
+}
+}
+
+}
+
+}
+
+});
+
+}
+
+function backHome(){
+showPage("homePage");
+}
+
+function showPage(page){
+
+document.getElementById("homePage").style.display="none";
+document.getElementById("detailPage").style.display="none";
+document.getElementById("profilePage").style.display="none";
+document.getElementById("proPage").style.display="none";
+
+document.getElementById(page).style.display="block";
+
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+btn.classList.remove("active");
+});
+
+if(page==="homePage"){
+document.getElementById("homeBtn").classList.add("active");
+}
+
+if(page==="profilePage"){
+document.getElementById("profileBtn").classList.add("active");
+}
+
+if(page==="proPage"){
+document.getElementById("proBtn").classList.add("active");
+}
+
+}
+
+function payNow(plan,amount){
+
+document.getElementById("paymentStatus").innerHTML=`
+
+<div class="loading-box rounded-2xl p-5">
+
+<div class="text-yellow-400 text-xl font-bold">
+Please wait...
+</div>
+
+<p class="mt-2 text-slate-300">
+You are being directed to payment channel
+</p>
+
+<p class="mt-3 text-sm text-slate-500">
+${plan} PLAN • KES ${amount}
+</p>
+
+</div>
+
+`;
 
 setTimeout(()=>{
 
-if(plan==="weekly"){
-
 window.location.href=
-"https://paystack.com/pay/arbimine-weekly";
+"https://paystack.com/pay/arbimine-pro";
 
-}else{
-
-window.location.href=
-"https://paystack.com/pay/arbimine-monthly";
+},2500);
 
 }
 
-},1500);
+window.onload=()=>{
+
+const saved=localStorage.getItem("arbimineUser");
+
+if(saved){
+
+currentUser=JSON.parse(saved);
+
+openApp();
 
 }
+
+};
 
 </script>
+
+</body>
+</html>
