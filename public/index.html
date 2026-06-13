@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>ArbiMine</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#0b1120;
+    color:white;
+}
+
+.hidden{
+    display:none;
+}
+
+/*
+==================================
+AUTH
+==================================
+*/
+
+.auth-screen{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.auth-box{
+    width:100%;
+    max-width:420px;
+    background:#111827;
+    padding:30px;
+    border-radius:20px;
+    border:1px solid #1f2937;
+}
+
+.logo{
+    font-size:32px;
+    font-weight:bold;
+    text-align:center;
+    margin-bottom:10px;
+}
+
+.subtitle{
+    text-align:center;
+    color:#94a3b8;
+    margin-bottom:30px;
+}
+
+input{
+    width:100%;
+    padding:15px;
+    margin-bottom:15px;
+    border:none;
+    border-radius:12px;
+    background:#1e293b;
+    color:white;
+    font-size:15px;
+}
+
+button{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:12px;
+    background:#2563eb;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    opacity:0.9;
+}
+
+.switch{
+    margin-top:15px;
+    text-align:center;
+    color:#94a3b8;
+    cursor:pointer;
+}
+
+/*
+==================================
+APP
+==================================
+*/
+
+.topbar{
+    position:sticky;
+    top:0;
+    z-index:100;
+    background:#111827;
+    padding:18px;
+    border-bottom:1px solid #1f2937;
+}
+
+.title{
+    font-size:24px;
+    font-weight:bold;
+}
+
+.subtitle2{
+    color:#94a3b8;
+    margin-top:5px;
+    font-size:14px;
+}
+
+.container{
+    padding:15px;
+}
+
+.card{
+    background:#111827;
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:16px;
+    border:1px solid #1f2937;
+}
+
+.row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+}
+
+.symbol{
+    font-size:22px;
+    font-weight:bold;
+}
+
+.spread{
+    background:#052e16;
+    color:#4ade80;
+    padding:8px 12px;
+    border-radius:999px;
+    font-weight:bold;
+}
+
+.exchange{
+    margin-top:14px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+}
+
+.exchange-box{
+    flex:1;
+    background:#0f172a;
+    border-radius:14px;
+    padding:12px;
+}
+
+.exchange-name{
+    color:#94a3b8;
+    font-size:13px;
+}
+
+.price{
+    font-size:17px;
+    margin-top:6px;
+    font-weight:bold;
+}
+
+.view-btn{
+    margin-top:18px;
+    background:#1d4ed8;
+}
+
+/*
+==================================
+DETAILS
+==================================
+*/
+
+.back-btn{
+    margin-bottom:16px;
+    background:#374151;
+}
+
+.detail-title{
+    font-size:28px;
+    font-weight:bold;
+}
+
+.info{
+    margin-top:18px;
+    display:grid;
+    gap:14px;
+}
+
+.info-box{
+    background:#0f172a;
+    padding:14px;
+    border-radius:14px;
+}
+
+.label{
+    color:#94a3b8;
+    font-size:13px;
+}
+
+.value{
+    margin-top:5px;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.network{
+    margin-top:10px;
+    padding:12px;
+    border-radius:12px;
+    background:#111827;
+    border:1px solid #1f2937;
+}
+
+.network-name{
+    font-weight:bold;
+    font-size:16px;
+}
+
+.network-status{
+    margin-top:6px;
+    color:#94a3b8;
+    font-size:14px;
+}
+
+canvas{
+    margin-top:20px;
+    background:white;
+    border-radius:16px;
+    padding:10px;
+}
+
+/*
+==================================
+BOTTOM NAV
+==================================
+*/
+
+.bottom-nav{
+    position:fixed;
+    bottom:0;
+    width:100%;
+    background:#111827;
+    display:flex;
+    justify-content:space-around;
+    padding:14px 0;
+    border-top:1px solid #1f2937;
+}
+
+.nav-btn{
+    background:none;
+    border:none;
+    color:white;
+    font-size:14px;
+    width:auto;
+    padding:0;
+}
+
+.spacer{
+    height:90px;
+}
+
+.loader{
+    text-align:center;
+    padding:30px;
+    color:#94a3b8;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- AUTH -->
+
+<div id="authScreen" class="auth-screen">
+
+    <div class="auth-box">
+
+        <div class="logo">
+            ArbiMine
+        </div>
+
+        <div class="subtitle">
+            Real Crypto Arbitrage Scanner
+        </div>
+
+        <div id="registerBox">
+
+            <input id="regUsername" placeholder="Username">
+            <input id="regEmail" placeholder="Email">
+            <input id="regMpesa" placeholder="Mpesa Number">
+            <input id="regPassword" type="password" placeholder="Password">
+
+            <button onclick="register()">
+                Create Account
+            </button>
+
+            <div class="switch"
+            onclick="showLogin()">
+
+                Already have account? Login
+
+            </div>
+
+        </div>
+
+        <div id="loginBox" class="hidden">
+
+            <input id="loginUsername" placeholder="Username">
+            <input id="loginPassword" type="password" placeholder="Password">
+
+            <button onclick="login()">
+                Login
+            </button>
+
+            <div class="switch"
+            onclick="showRegister()">
+
+                Create new account
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- APP -->
+
+<div id="appScreen" class="hidden">
+
+    <div class="topbar">
+
+        <div class="title">
+            ArbiMine
+        </div>
+
+        <div class="subtitle2">
+            Live Arbitrage Opportunities
+        </div>
+
+    </div>
+
+    <!-- HOME -->
+
+    <div id="homePage">
+
+        <div class="container">
+
+            <div id="opportunities">
+
+                <div class="loader">
+                    Loading opportunities...
+                </div>
+
+            </div>
+
+            <div class="spacer"></div>
+
+        </div>
+
+    </div>
+
+    <!-- DETAILS -->
+
+    <div id="detailsPage" class="hidden">
+
+        <div class="container">
+
+            <button class="back-btn"
+            onclick="goBack()">
+
+                ← Back
+
+            </button>
+
+            <div id="detailsContent"></div>
+
+            <div class="spacer"></div>
+
+        </div>
+
+    </div>
+
+    <!-- PROFILE -->
+
+    <div id="profilePage" class="hidden">
+
+        <div class="container">
+
+            <div class="card">
+
+                <div class="symbol">
+                    Profile
+                </div>
+
+                <div id="profileData"
+                style="margin-top:20px">
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- BOTTOM NAV -->
+
+    <div class="bottom-nav">
+
+        <button class="nav-btn"
+        onclick="showHome()">
+
+            Home
+
+        </button>
+
+        <button class="nav-btn"
+        onclick="loadProfile()">
+
+            Profile
+
+        </button>
+
+        <button class="nav-btn"
+        onclick="logout()">
+
+            Logout
+
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+
+const API = '';
+
+let currentChart = null;
+
+/*
+==================================
+AUTO LOGIN
+==================================
+*/
+
+const token =
+localStorage.getItem('token');
+
+if(token){
+
+    openApp();
+
+}
+
+/*
+==================================
+AUTH UI
+==================================
+*/
+
+function showLogin(){
+
+    document
+    .getElementById('registerBox')
+    .classList.add('hidden');
+
+    document
+    .getElementById('loginBox')
+    .classList.remove('hidden');
+}
+
+function showRegister(){
+
+    document
+    .getElementById('loginBox')
+    .classList.add('hidden');
+
+    document
+    .getElementById('registerBox')
+    .classList.remove('hidden');
+}
+
+/*
+==================================
+REGISTER
+==================================
+*/
+
+async function register(){
+
+    const body = {
+
+        username:
+        document.getElementById(
+            'regUsername'
+        ).value,
+
+        email:
+        document.getElementById(
+            'regEmail'
+        ).value,
+
+        mpesa:
+        document.getElementById(
+            'regMpesa'
+        ).value,
+
+        password:
+        document.getElementById(
+            'regPassword'
+        ).value
+    };
+
+    const res =
+    await fetch('/api/register',{
+
+        method:'POST',
+
+        headers:{
+            'Content-Type':
+            'application/json'
+        },
+
+        body:JSON.stringify(body)
+    });
+
+    const data =
+    await res.json();
+
+    if(data.success){
+
+        localStorage.setItem(
+            'token',
+            data.token
+        );
+
+        openApp();
+
+    }else{
+
+        alert(
+            data.error || 'Failed'
+        );
+    }
+}
+
+/*
+==================================
+LOGIN
+==================================
+*/
+
+async function login(){
+
+    const body = {
+
+        username:
+        document.getElementById(
+            'loginUsername'
+        ).value,
+
+        password:
+        document.getElementById(
+            'loginPassword'
+        ).value
+    };
+
+    const res =
+    await fetch('/api/login',{
+
+        method:'POST',
+
+        headers:{
+            'Content-Type':
+            'application/json'
+        },
+
+        body:JSON.stringify(body)
+    });
+
+    const data =
+    await res.json();
+
+    if(data.success){
+
+        localStorage.setItem(
+            'token',
+            data.token
+        );
+
+        openApp();
+
+    }else{
+
+        alert(
+            data.error || 'Login failed'
+        );
+    }
+}
+
+/*
+==================================
+OPEN APP
+==================================
+*/
+
+function openApp(){
+
+    document
+    .getElementById('authScreen')
+    .classList.add('hidden');
+
+    document
+    .getElementById('appScreen')
+    .classList.remove('hidden');
+
+    loadOpportunities();
+}
+
+/*
+==================================
+LOAD OPPORTUNITIES
+==================================
+*/
+
+async function loadOpportunities(){
+
+    const box =
+    document.getElementById(
+        'opportunities'
+    );
+
+    box.innerHTML = `
+        <div class="loader">
+            Scanning markets...
+        </div>
+    `;
+
+    try{
+
+        const res =
+        await fetch('/api/opportunities',{
+
+            headers:{
+                Authorization:
+                localStorage.getItem(
+                    'token'
+                )
+            }
+        });
+
+        const data =
+        await res.json();
+
+        if(!data.success){
+
+            box.innerHTML = `
+                <div class="loader">
+                    Failed loading opportunities
+                </div>
+            `;
+
+            return;
+        }
+
+        if(!data.opportunities.length){
+
+            box.innerHTML = `
+                <div class="loader">
+                    No opportunities found
+                </div>
+            `;
+
+            return;
+        }
+
+        box.innerHTML = '';
+
+        data.opportunities.forEach(o=>{
+
+            box.innerHTML += `
+
+            <div class="card">
+
+                <div class="row">
+
+                    <div class="symbol">
+                        ${o.symbol}
+                    </div>
+
+                    <div class="spread">
+                        ${o.spread}%
+                    </div>
+
+                </div>
+
+                <div class="exchange">
+
+                    <div class="exchange-box">
+
+                        <div class="exchange-name">
+                            BUY FROM
+                        </div>
+
+                        <div class="price">
+                            ${o.buyExchange}
+                        </div>
+
+                        <div style="margin-top:5px">
+                            $${o.buyPrice}
+                        </div>
+
+                    </div>
+
+                    <div class="exchange-box">
+
+                        <div class="exchange-name">
+                            SELL TO
+                        </div>
+
+                        <div class="price">
+                            ${o.sellExchange}
+                        </div>
+
+                        <div style="margin-top:5px">
+                            $${o.sellPrice}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <button class="view-btn"
+                onclick='openOpportunity(${JSON.stringify(o)})'>
+
+                    View Details
+
+                </button>
+
+            </div>
+
+            `;
+        });
+
+    }catch(err){
+
+        box.innerHTML = `
+            <div class="loader">
+                ${err.message}
+            </div>
+        `;
+    }
+}
+
+/*
+==================================
+DETAILS
+==================================
+*/
+
+async function openOpportunity(o){
+
+    document
+    .getElementById('homePage')
+    .classList.add('hidden');
+
+    document
+    .getElementById('profilePage')
+    .classList.add('hidden');
+
+    document
+    .getElementById('detailsPage')
+    .classList.remove('hidden');
+
+    const box =
+    document.getElementById(
+        'detailsContent'
+    );
+
+    box.innerHTML = `
+
+    <div class="card">
+
+        <div class="detail-title">
+            ${o.symbol}
+        </div>
+
+        <div class="info">
+
+            <div class="info-box">
+
+                <div class="label">
+                    Arbitrage Spread
+                </div>
+
+                <div class="value">
+                    ${o.spread}%
+                </div>
+
+            </div>
+
+            <div class="info-box">
+
+                <div class="label">
+                    Buy Exchange
+                </div>
+
+                <div class="value">
+                    ${o.buyExchange}
+                </div>
+
+            </div>
+
+            <div class="info-box">
+
+                <div class="label">
+                    Sell Exchange
+                </div>
+
+                <div class="value">
+                    ${o.sellExchange}
+                </div>
+
+            </div>
+
+            <div class="info-box">
+
+                <div class="label">
+                    Liquidity
+                </div>
+
+                <div class="value">
+                    Buy:
+                    ${o.liquidity.buyVolume}
+
+                    <br><br>
+
+                    Sell:
+                    ${o.liquidity.sellVolume}
+                </div>
+
+            </div>
+
+            <div class="info-box">
+
+                <div class="label">
+                    Estimated Arrival Time
+                </div>
+
+                <div class="value">
+                    ${o.estimatedTransferTime}
+                </div>
+
+            </div>
+
+            <div class="info-box">
+
+                <div class="label">
+                    Buy Networks
+                </div>
+
+                ${renderNetworks(
+                    o.buyNetworks
+                )}
+
+            </div>
+
+            <div class="info-box">
+
+                <div class="label">
+                    Sell Networks
+                </div>
+
+                ${renderNetworks(
+                    o.sellNetworks
+                )}
+
+            </div>
+
+        </div>
+
+        <canvas id="trendChart"></canvas>
+
+    </div>
+
+    `;
+
+    drawChart(o.history);
+}
+
+/*
+==================================
+NETWORKS
+==================================
+*/
+
+function renderNetworks(networks){
+
+    if(!networks.length){
+
+        return `
+            <div class="network">
+                No network data
+            </div>
+        `;
+    }
+
+    return networks.map(n=>`
+
+        <div class="network">
+
+            <div class="network-name">
+                ${n.network}
+            </div>
+
+            <div class="network-status">
+
+                Deposit:
+                ${n.depositEnable ? 'Open' : 'Closed'}
+
+                <br>
+
+                Withdraw:
+                ${n.withdrawEnable ? 'Open' : 'Closed'}
+
+                <br>
+
+                Fee:
+                ${n.withdrawFee}
+
+                <br>
+
+                Arrival:
+                ${n.estimatedArrival}
+
+            </div>
+
+        </div>
+
+    `).join('');
+}
+
+/*
+==================================
+GRAPH
+==================================
+*/
+
+function drawChart(history){
+
+    const ctx =
+    document
+    .getElementById(
+        'trendChart'
+    );
+
+    if(currentChart){
+
+        currentChart.destroy();
+    }
+
+    currentChart =
+    new Chart(ctx,{
+
+        type:'line',
+
+        data:{
+
+            labels:
+            history.map((_,i)=>i+1),
+
+            datasets:[{
+
+                label:'Spread %',
+
+                data:
+                history.map(
+                    h => h.spread
+                ),
+
+                borderColor:'#2563eb',
+
+                tension:0.4
+            }]
+        },
+
+        options:{
+
+            responsive:true
+        }
+    });
+}
+
+/*
+==================================
+BACK
+==================================
+*/
+
+function goBack(){
+
+    document
+    .getElementById('detailsPage')
+    .classList.add('hidden');
+
+    document
+    .getElementById('homePage')
+    .classList.remove('hidden');
+}
+
+/*
+==================================
+PROFILE
+==================================
+*/
+
+async function loadProfile(){
+
+    document
+    .getElementById('homePage')
+    .classList.add('hidden');
+
+    document
+    .getElementById('detailsPage')
+    .classList.add('hidden');
+
+    document
+    .getElementById('profilePage')
+    .classList.remove('hidden');
+
+    const res =
+    await fetch('/api/me',{
+
+        headers:{
+            Authorization:
+            localStorage.getItem(
+                'token'
+            )
+        }
+    });
+
+    const data =
+    await res.json();
+
+    document
+    .getElementById(
+        'profileData'
+    ).innerHTML = `
+
+        <div style="margin-bottom:14px">
+
+            Username:
+            <b>${data.username}</b>
+
+        </div>
+
+        <div style="margin-bottom:14px">
+
+            Email:
+            <b>${data.email}</b>
+
+        </div>
+
+        <div style="margin-bottom:14px">
+
+            Mpesa:
+            <b>${data.mpesa}</b>
+
+        </div>
+
+        <div style="margin-bottom:14px">
+
+            Plan:
+            <b>${data.plan}</b>
+
+        </div>
+
+    `;
+}
+
+/*
+==================================
+SHOW HOME
+==================================
+*/
+
+function showHome(){
+
+    document
+    .getElementById('profilePage')
+    .classList.add('hidden');
+
+    document
+    .getElementById('detailsPage')
+    .classList.add('hidden');
+
+    document
+    .getElementById('homePage')
+    .classList.remove('hidden');
+}
+
+/*
+==================================
+LOGOUT
+==================================
+*/
+
+function logout(){
+
+    localStorage.removeItem(
+        'token'
+    );
+
+    location.reload();
+}
+
+/*
+==================================
+AUTO REFRESH
+==================================
+*/
+
+setInterval(()=>{
+
+    if(
+        !document
+        .getElementById('homePage')
+        .classList.contains('hidden')
+    ){
+
+        loadOpportunities();
+    }
+
+},15000);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,193 @@
+<script>
+
+async function register(){
+
+    const btn =
+    event.target;
+
+    btn.disabled = true;
+    btn.innerHTML = 'Creating Account...';
+
+    try{
+
+        const body = {
+
+            username:
+            document.getElementById(
+                'regUsername'
+            ).value.trim(),
+
+            email:
+            document.getElementById(
+                'regEmail'
+            ).value.trim(),
+
+            mpesa:
+            document.getElementById(
+                'regMpesa'
+            ).value.trim(),
+
+            password:
+            document.getElementById(
+                'regPassword'
+            ).value.trim()
+        };
+
+        if(
+            !body.username ||
+            !body.email ||
+            !body.mpesa ||
+            !body.password
+        ){
+
+            alert('Fill all fields');
+
+            btn.disabled = false;
+            btn.innerHTML = 'Create Account';
+
+            return;
+        }
+
+        const res =
+        await fetch('/api/register',{
+
+            method:'POST',
+
+            headers:{
+                'Content-Type':
+                'application/json'
+            },
+
+            body:JSON.stringify(body)
+        });
+
+        const data =
+        await res.json();
+
+        if(data.success){
+
+            localStorage.setItem(
+                'token',
+                data.token
+            );
+
+            localStorage.setItem(
+                'username',
+                data.username
+            );
+
+            btn.innerHTML = 'Success';
+
+            setTimeout(()=>{
+
+                openApp();
+
+            },300);
+
+        }else{
+
+            alert(
+                data.error ||
+                'Registration failed'
+            );
+
+            btn.disabled = false;
+            btn.innerHTML =
+            'Create Account';
+        }
+
+    }catch(err){
+
+        alert(err.message);
+
+        btn.disabled = false;
+
+        btn.innerHTML =
+        'Create Account';
+    }
+}
+
+async function login(){
+
+    const btn =
+    event.target;
+
+    btn.disabled = true;
+    btn.innerHTML = 'Logging In...';
+
+    try{
+
+        const body = {
+
+            username:
+            document.getElementById(
+                'loginUsername'
+            ).value.trim(),
+
+            password:
+            document.getElementById(
+                'loginPassword'
+            ).value.trim()
+        };
+
+        const res =
+        await fetch('/api/login',{
+
+            method:'POST',
+
+            headers:{
+                'Content-Type':
+                'application/json'
+            },
+
+            body:JSON.stringify(body)
+        });
+
+        const data =
+        await res.json();
+
+        if(data.success){
+
+            localStorage.setItem(
+                'token',
+                data.token
+            );
+
+            localStorage.setItem(
+                'username',
+                data.username
+            );
+
+            btn.innerHTML = 'Success';
+
+            setTimeout(()=>{
+
+                openApp();
+
+            },300);
+
+        }else{
+
+            alert(
+                data.error ||
+                'Login failed'
+            );
+
+            btn.disabled = false;
+
+            btn.innerHTML =
+            'Login';
+        }
+
+    }catch(err){
+
+        alert(err.message);
+
+        btn.disabled = false;
+
+        btn.innerHTML =
+        'Login';
+    }
+}
+
+</script>
