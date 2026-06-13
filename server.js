@@ -17,7 +17,7 @@ mongoose.connect(MONGO_URI)
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Schemas
+// Schemas (unchanged)
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
@@ -33,11 +33,15 @@ const sessionSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 const Session = mongoose.model('Session', sessionSchema);
 
-const opportunityHistory = {};
-
 const hashPassword = p => crypto.createHash('sha256').update(p).digest('hex');
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
+// ---------- Global cache for opportunities ----------
+let cachedOpportunities = [];
+let lastScanTime = 0;
+const SCAN_INTERVAL = 60000; // 60 seconds
+
+// ---------- Helper: fetch ticker data from exchange (same as before) ----------
 async function safeGet(url, name) {
   try {
     const res = await axios.get(url, { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -48,7 +52,6 @@ async function safeGet(url, name) {
   }
 }
 
-// Exchanges for tickers
 const EXCHANGES = {
   mexc: 'https://api.mexc.com/api/v3/ticker/24hr',
   kucoin: 'https://api.kucoin.com/api/v1/market/allTickers',
@@ -69,74 +72,6 @@ const EXCHANGES = {
 const MIN_PROFIT = 0.2;
 const MAX_PROFIT = 100;
 
-// ==================== AUTH ====================
-app.post('/api/register', async (req, res) => {
-  try {
-    const { username, email, mpesa, password } = req.body;
-    if (!username || !email || !mpesa || !password) return res.status(400).json({ error: 'All fields required' });
-    const existing = await User.findOne({ $or: [{ username }, { email }] });
-    if (existing) return res.status(409).json({ error: 'Username or email already exists' });
-    const user = new User({ username, email, mpesa, passwordHash: hashPassword(password) });
-    await user.save();
-    const token = generateToken();
-    await new Session({ token, username }).save();
-    res.json({ success: true, token, username });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.post('/api/login', async (req, res) => {
-  try {
-    const { email, username, password } = req.body; // accept either
-    const loginId = email || username;
-    if (!loginId || !password) {
-      return res.status(400).json({ error: 'Email/Username and password required' });
-    }
-    console.log(`Login attempt for: ${loginId}`);
-
-    // Find user by email OR username
-    const user = await User.findOne({
-      $or: [{ email: loginId }, { username: loginId }]
-    });
-    if (!user) {
-      console.log(`User not found: ${loginId}`);
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const valid = user.passwordHash === hashPassword(password);
-    if (!valid) {
-      console.log(`Invalid password for: ${loginId}`);
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const token = generateToken();
-    await new Session({ token, username: user.username }).save();
-    console.log(`Login successful: ${user.username}`);
-    res.json({ success: true, token, username: user.username });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.get('/api/me', async (req, res) => {
-  try {
-    const token = req.headers.authorization;
-    if (!token) return res.status(401).json({ error: 'No token' });
-    const session = await Session.findOne({ token });
-    if (!session) return res.status(401).json({ error: 'Invalid session' });
-    const user = await User.findOne({ username: session.username });
-    if (!user) return res.status(401).json({ error: 'User not found' });
-    res.json({ username: user.username, email: user.email, mpesa: user.mpesa });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// ==================== SYMBOL EXTRACTION ====================
 function extractSymbol(exchange, symbol, t) {
   let sym = null, price = null, volume = null;
   try {
@@ -156,81 +91,10 @@ function extractSymbol(exchange, symbol, t) {
   } catch { return null; }
 }
 
-// ==================== REAL NETWORK DATA (CCXT) ====================
-const CCXT_EXCHANGES = {
-  binance: ccxt.binance,
-  kucoin: ccxt.kucoin,
-  okx: ccxt.okx,
-  bybit: ccxt.bybit,
-  gateio: ccxt.gateio,
-  htx: ccxt.huobi,
-  mexc: ccxt.mexc,
-  bitmart: ccxt.bitmart,
-  bitget: ccxt.bitget,
-  coinex: ccxt.coinex,
-  lbank: ccxt.lbank,
-  poloniex: ccxt.poloniex,
-  bitfinex: ccxt.bitfinex,
-  cryptocom: ccxt.cryptocom,
-  upbit: ccxt.upbit
-};
-
-const networkCache = new Map();
-
-async function fetchRealNetworks(exchangeId, coin) {
-  const key = exchangeId.toLowerCase();
-  const cacheKey = `${key}:${coin}`;
-  if (networkCache.has(cacheKey)) {
-    const cached = networkCache.get(cacheKey);
-    if (Date.now() - cached.timestamp < 3600000) return cached.data;
-  }
-
-  const ExchangeClass = CCXT_EXCHANGES[key];
-  if (!ExchangeClass) {
-    console.log(`No CCXT support for exchange: ${exchangeId}`);
-    return null;
-  }
-
-  try {
-    const ex = new ExchangeClass({ enableRateLimit: true });
-    await ex.loadMarkets();
-    const currencies = await ex.fetchCurrencies();
-    const coinData = currencies[coin];
-    if (!coinData || !coinData.networks) return null;
-
-    const networks = {};
-    for (const [netName, netInfo] of Object.entries(coinData.networks)) {
-      networks[netName] = {
-        name: netName,
-        deposit: netInfo.deposit === true,
-        withdraw: netInfo.withdraw === true,
-        fee: netInfo.fee || 0,
-        minWithdraw: netInfo.withdrawMin || 0
-      };
-    }
-    const result = {
-      networks,
-      canWithdraw: coinData.withdraw === true,
-      canDeposit: coinData.deposit === true
-    };
-    networkCache.set(cacheKey, { timestamp: Date.now(), data: result });
-    return result;
-  } catch (err) {
-    console.log(`Network error ${exchangeId} ${coin}:`, err.message);
-    return null;
-  }
-}
-
-app.get('/api/network/:exchange/:symbol', async (req, res) => {
-  const { exchange, symbol } = req.params;
-  const coin = symbol.split('/')[0];
-  const data = await fetchRealNetworks(exchange, coin);
-  if (!data) return res.status(404).json({ error: 'Network data not available' });
-  res.json(data);
-});
-
-// ==================== OPPORTUNITIES ====================
-app.get('/api/opportunities', async (req, res) => {
+// ---------- Background scanner (updates cache) ----------
+async function scanArbitrage() {
+  console.log('🔄 Running background arbitrage scan...');
+  const startTime = Date.now();
   try {
     const results = await Promise.all(Object.entries(EXCHANGES).map(([n, u]) => safeGet(u, n)));
     const allData = {};
@@ -261,7 +125,6 @@ app.get('/api/opportunities', async (req, res) => {
 
     const symbols = new Set();
     Object.values(allData).forEach(ex => Object.keys(ex).forEach(s => symbols.add(s)));
-
     const opportunities = [];
     for (const symbol of symbols) {
       const prices = [];
@@ -274,36 +137,173 @@ app.get('/api/opportunities', async (req, res) => {
       const [sellEx, sell] = prices[prices.length - 1];
       const spread = ((sell.price - buy.price) / buy.price) * 100;
       if (spread < MIN_PROFIT || spread > MAX_PROFIT) continue;
-      const id = `${symbol}-${buyEx}-${sellEx}`;
-      if (!opportunityHistory[id]) opportunityHistory[id] = [];
-      opportunityHistory[id].push({ time: Date.now(), spread });
-      if (opportunityHistory[id].length > 20) opportunityHistory[id].shift();
-      let liquidityScore = buy.volume ? buy.volume * buy.price : Math.random() * 50000 + 10000;
+      const liquidity = buy.volume ? buy.volume * buy.price : Math.random() * 50000 + 10000;
       opportunities.push({
-        id, symbol,
+        id: `${symbol}-${buyEx}-${sellEx}`,
+        symbol,
         buyExchange: buyEx.toUpperCase(),
         sellExchange: sellEx.toUpperCase(),
         buyPrice: buy.price.toFixed(8),
         sellPrice: sell.price.toFixed(8),
         spread: spread.toFixed(2),
-        liquidity: liquidityScore.toFixed(0),
-        history: opportunityHistory[id],
-        tradable: true
+        liquidity: liquidity.toFixed(0)
       });
     }
-    res.json({ count: opportunities.length, opportunities: opportunities.sort((a,b) => +b.spread - +a.spread) });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: e.message });
+    cachedOpportunities = opportunities.sort((a,b) => +b.spread - +a.spread);
+    lastScanTime = Date.now();
+    console.log(`✅ Scan complete. Found ${cachedOpportunities.length} opportunities in ${Date.now() - startTime}ms`);
+  } catch (err) {
+    console.error('Scan failed:', err);
+  }
+}
+
+// Start background scanner immediately, then every interval
+scanArbitrage();
+setInterval(scanArbitrage, SCAN_INTERVAL);
+
+// ---------- Auth Routes (unchanged) ----------
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, email, mpesa, password } = req.body;
+    if (!username || !email || !mpesa || !password) return res.status(400).json({ error: 'All fields required' });
+    const existing = await User.findOne({ $or: [{ username }, { email }] });
+    if (existing) return res.status(409).json({ error: 'Username or email already exists' });
+    const user = new User({ username, email, mpesa, passwordHash: hashPassword(password) });
+    await user.save();
+    const token = generateToken();
+    await new Session({ token, username }).save();
+    res.json({ success: true, token, username });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// ==================== PAYMENT ====================
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, username, password } = req.body;
+    const loginId = email || username;
+    if (!loginId || !password) return res.status(400).json({ error: 'Email/Username and password required' });
+    const user = await User.findOne({ $or: [{ email: loginId }, { username: loginId }] });
+    if (!user || user.passwordHash !== hashPassword(password))
+      return res.status(401).json({ error: 'Invalid credentials' });
+    const token = generateToken();
+    await new Session({ token, username: user.username }).save();
+    res.json({ success: true, token, username: user.username });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/me', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const session = await Session.findOne({ token });
+    if (!session) return res.status(401).json({ error: 'Invalid session' });
+    const user = await User.findOne({ username: session.username });
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    res.json({ username: user.username, email: user.email, mpesa: user.mpesa });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ---------- Fast opportunities endpoint (cached) ----------
+app.get('/api/opportunities', (req, res) => {
+  res.json({
+    count: cachedOpportunities.length,
+    opportunities: cachedOpportunities,
+    lastScan: lastScanTime
+  });
+});
+
+// ---------- Real-time details for one opportunity ----------
+const CCXT_EXCHANGES = {
+  binance: ccxt.binance, kucoin: ccxt.kucoin, okx: ccxt.okx, bybit: ccxt.bybit,
+  gateio: ccxt.gateio, htx: ccxt.huobi, mexc: ccxt.mexc, bitmart: ccxt.bitmart,
+  bitget: ccxt.bitget, coinex: ccxt.coinex, lbank: ccxt.lbank, poloniex: ccxt.poloniex,
+  bitfinex: ccxt.bitfinex, cryptocom: ccxt.cryptocom, upbit: ccxt.upbit
+};
+const networkCache = new Map();
+
+async function fetchRealNetworks(exchangeId, coin) {
+  const key = exchangeId.toLowerCase();
+  const cacheKey = `${key}:${coin}`;
+  if (networkCache.has(cacheKey)) {
+    const cached = networkCache.get(cacheKey);
+    if (Date.now() - cached.timestamp < 3600000) return cached.data;
+  }
+  const ExchangeClass = CCXT_EXCHANGES[key];
+  if (!ExchangeClass) return null;
+  try {
+    const ex = new ExchangeClass({ enableRateLimit: true });
+    await ex.loadMarkets();
+    const currencies = await ex.fetchCurrencies();
+    const coinData = currencies[coin];
+    if (!coinData || !coinData.networks) return null;
+    const networks = {};
+    for (const [netName, netInfo] of Object.entries(coinData.networks)) {
+      networks[netName] = {
+        name: netName,
+        deposit: netInfo.deposit === true,
+        withdraw: netInfo.withdraw === true,
+        fee: netInfo.fee || 0,
+        minWithdraw: netInfo.withdrawMin || 0
+      };
+    }
+    const result = { networks, canWithdraw: coinData.withdraw === true, canDeposit: coinData.deposit === true };
+    networkCache.set(cacheKey, { timestamp: Date.now(), data: result });
+    return result;
+  } catch (err) {
+    console.log(`Network error ${exchangeId} ${coin}:`, err.message);
+    return null;
+  }
+}
+
+app.get('/api/opportunity/:id/details', async (req, res) => {
+  const { id } = req.params;
+  // Find the opportunity in cached list by id
+  const opp = cachedOpportunities.find(o => o.id === id);
+  if (!opp) return res.status(404).json({ error: 'Opportunity not found' });
+
+  const coin = opp.symbol;
+  const buyEx = opp.buyExchange.toLowerCase();
+  const sellEx = opp.sellExchange.toLowerCase();
+
+  const [buyNet, sellNet] = await Promise.all([
+    fetchRealNetworks(buyEx, coin),
+    fetchRealNetworks(sellEx, coin)
+  ]);
+
+  const tradable = buyNet?.canWithdraw === true && sellNet?.canDeposit === true;
+  // Simple risk based on spread + tradability
+  const spreadNum = parseFloat(opp.spread);
+  let risk = 'medium';
+  if (!tradable) risk = 'high';
+  else if (spreadNum < 1) risk = 'low';
+  else if (spreadNum > 3) risk = 'high';
+  else risk = 'medium';
+
+  res.json({
+    ...opp,
+    tradable,
+    risk,
+    buyNetworks: buyNet?.networks || {},
+    sellNetworks: sellNet?.networks || {},
+    buyWithdraw: buyNet?.canWithdraw || false,
+    sellDeposit: sellNet?.canDeposit || false
+  });
+});
+
+// ---------- Payment endpoint (unchanged) ----------
 app.post('/api/pesapal/pay', (req, res) => {
   const { phone, amount, plan } = req.body;
   console.log('PAYMENT:', phone, amount, plan);
   res.json({ success: true, message: `STK Push sent to ${phone}` });
 });
 
-// ==================== START SERVER ====================
+// ---------- Start server ----------
 app.listen(PORT, () => console.log(`🚀 ArbiMine running on ${PORT}`));
