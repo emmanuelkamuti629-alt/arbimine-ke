@@ -292,7 +292,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   });
 });
 
-// ---------- REAL PAYHERO STK PUSH ----------
+// ---------- REAL PAYHERO STK PUSH (corrected endpoint) ----------
 app.post('/api/pesapal/pay', async (req, res) => {
   const { phone, amount, plan } = req.body;
   if (!phone || !amount || !plan) {
@@ -305,8 +305,10 @@ app.post('/api/pesapal/pay', async (req, res) => {
     console.error('PAYHERO credentials missing');
     return res.status(500).json({ error: 'Payment gateway not configured' });
   }
+  // Corrected endpoint (notice /api/ after the domain)
+  const payheroUrl = 'https://api.payhero.co.ke/api/stk-push';
   try {
-    const response = await axios.post('https://api.payhero.co.ke/stk-push', {
+    const response = await axios.post(payheroUrl, {
       amount: parseInt(amount),
       phone: formattedPhone,
       channel_id: channelId,
@@ -316,14 +318,14 @@ app.post('/api/pesapal/pay', async (req, res) => {
       headers: {
         'Authorization': payheroToken,
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 30000
     });
     console.log('PayHero response:', response.data);
-    // PayHero usually returns { Status: "Success", Message: "STK Push sent", ... }
-    if (response.data.Status === 'Success') {
+    if (response.data.Status === 'Success' || response.data.success === true) {
       res.json({ success: true, message: 'STK Push sent. Please check your phone and enter PIN to complete payment.' });
     } else {
-      res.status(400).json({ error: response.data.Message || 'Payment initiation failed' });
+      res.status(400).json({ error: response.data.Message || response.data.message || 'Payment initiation failed' });
     }
   } catch (err) {
     console.error('PayHero error:', err.response?.data || err.message);
@@ -331,7 +333,7 @@ app.post('/api/pesapal/pay', async (req, res) => {
   }
 });
 
-// Optional callback endpoint (for PayHero to notify)
+// Optional callback endpoint for PayHero notifications
 app.post('/api/payment/callback', (req, res) => {
   console.log('Payment callback received:', req.body);
   // Here you would update user subscription based on Status and ExternalReference
