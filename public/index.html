@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>ArbiMine • Real PayHero</title>
+  <title>ArbiMine • Paystack Integration</title>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -101,14 +101,14 @@
     <div class="pro-card">
       <div class="plan-name">Weekly Boost</div>
       <div class="price">100 KES</div>
-      <input type="tel" id="weeklyPhone" class="pro-input" placeholder="M-Pesa number (e.g., 0712345678)">
-      <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with M-Pesa</button>
+      <input type="tel" id="weeklyPhone" class="pro-input" placeholder="M-Pesa number (optional for Paystack)">
+      <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with Paystack</button>
     </div>
     <div class="pro-card">
       <div class="plan-name">Monthly Max</div>
       <div class="price">350 KES</div>
-      <input type="tel" id="monthlyPhone" class="pro-input" placeholder="M-Pesa number (e.g., 0712345678)">
-      <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with M-Pesa</button>
+      <input type="tel" id="monthlyPhone" class="pro-input" placeholder="M-Pesa number (optional for Paystack)">
+      <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with Paystack</button>
     </div>
   </div>
 
@@ -318,24 +318,25 @@
     } catch { container.innerHTML = '<div class="card red">Session expired.</div>'; }
   }
 
+  // UPDATED payPro for Paystack redirect
   async function payPro(plan, amount) {
     if (!token) { alert('Please login first'); return; }
+    // Phone number is optional for Paystack, but we keep it for consistency
     const phoneInput = plan === 'weekly' ? document.getElementById('weeklyPhone') : document.getElementById('monthlyPhone');
     const phone = phoneInput.value.trim();
-    if (!phone) { alert('Please enter your M-Pesa number'); return; }
-    if (!isValidPhone(phone)) { alert('Please enter a valid Kenyan phone number (e.g., 0712345678, +254712345678, 254712345678)'); return; }
+    // No phone validation needed, but we can ignore it.
     try {
       const res = await fetch('/api/pesapal/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: token },
-        body: JSON.stringify({ phone, amount, plan })
+        body: JSON.stringify({ plan, amount })  // phone not required by backend
       });
       const data = await res.json();
-      if (data.success) {
-        alert(data.message); // "STK Push sent. Please check your phone and enter PIN to complete payment."
-        phoneInput.value = '';
+      if (data.success && data.authorizationUrl) {
+        // Redirect user to Paystack payment page
+        window.location.href = data.authorizationUrl;
       } else {
-        alert(data.error || 'Payment initiation failed');
+        alert(data.error || 'Payment initialization failed');
       }
     } catch (err) {
       alert('Payment request failed. Please try again.');
