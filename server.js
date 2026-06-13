@@ -69,7 +69,7 @@ const EXCHANGES = {
 const MIN_PROFIT = 0.2;
 const MAX_PROFIT = 100;
 
-// AUTH ROUTES
+// ==================== AUTH ====================
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -116,7 +116,7 @@ app.get('/api/me', async (req, res) => {
   }
 });
 
-// Symbol extraction
+// ==================== SYMBOL EXTRACTION ====================
 function extractSymbol(exchange, symbol, t) {
   let sym = null, price = null, volume = null;
   try {
@@ -136,28 +136,47 @@ function extractSymbol(exchange, symbol, t) {
   } catch { return null; }
 }
 
-// Network cache
+// ==================== REAL NETWORK DATA (CCXT) ====================
+const CCXT_EXCHANGES = {
+  binance: ccxt.binance,
+  kucoin: ccxt.kucoin,
+  okx: ccxt.okx,
+  bybit: ccxt.bybit,
+  gateio: ccxt.gateio,
+  htx: ccxt.huobi,
+  mexc: ccxt.mexc,
+  bitmart: ccxt.bitmart,
+  bitget: ccxt.bitget,
+  coinex: ccxt.coinex,
+  lbank: ccxt.lbank,
+  poloniex: ccxt.poloniex,
+  bitfinex: ccxt.bitfinex,
+  cryptocom: ccxt.cryptocom,
+  upbit: ccxt.upbit
+};
+
 const networkCache = new Map();
+
 async function fetchRealNetworks(exchangeId, coin) {
   const cacheKey = `${exchangeId}:${coin}`;
   if (networkCache.has(cacheKey)) {
     const cached = networkCache.get(cacheKey);
     if (Date.now() - cached.timestamp < 3600000) return cached.data;
   }
+
+  const ExchangeClass = CCXT_EXCHANGES[exchangeId.toLowerCase()];
+  if (!ExchangeClass) {
+    console.log(`No CCXT support for exchange: ${exchangeId}`);
+    return null;
+  }
+
   try {
-    const ccxtMap = {
-      binance: new ccxt.binance(), kucoin: new ccxt.kucoin(), okx: new ccxt.okx(),
-      bybit: new ccxt.bybit(), gateio: new ccxt.gateio(), htx: new ccxt.htx(),
-      mexc: new ccxt.mexc(), bitmart: new ccxt.bitmart(), bitget: new ccxt.bitget(),
-      coinex: new ccxt.coinex(), lbank: new ccxt.lbank(), poloniex: new ccxt.poloniex(),
-      bitfinex: new ccxt.bitfinex(), cryptocom: new ccxt.cryptocom(), upbit: new ccxt.upbit()
-    };
-    const ex = ccxtMap[exchangeId.toLowerCase()];
-    if (!ex) return null;
+    const ex = new ExchangeClass({ enableRateLimit: true });
     await ex.loadMarkets();
     const currencies = await ex.fetchCurrencies();
     const coinData = currencies[coin];
     if (!coinData || !coinData.networks) return null;
+
     const networks = {};
     for (const [netName, netInfo] of Object.entries(coinData.networks)) {
       networks[netName] = {
@@ -168,7 +187,11 @@ async function fetchRealNetworks(exchangeId, coin) {
         minWithdraw: netInfo.withdrawMin || 0
       };
     }
-    const result = { networks, canWithdraw: coinData.withdraw, canDeposit: coinData.deposit };
+    const result = {
+      networks,
+      canWithdraw: coinData.withdraw === true,
+      canDeposit: coinData.deposit === true
+    };
     networkCache.set(cacheKey, { timestamp: Date.now(), data: result });
     return result;
   } catch (err) {
@@ -185,7 +208,7 @@ app.get('/api/network/:exchange/:symbol', async (req, res) => {
   res.json(data);
 });
 
-// OPPORTUNITIES endpoint with liquidity & history
+// ==================== OPPORTUNITIES ====================
 app.get('/api/opportunities', async (req, res) => {
   try {
     const results = await Promise.all(Object.entries(EXCHANGES).map(([n, u]) => safeGet(u, n)));
@@ -214,8 +237,10 @@ app.get('/api/opportunities', async (req, res) => {
         allData[ex][d.symbol] = { price: d.price, volume: d.volume };
       }
     });
+
     const symbols = new Set();
     Object.values(allData).forEach(ex => Object.keys(ex).forEach(s => symbols.add(s)));
+
     const opportunities = [];
     for (const symbol of symbols) {
       const prices = [];
@@ -232,7 +257,6 @@ app.get('/api/opportunities', async (req, res) => {
       if (!opportunityHistory[id]) opportunityHistory[id] = [];
       opportunityHistory[id].push({ time: Date.now(), spread });
       if (opportunityHistory[id].length > 20) opportunityHistory[id].shift();
-      // Liquidity: use buy volume or mock
       let liquidityScore = buy.volume ? buy.volume * buy.price : Math.random() * 50000 + 10000;
       opportunities.push({
         id, symbol,
@@ -243,20 +267,22 @@ app.get('/api/opportunities', async (req, res) => {
         spread: spread.toFixed(2),
         liquidity: liquidityScore.toFixed(0),
         history: opportunityHistory[id],
-        tradable: true // will be determined by network data later on frontend
+        tradable: true
       });
     }
     res.json({ count: opportunities.length, opportunities: opportunities.sort((a,b) => +b.spread - +a.spread) });
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: e.message });
   }
 });
 
-// Payment
+// ==================== PAYMENT ====================
 app.post('/api/pesapal/pay', (req, res) => {
   const { phone, amount, plan } = req.body;
   console.log('PAYMENT:', phone, amount, plan);
   res.json({ success: true, message: `STK Push sent to ${phone}` });
 });
 
+// ==================== START SERVER ====================
 app.listen(PORT, () => console.log(`🚀 ArbiMine running on ${PORT}`));
