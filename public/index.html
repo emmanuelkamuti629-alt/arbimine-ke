@@ -3,345 +3,450 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>ArbiMine • Paystack Integration</title>
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <title>Arbitrage Nexus · AI Risk & Fee (USDT)</title>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- TailwindCSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0b1220; font-family: 'Inter', system-ui, sans-serif; color: #eef2ff; padding-bottom: 70px; }
-    .auth-container { max-width: 420px; margin: 60px auto; padding: 24px; background: #111a2e; border-radius: 28px; }
-    .auth-container input { width: 100%; padding: 14px; margin: 8px 0; background: #0f172f; border: 1px solid #1e2a4a; border-radius: 18px; color: white; }
-    .auth-container button { width: 100%; padding: 14px; background: #00ff99; border: none; border-radius: 40px; font-weight: bold; margin-top: 16px; cursor: pointer; }
-    .toggle-link { text-align: center; margin-top: 20px; color: #5cb3ff; cursor: pointer; }
-    .dashboard { display: none; }
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #111a2e; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #1e2a4a; z-index: 100; }
-    .nav-item { background: none; border: none; color: #8e9ab0; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-    .nav-item .icon { font-size: 24px; }
-    .nav-item.active { color: #00ff99; }
-    .section { display: none; padding: 20px 16px; }
-    .section.active { display: block; }
-    h3 { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; font-size: 22px; }
-    .refresh-btn, .sort-select, .filter-select { background: #1e2a4a; border: none; color: white; padding: 8px 12px; border-radius: 40px; cursor: pointer; }
-    .card { background: #111a2e; border-radius: 20px; padding: 16px; margin-bottom: 14px; cursor: pointer; border: 1px solid #1f2a46; transition: 0.1s; }
-    .card:active { transform: scale(0.99); }
-    .symbol { font-size: 18px; font-weight: bold; color: #00ff99; margin-bottom: 8px; }
-    .row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; }
-    .badge { padding: 4px 10px; border-radius: 40px; font-size: 12px; display: inline-block; }
-    .green { background: #0f5132; color: #00ff99; }
-    .red { background: #5a1a1a; color: #ff8a8a; }
-    .yellow { background: #5a4a1a; color: #ffcc00; }
-    .loading { text-align: center; padding: 32px; color: #8e9ab0; }
-    .pro-card { background: linear-gradient(135deg, #0f1a2e, #0a1020); border-radius: 28px; padding: 24px; margin-bottom: 20px; border: 1px solid #2a3a60; }
-    .plan-name { font-size: 28px; font-weight: bold; background: linear-gradient(90deg, #00ff99, #00ccff); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .price { font-size: 42px; font-weight: bold; margin: 12px 0; }
-    .pro-input { width: 100%; padding: 12px; margin: 12px 0; background: #0f172f; border: 1px solid #1e2a4a; border-radius: 20px; color: white; font-size: 16px; }
-    .btn-pro { background: #00ff99; color: #0b1220; font-weight: bold; border: none; border-radius: 60px; padding: 14px; width: 100%; font-size: 18px; cursor: pointer; }
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; overflow-y: auto; padding: 20px; }
-    .modal-content { max-width: 600px; margin: 20px auto; background: #0f172f; border-radius: 32px; padding: 24px; position: relative; }
-    .close-modal { position: absolute; top: 16px; right: 20px; font-size: 28px; cursor: pointer; }
-    .exchange-columns { display: flex; gap: 16px; margin: 20px 0; flex-wrap: wrap; }
-    .exchange-card { flex: 1; background: #0a1020; border-radius: 20px; padding: 16px; }
-    .exchange-title { font-size: 18px; font-weight: bold; color: #7cb9ff; }
-    .status-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-left: 8px; }
-    .network-table { margin-top: 20px; background: #0a1020; border-radius: 20px; overflow: hidden; }
-    .network-row { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #1e2a4a; }
-    .risk-low { background: #0f5132; color: #00ff99; }
-    .risk-medium { background: #5a4a1a; color: #ffcc00; }
-    .risk-high { background: #5a1a1a; color: #ff8a8a; }
-    #chart { margin-top: 20px; background: #0a1020; border-radius: 20px; padding: 12px; }
+    .opportunity-card { transition: all 0.15s ease; cursor: pointer; }
+    .opportunity-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+    .risk-badge-low { background: #10b981; }
+    .risk-badge-med { background: #f59e0b; }
+    .risk-badge-high { background: #ef4444; }
+    button:active { transform: scale(0.97); }
+    .graph-container { min-height: 220px; }
   </style>
 </head>
-<body>
-<div id="authContainer" class="auth-container">
-  <div id="loginPanel">
-    <h2>🔓 ArbiMine</h2>
-    <input type="email" id="loginEmail" placeholder="Email" required>
-    <input type="password" id="loginPassword" placeholder="Password" required>
-    <button onclick="login()">Login →</button>
-    <div class="toggle-link" onclick="showRegister()">Create account</div>
-  </div>
-  <div id="registerPanel" style="display:none;">
-    <h2>📝 Register</h2>
-    <input type="text" id="regUsername" placeholder="Username" required>
-    <input type="email" id="regEmail" placeholder="Email" required>
-    <input type="tel" id="regMpesa" placeholder="Mobile number (e.g., 0712345678)" required>
-    <input type="password" id="regPassword" placeholder="Password" required>
-    <button onclick="register()">Register</button>
-    <div class="toggle-link" onclick="showLogin()">Back to Login</div>
-  </div>
-</div>
+<body class="bg-gradient-to-br from-slate-50 to-gray-100 font-sans antialiased">
 
-<div id="dashboard" class="dashboard">
-  <div class="bottom-nav">
-    <button class="nav-item active" onclick="switchTab('home', event)"><span class="icon">🏠</span><span>Home</span></button>
-    <button class="nav-item" onclick="switchTab('pro', event)"><span class="icon">💎</span><span>Pro</span></button>
-    <button class="nav-item" onclick="switchTab('profile', event)"><span class="icon">👤</span><span>Profile</span></button>
+<div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+  <!-- Header -->
+  <div class="flex flex-wrap justify-between items-center mb-6 border-b border-gray-200 pb-3">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-800">⚡ Arbitrage Nexus</h1>
+      <p class="text-gray-500 text-sm mt-1">real‑time cross‑exchange · AI risk + fee in USDT</p>
+    </div>
+    <div class="text-xs text-gray-400 bg-white/60 px-3 py-1 rounded-full shadow-sm"><i class="fas fa-robot mr-1"></i> predictive engine active</div>
   </div>
 
-  <div id="home" class="section active">
-    <h3>📡 Live Arbitrage
-      <div style="display: flex; gap: 8px;">
-        <button class="refresh-btn" onclick="refreshOpportunities()">🔄</button>
-        <select id="sortSelect" class="sort-select" onchange="loadAndRender()">
-          <option value="spreadDesc">Spread high-low</option>
-          <option value="symbolAsc">Symbol A-Z</option>
-        </select>
-        <select id="rangeFilter" class="filter-select" onchange="loadAndRender()">
-          <option value="all">All spreads</option>
-          <option value="0.2-1">0.2% - 1%</option>
-          <option value="1-5">1% - 5%</option>
-          <option value="5+">5% +</option>
-        </select>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- LEFT: Opportunities list (outside phase shows tradable + risk level) -->
+    <div class="lg:col-span-1 bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+      <div class="p-4 bg-gray-50/80 border-b border-gray-200 flex justify-between items-center">
+        <h2 class="font-semibold text-gray-700"><i class="fas fa-chart-line mr-2 text-indigo-500"></i>Live Opportunities</h2>
+        <div class="flex gap-2">
+          <button id="homeBtn" class="bg-white hover:bg-indigo-50 text-gray-700 text-sm px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 border"><i class="fas fa-home"></i> Home</button>
+          <button id="backBtn" class="bg-white hover:bg-indigo-50 text-gray-700 text-sm px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 border"><i class="fas fa-arrow-left"></i> Back</button>
+          <button id="nextBtn" class="bg-white hover:bg-indigo-50 text-gray-700 text-sm px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 border">Next <i class="fas fa-arrow-right"></i></button>
+        </div>
       </div>
-    </h3>
-    <div id="oppList" class="loading">Loading opportunities...</div>
-  </div>
-
-  <div id="pro" class="section">
-    <h3>💎 Unlock Pro</h3>
-    <div class="pro-card">
-      <div class="plan-name">Weekly Boost</div>
-      <div class="price">100 KES</div>
-      <input type="tel" id="weeklyPhone" class="pro-input" placeholder="M-Pesa number (optional for Paystack)">
-      <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with Paystack</button>
+      <div id="opportunitiesList" class="divide-y divide-gray-100 max-h-[540px] overflow-y-auto"></div>
+      <div class="p-3 text-center text-xs text-gray-400 bg-gray-50 border-t border-gray-100">
+        <i class="fas fa-clock"></i> click any card → instant AI + fee details
+      </div>
     </div>
-    <div class="pro-card">
-      <div class="plan-name">Monthly Max</div>
-      <div class="price">350 KES</div>
-      <input type="tel" id="monthlyPhone" class="pro-input" placeholder="M-Pesa number (optional for Paystack)">
-      <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with Paystack</button>
+
+    <!-- RIGHT: Detail panel + graph + AI + fee in USDT -->
+    <div class="lg:col-span-2 bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4 border-b border-indigo-100">
+        <div class="flex flex-wrap justify-between items-center gap-2">
+          <div>
+            <span class="text-xs font-medium text-indigo-600 uppercase tracking-wide">Selected Opportunity</span>
+            <h2 id="detailOppName" class="text-2xl font-bold text-gray-800 mt-0">—</h2>
+          </div>
+          <div id="tradableOutsideBadge" class="inline-flex items-center gap-1.5 bg-white/70 px-3 py-1.5 rounded-full shadow-sm text-sm font-medium"></div>
+        </div>
+      </div>
+
+      <div class="p-5 space-y-5">
+        <!-- quick stats row -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+          <div class="bg-gray-50 p-3 rounded-xl"><span class="text-gray-500 block text-xs">Buy Exchange</span><span id="detailExchangeA" class="font-mono font-medium text-gray-800">—</span></div>
+          <div class="bg-gray-50 p-3 rounded-xl"><span class="text-gray-500 block text-xs">Sell Exchange</span><span id="detailExchangeB" class="font-mono font-medium text-gray-800">—</span></div>
+          <div class="bg-gray-50 p-3 rounded-xl"><span class="text-gray-500 block text-xs">Spread %</span><span id="detailSpread" class="font-bold text-indigo-700">—</span></div>
+        </div>
+
+        <!-- Fee in USDT section -->
+        <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="fas fa-dollar-sign text-amber-600"></i>
+            <span class="font-semibold text-gray-700">Estimated Fees (USDT)</span>
+            <span class="text-xs text-gray-400 ml-auto">based on token price</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div><span class="text-gray-500">Buy side fee:</span> <span id="buyFeeUsdt" class="font-mono font-bold">—</span></div>
+            <div><span class="text-gray-500">Sell side fee:</span> <span id="sellFeeUsdt" class="font-mono font-bold">—</span></div>
+          </div>
+          <div class="text-xs text-gray-400 mt-1"><i class="fas fa-info-circle"></i> Network fee converted to USDT using spot price</div>
+        </div>
+
+        <!-- AI Risk Level + explanation -->
+        <div class="bg-gray-50/80 rounded-xl p-4 border border-gray-200">
+          <div class="flex items-center gap-2 mb-3">
+            <i class="fas fa-brain text-purple-600 text-lg"></i>
+            <span class="font-semibold text-gray-700">AI Risk Prediction</span>
+            <span class="text-xs text-gray-400 ml-auto">live ensemble model</span>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div><span id="riskRatingDisplay" class="text-2xl font-bold tracking-tight px-3 py-1 rounded-full text-white risk-badge-low inline-block">—</span></div>
+            <div class="text-xs text-gray-500 bg-white rounded-full px-3 py-1"><span id="riskScoreValue">0</span>/10 risk coefficient</div>
+          </div>
+          <div id="riskExplanation" class="mt-3 text-sm text-gray-600 bg-white p-3 rounded-lg border-l-4 border-purple-300 shadow-inner">Loading risk factors...</div>
+        </div>
+
+        <!-- Graph section -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700"><i class="fas fa-chart-line mr-1 text-indigo-500"></i> Spread trend (%)</span>
+            <span class="text-[11px] text-gray-400">x: recent ticks | y: spread %</span>
+          </div>
+          <div class="bg-white p-2 rounded-xl border border-gray-200 graph-container">
+            <canvas id="spreadTrendChart" width="400" height="200" style="max-height: 220px; width: 100%"></canvas>
+          </div>
+        </div>
+
+        <!-- Additional details: liquidity, deposit/withdraw status -->
+        <div class="text-xs text-gray-500 border-t pt-3 flex flex-wrap justify-between gap-2">
+          <span><i class="fas fa-tint"></i> Liquidity: <span id="liqDetails">—</span></span>
+          <span><i class="fas fa-exchange-alt"></i> Deposit/Withdraw: <span id="depositStatus">—</span></span>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div id="profile" class="section">
-    <h3>👤 Profile</h3>
-    <div id="profileCard" class="loading">Loading...</div>
-    <button class="btn-pro" style="background:#334155; margin-top:20px;" onclick="logout()">Logout</button>
-  </div>
-</div>
-
-<!-- Detail Modal -->
-<div id="detailModal" class="modal">
-  <div class="modal-content">
-    <span class="close-modal" onclick="closeDetail()">&times;</span>
-    <div id="modalBody">Loading details...</div>
-    <div id="chart"></div>
   </div>
 </div>
 
 <script>
-  let token = localStorage.getItem('token');
-  let allOpportunities = [];
-  let currentChart = null;
-
-  window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); };
-
-  function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
-  function isValidPhone(phone) { return /^(07|01|\+254|254)\d{8,12}$/.test(phone.replace(/\D/g, '').replace(/^0/, '254')); }
-
-  async function verifyAndShowDashboard() {
-    try {
-      const res = await fetch('/api/me', { headers: { Authorization: token } });
-      const data = await res.json();
-      if (data.username) {
-        document.getElementById('authContainer').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-        loadOpps();
-        loadProfile();
-      } else throw new Error();
-    } catch { localStorage.removeItem('token'); token = null; showAuth(); }
-  }
-
-  function showAuth() { document.getElementById('authContainer').style.display = 'block'; document.getElementById('dashboard').style.display = 'none'; }
-  function showRegister() { document.getElementById('loginPanel').style.display = 'none'; document.getElementById('registerPanel').style.display = 'block'; }
-  function showLogin() { document.getElementById('registerPanel').style.display = 'none'; document.getElementById('loginPanel').style.display = 'block'; }
-
-  async function register() {
-    const username = document.getElementById('regUsername').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const mpesa = document.getElementById('regMpesa').value.trim();
-    const password = document.getElementById('regPassword').value;
-    if (!username || !email || !mpesa || !password) { alert('All fields required'); return; }
-    if (!isValidEmail(email)) { alert('Please enter a valid email address'); return; }
-    if (!isValidPhone(mpesa)) { alert('Please enter a valid Kenyan mobile number (e.g., 0712345678)'); return; }
-    if (password.length < 4) { alert('Password must be at least 4 characters'); return; }
-    try {
-      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, mpesa, password }) });
-      const data = await res.json();
-      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
-      else alert(data.error);
-    } catch { alert('Server error'); }
-  }
-
-  async function login() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    if (!email || !password) { alert('Email and password required'); return; }
-    try {
-      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
-      const data = await res.json();
-      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
-      else alert(data.error || 'Invalid credentials');
-    } catch { alert('Login error'); }
-  }
-
-  function logout() { localStorage.removeItem('token'); location.reload(); }
-
-  function switchTab(tabId, event) {
-    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-    if (event?.target) event.target.closest('.nav-item').classList.add('active');
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    if (tabId === 'home') loadOpps();
-    if (tabId === 'profile') loadProfile();
-  }
-
-  async function refreshOpportunities() { await loadOpps(); }
-
-  async function loadOpps() {
-    const container = document.getElementById('oppList');
-    container.innerHTML = '<div class="loading">Loading opportunities...</div>';
-    try {
-      const res = await fetch('/api/opportunities');
-      const data = await res.json();
-      if (!data.opportunities || data.opportunities.length === 0) { container.innerHTML = '<div class="card">No spreads >0.2% found.</div>'; return; }
-      allOpportunities = data.opportunities;
-      loadAndRender();
-    } catch { container.innerHTML = '<div class="card red">Failed to load.</div>'; }
-  }
-
-  function loadAndRender() {
-    let filtered = [...allOpportunities];
-    const range = document.getElementById('rangeFilter').value;
-    if (range !== 'all') {
-      const [min, max] = range === '5+' ? [5, Infinity] : range.split('-').map(Number);
-      filtered = filtered.filter(o => parseFloat(o.spread) >= min && (max ? parseFloat(o.spread) <= max : true));
+  // ======================== OPPORTUNITIES DATA (based on images) ========================
+  const opportunities = [
+    {
+      id: 0,
+      name: "SWEAT",
+      buyExchange: "HTX",
+      sellExchange: "GATEIO",
+      buyPrice: 0.00070100,
+      sellPrice: 0.00086490,
+      spreadPercent: 23.38,
+      // historical spread % trends (mock realistic)
+      historicalSpreads: [22.1, 22.5, 22.9, 23.2, 23.4, 23.5, 23.4, 23.3, 23.38, 23.38],
+      // liquidity scores (0-10)
+      liquidityScore: 6.2,
+      volumeScore: 7.0,
+      // deposit/withdraw availability (true=available, false=disabled)
+      buyDepositAvailable: true,
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: true,
+      sellWithdrawAvailable: true,
+      // network fees in token units (from image we guess for others, but for HIPPO we have actual)
+      buyFeeTokenUnits: 0.5,   // dummy example, will convert
+      sellFeeTokenUnits: 0.3,
+      // exchange reputation (1-10)
+      buyRep: 8,
+      sellRep: 7,
+      // liquidity displayed text
+      buyLiquidityUSD: "≈ $124K",
+      sellLiquidityUSD: "≈ $98K"
+    },
+    {
+      id: 1,
+      name: "FCT2",
+      buyExchange: "HTX",
+      sellExchange: "MEXC",
+      buyPrice: 0.00688600,
+      sellPrice: 0.00839000,
+      spreadPercent: 21.84,
+      historicalSpreads: [20.5, 21.0, 21.3, 21.6, 21.8, 21.9, 21.85, 21.84, 21.84, 21.84],
+      liquidityScore: 5.5,
+      volumeScore: 6.0,
+      buyDepositAvailable: true,
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: true,
+      sellWithdrawAvailable: true,
+      buyFeeTokenUnits: 0.8,
+      sellFeeTokenUnits: 0.4,
+      buyRep: 8,
+      sellRep: 9,
+      buyLiquidityUSD: "≈ $87K",
+      sellLiquidityUSD: "≈ $112K"
+    },
+    {
+      id: 2,
+      name: "HIPPO",
+      buyExchange: "BITMART",
+      sellExchange: "HTX",
+      buyPrice: 0.00016000,
+      sellPrice: 0.00019400,
+      spreadPercent: 21.25,
+      historicalSpreads: [19.8, 20.2, 20.7, 21.0, 21.2, 21.3, 21.25, 21.25, 21.25, 21.25],
+      liquidityScore: 0,      // from image: liquidity $0
+      volumeScore: 0.5,
+      buyDepositAvailable: true,   // BITMART: Deposit Available, Withdraw Available
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: false,  // HTX: Deposit Disabled, Withdraw Disabled
+      sellWithdrawAvailable: false,
+      buyFeeTokenUnits: 12509,      // given in image
+      sellFeeTokenUnits: 5,
+      buyRep: 6,     // BITMART lower rep
+      sellRep: 8,
+      buyLiquidityUSD: "$0",
+      sellLiquidityUSD: "$0"
+    },
+    {
+      id: 3,
+      name: "GMX",
+      buyExchange: "HTX",
+      sellExchange: "BITMART",
+      buyPrice: 4.64910000,
+      sellPrice: 5.62999000,
+      spreadPercent: 21.10,
+      historicalSpreads: [20.3, 20.7, 20.9, 21.1, 21.2, 21.15, 21.1, 21.1, 21.1, 21.1],
+      liquidityScore: 7.2,
+      volumeScore: 7.8,
+      buyDepositAvailable: true,
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: true,
+      sellWithdrawAvailable: true,
+      buyFeeTokenUnits: 1.2,
+      sellFeeTokenUnits: 2.0,
+      buyRep: 8,
+      sellRep: 6,
+      buyLiquidityUSD: "≈ $210K",
+      sellLiquidityUSD: "≈ $45K"
+    },
+    {
+      id: 4,
+      name: "CC",
+      buyExchange: "KUCOIN",
+      sellExchange: "HTX",
+      buyPrice: 0.15994000,
+      sellPrice: 0.19180000,
+      spreadPercent: 19.92,
+      historicalSpreads: [18.5, 19.0, 19.4, 19.7, 19.9, 20.0, 19.95, 19.92, 19.92, 19.92],
+      liquidityScore: 6.8,
+      volumeScore: 7.1,
+      buyDepositAvailable: true,
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: true,
+      sellWithdrawAvailable: true,
+      buyFeeTokenUnits: 1.5,
+      sellFeeTokenUnits: 0.9,
+      buyRep: 9,
+      sellRep: 8,
+      buyLiquidityUSD: "≈ $150K",
+      sellLiquidityUSD: "≈ $180K"
     }
-    const sortBy = document.getElementById('sortSelect').value;
-    if (sortBy === 'spreadDesc') filtered.sort((a,b) => parseFloat(b.spread) - parseFloat(a.spread));
-    if (sortBy === 'symbolAsc') filtered.sort((a,b) => a.symbol.localeCompare(b.symbol));
-    renderOppsList(filtered);
+  ];
+
+  // Helper: determine if tradable (must have positive spread, both deposit/withdraw available for respective sides, liquidity > 0)
+  function isTradable(opp) {
+    // For arbitrage: need to buy on buyExchange (deposit not needed for buy? Actually to buy you need funds, but withdraw needed if you want to move? 
+    // Realistic: you need sell side deposit enabled to receive tokens, buy side withdraw enabled to move? Simpler: both deposit on sell and withdraw on buy must be available.
+    // Based on HIPPO: deposit disabled on HTX (sell side) => not tradable.
+    const sellDepositOk = opp.sellDepositAvailable;
+    const buyWithdrawOk = opp.buyWithdrawAvailable;
+    const positiveSpread = opp.spreadPercent > 0;
+    const hasLiquidity = opp.liquidityScore > 0.1;
+    return positiveSpread && sellDepositOk && buyWithdrawOk && hasLiquidity;
   }
 
-  function renderOppsList(opps) {
-    const container = document.getElementById('oppList');
-    container.innerHTML = '';
-    for (const opp of opps) {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="symbol">${opp.symbol}</div>
-        <div class="row"><span>${opp.buyExchange}</span><span>💰 ${opp.buyPrice}</span></div>
-        <div class="row"><span>${opp.sellExchange}</span><span>💰 ${opp.sellPrice}</span></div>
-        <div class="row"><span>Spread</span><span class="badge green">${opp.spread}%</span></div>
-      `;
-      card.onclick = () => showDetail(opp.id);
-      container.appendChild(card);
-    }
+  // Compute fee in USDT for buy and sell sides
+  function computeFeesInUSDT(opp) {
+    const buyFeeUsdt = opp.buyFeeTokenUnits * opp.buyPrice;
+    const sellFeeUsdt = opp.sellFeeTokenUnits * opp.sellPrice;
+    return { buyFeeUsdt, sellFeeUsdt };
   }
 
-  async function showDetail(oppId) {
-    const modal = document.getElementById('detailModal');
-    const modalBody = document.getElementById('modalBody');
-    modalBody.innerHTML = '<div class="loading">Fetching real network data...</div>';
-    modal.style.display = 'block';
-    if (currentChart) currentChart.destroy();
-    try {
-      const res = await fetch(`/api/opportunity/${oppId}/details`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      displayDetailModal(data);
-    } catch (err) {
-      modalBody.innerHTML = `<div class="red" style="padding:20px">Failed to load details: ${err.message}</div>`;
-    }
+  // AI Risk Engine (takes tradability, liquidity, deposit status, spread vol, reputation)
+  function computeAIRisk(opp) {
+    const hist = opp.historicalSpreads;
+    const meanHist = hist.reduce((a,b)=>a+b,0)/hist.length;
+    let variance = hist.map(v => Math.pow(v - meanHist,2)).reduce((a,b)=>a+b,0)/hist.length;
+    let stdDev = Math.sqrt(variance);
+    let cv = (Math.abs(meanHist) > 0.01) ? stdDev / Math.abs(meanHist) : 1.2;
+    
+    let spreadRisk = opp.spreadPercent > 25 ? 3.5 : (opp.spreadPercent > 18 ? 2.0 : 1.0);
+    let negativeRisk = opp.spreadPercent <= 0 ? 5 : 0;
+    
+    let volatilityRisk = cv > 0.25 ? 2.8 : (cv > 0.12 ? 1.5 : 0.5);
+    let liquidityRisk = (10 - opp.liquidityScore) * 0.5;
+    liquidityRisk = Math.min(liquidityRisk, 3.5);
+    
+    // deposit/withdraw penalties
+    let depositRisk = 0;
+    if (!opp.sellDepositAvailable) depositRisk += 3.0;
+    if (!opp.buyWithdrawAvailable) depositRisk += 2.5;
+    
+    let repRisk = (10 - opp.buyRep) * 0.2 + (10 - opp.sellRep) * 0.2;
+    repRisk = Math.min(repRisk, 2.0);
+    
+    let rawScore = spreadRisk + volatilityRisk + liquidityRisk + depositRisk + repRisk + negativeRisk;
+    rawScore = Math.min(Math.max(rawScore, 0.5), 9.9);
+    
+    let riskLevel = "";
+    if (rawScore < 3.2) riskLevel = "LOW";
+    else if (rawScore <= 6.0) riskLevel = "MEDIUM";
+    else riskLevel = "HIGH";
+    
+    // Explanation
+    let reasons = [];
+    if (!isTradable(opp)) reasons.push(`⚠️ NOT TRADABLE: ${!opp.sellDepositAvailable ? 'sell deposit disabled' : ''} ${!opp.buyWithdrawAvailable ? 'buy withdraw disabled' : ''} ${opp.liquidityScore === 0 ? 'zero liquidity' : ''}`);
+    if (opp.spreadPercent > 20) reasons.push(`📈 High spread ${opp.spreadPercent}% offers profit but execution risk.`);
+    if (cv > 0.25) reasons.push(`🌊 Unstable spread trend (CV=${cv.toFixed(2)}).`);
+    if (opp.liquidityScore < 3) reasons.push(`💧 Very low liquidity (score ${opp.liquidityScore.toFixed(1)}/10) → slippage risk.`);
+    if (depositRisk > 2) reasons.push(`🚫 Deposit/withdraw restrictions on one side.`);
+    if (riskLevel === "HIGH") reasons.unshift(`❗ HIGH RISK: major obstacles or extreme volatility.`);
+    else if (riskLevel === "MEDIUM") reasons.unshift(`🔶 MEDIUM RISK: watch liquidity and deposit status.`);
+    else reasons.unshift(`✅ LOW RISK: favorable conditions.`);
+    
+    let finalReason = reasons.slice(0, 5).join(" · ");
+    return { level: riskLevel, score: rawScore.toFixed(1), explanation: finalReason };
   }
 
-  function getStatusBadge(status) {
-    if (status === true) return '<span class="status-badge green">Available</span>';
-    if (status === false) return '<span class="status-badge red">Disabled</span>';
-    return '<span class="status-badge yellow">Unverified</span>';
-  }
-
-  function displayDetailModal(opp) {
-    const modalBody = document.getElementById('modalBody');
-    const riskColor = opp.risk === 'low' ? 'risk-low' : (opp.risk === 'medium' ? 'risk-medium' : 'risk-high');
-    const tradableText = opp.tradable ? 'TRADABLE ✅' : 'NOT TRADABLE ❌';
-    const tradableClass = opp.tradable ? 'green' : 'red';
-    const buyStatus = opp.buyWithdraw;
-    const sellStatus = opp.sellDeposit;
-
-    function networkRows(networks) {
-      if (!networks || Object.keys(networks).length === 0) return '<div class="network-row"><span>No network data available</span></div>';
-      return Object.values(networks).map(n => {
-        const depBadge = n.deposit === true ? '<span class="status-badge green">Available</span>' : (n.deposit === false ? '<span class="status-badge red">Disabled</span>' : '<span class="status-badge yellow">Unverified</span>');
-        const wdBadge = n.withdraw === true ? '<span class="status-badge green">Available</span>' : (n.withdraw === false ? '<span class="status-badge red">Disabled</span>' : '<span class="status-badge yellow">Unverified</span>');
-        return `
-          <div class="network-row">
-            <div class="network-name">${n.name}</div>
-            <div class="network-details">
-              Deposit: ${depBadge} | Withdraw: ${wdBadge}<br>
-              Fee: ${typeof n.fee === 'number' ? n.fee : 'variable'}<br>
-              Min Withdraw: ${n.minWithdraw || 'N/A'}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    modalBody.innerHTML = `
-      <div class="modal-symbol">${opp.symbol}</div>
-      <div class="modal-spread">Spread: <span style="color:#00ff99">${opp.spread}%</span></div>
-      <div><span class="badge ${tradableClass}">${tradableText}</span>
-      <span class="badge ${riskColor}" style="margin-left:10px">Risk: ${opp.risk.toUpperCase()}</span></div>
-      <div class="exchange-columns">
-        <div class="exchange-card"><div class="exchange-title">Buy: ${opp.buyExchange}</div><div class="price">$${opp.buyPrice}</div><div class="status">Withdraw: ${getStatusBadge(buyStatus)}</div><div class="liquidity">Liquidity: $${opp.liquidity}</div></div>
-        <div class="exchange-card"><div class="exchange-title">Sell: ${opp.sellExchange}</div><div class="price">$${opp.sellPrice}</div><div class="status">Deposit: ${getStatusBadge(sellStatus)}</div><div class="liquidity">Liquidity: $${opp.liquidity}</div></div>
-      </div>
-      <h4>Networks (${opp.buyExchange})</h4><div class="network-table">${networkRows(opp.buyNetworks)}</div>
-      <h4>Networks (${opp.sellExchange})</h4><div class="network-table">${networkRows(opp.sellNetworks)}</div>
-    `;
-    document.getElementById('chart').style.display = 'none';
-  }
-
-  function closeDetail() {
-    document.getElementById('detailModal').style.display = 'none';
-    if (currentChart) currentChart.destroy();
-  }
-
-  async function loadProfile() {
-    const container = document.getElementById('profileCard');
-    container.innerHTML = '<div class="loading">Loading...</div>';
-    try {
-      const res = await fetch('/api/me', { headers: { Authorization: token } });
-      const user = await res.json();
-      if (user.error) throw new Error();
-      container.innerHTML = `<div class="card"><div class="row"><span>👤 Username:</span><span>${user.username}</span></div><div class="row"><span>📧 Email:</span><span>${user.email}</span></div><div class="row"><span>📱 Mobile:</span><span>${user.mpesa}</span></div></div>`;
-    } catch { container.innerHTML = '<div class="card red">Session expired.</div>'; }
-  }
-
-  // UPDATED payPro for Paystack redirect
-  async function payPro(plan, amount) {
-    if (!token) { alert('Please login first'); return; }
-    // Phone number is optional for Paystack, but we keep it for consistency
-    const phoneInput = plan === 'weekly' ? document.getElementById('weeklyPhone') : document.getElementById('monthlyPhone');
-    const phone = phoneInput.value.trim();
-    // No phone validation needed, but we can ignore it.
-    try {
-      const res = await fetch('/api/pesapal/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token },
-        body: JSON.stringify({ plan, amount })  // phone not required by backend
-      });
-      const data = await res.json();
-      if (data.success && data.authorizationUrl) {
-        // Redirect user to Paystack payment page
-        window.location.href = data.authorizationUrl;
-      } else {
-        alert(data.error || 'Payment initialization failed');
+  // Chart instance
+  let trendChart = null;
+  function renderGraph(historicalArray, oppName) {
+    const ctx = document.getElementById('spreadTrendChart').getContext('2d');
+    if (trendChart) trendChart.destroy();
+    const labels = historicalArray.map((_, i) => `t-${historicalArray.length-i}`);
+    trendChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: `${oppName} spread %`,
+          data: historicalArray,
+          borderColor: '#4f46e5',
+          backgroundColor: 'rgba(79,70,229,0.05)',
+          borderWidth: 2.5,
+          pointRadius: 3,
+          pointBackgroundColor: '#818cf8',
+          tension: 0.2,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { tooltip: { mode: 'index' }, legend: { position: 'top' } },
+        scales: { y: { title: { display: true, text: 'Spread (%)' } } }
       }
-    } catch (err) {
-      alert('Payment request failed. Please try again.');
-    }
+    });
   }
+
+  let currentIndex = 0;
+  function updateDetailPanel(index) {
+    const opp = opportunities[index];
+    if (!opp) return;
+    
+    document.getElementById('detailOppName').innerText = opp.name;
+    document.getElementById('detailExchangeA').innerHTML = `${opp.buyExchange} (buy) <span class="text-[11px] text-gray-400">$${opp.buyPrice.toFixed(8)}</span>`;
+    document.getElementById('detailExchangeB').innerHTML = `${opp.sellExchange} (sell) <span class="text-[11px] text-gray-400">$${opp.sellPrice.toFixed(8)}</span>`;
+    document.getElementById('detailSpread').innerHTML = `${opp.spreadPercent.toFixed(2)}%`;
+    
+    const tradable = isTradable(opp);
+    const tradableHtml = tradable ? `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold"><i class="fas fa-check-circle"></i> TRADABLE</span>` : `<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold"><i class="fas fa-times-circle"></i> NOT TRADABLE</span>`;
+    document.getElementById('tradableOutsideBadge').innerHTML = tradableHtml;
+    
+    // Fees in USDT
+    const { buyFeeUsdt, sellFeeUsdt } = computeFeesInUSDT(opp);
+    document.getElementById('buyFeeUsdt').innerHTML = `$${buyFeeUsdt.toFixed(4)} USD`;
+    document.getElementById('sellFeeUsdt').innerHTML = `$${sellFeeUsdt.toFixed(4)} USD`;
+    
+    // Liquidity details
+    document.getElementById('liqDetails').innerHTML = `${opp.buyExchange}: ${opp.buyLiquidityUSD} | ${opp.sellExchange}: ${opp.sellLiquidityUSD}`;
+    const depositStatusText = `Buy: deposit ${opp.buyDepositAvailable ? '✓' : '✗'} withdraw ${opp.buyWithdrawAvailable ? '✓' : '✗'} | Sell: deposit ${opp.sellDepositAvailable ? '✓' : '✗'} withdraw ${opp.sellWithdrawAvailable ? '✓' : '✗'}`;
+    document.getElementById('depositStatus').innerHTML = depositStatusText;
+    
+    // AI Risk
+    const risk = computeAIRisk(opp);
+    let riskClass = "";
+    if (risk.level === "LOW") riskClass = "risk-badge-low";
+    else if (risk.level === "MEDIUM") riskClass = "risk-badge-med";
+    else riskClass = "risk-badge-high";
+    const riskSpan = document.getElementById('riskRatingDisplay');
+    riskSpan.innerText = `${risk.level} RISK`;
+    riskSpan.className = `text-2xl font-bold tracking-tight px-3 py-1 rounded-full text-white ${riskClass} inline-block`;
+    document.getElementById('riskScoreValue').innerText = risk.score;
+    document.getElementById('riskExplanation').innerHTML = `<i class="fas fa-microchip mr-1 text-purple-500"></i> ${risk.explanation}`;
+    
+    renderGraph(opp.historicalSpreads, opp.name);
+  }
+
+  // Render opportunities list with tradable + risk level badges outside
+  function renderOpportunityList() {
+    const container = document.getElementById('opportunitiesList');
+    container.innerHTML = '';
+    opportunities.forEach((opp, idx) => {
+      const tradable = isTradable(opp);
+      const risk = computeAIRisk(opp);
+      const tradableBadge = tradable ? 
+        '<span class="bg-emerald-100 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full"><i class="fas fa-bolt"></i> Tradable</span>' : 
+        '<span class="bg-rose-100 text-rose-700 text-[10px] font-semibold px-2 py-0.5 rounded-full"><i class="fas fa-ban"></i> Not tradable</span>';
+      let riskBadge = '';
+      if (risk.level === 'LOW') riskBadge = '<span class="bg-green-100 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-full"><i class="fas fa-shield-alt"></i> Low Risk</span>';
+      else if (risk.level === 'MEDIUM') riskBadge = '<span class="bg-yellow-100 text-yellow-700 text-[10px] font-semibold px-2 py-0.5 rounded-full"><i class="fas fa-chart-line"></i> Medium Risk</span>';
+      else riskBadge = '<span class="bg-red-100 text-red-700 text-[10px] font-semibold px-2 py-0.5 rounded-full"><i class="fas fa-exclamation-triangle"></i> High Risk</span>';
+      
+      const card = document.createElement('div');
+      card.className = `opportunity-card p-4 flex justify-between items-center hover:bg-indigo-50/40 border-b border-gray-100`;
+      card.setAttribute('data-idx', idx);
+      card.innerHTML = `
+        <div>
+          <div class="font-bold text-gray-800 text-lg">${opp.name}</div>
+          <div class="flex gap-2 text-xs text-gray-500 mt-0.5 flex-wrap">
+            <span>${opp.buyExchange} → ${opp.sellExchange}</span>
+            <span class="text-indigo-600 font-mono">${opp.spreadPercent.toFixed(2)}%</span>
+          </div>
+          <div class="flex gap-1 mt-1">
+            ${tradableBadge}
+            ${riskBadge}
+          </div>
+        </div>
+        <i class="fas fa-chevron-right text-gray-300 text-sm"></i>
+      `;
+      card.addEventListener('click', () => {
+        currentIndex = idx;
+        updateDetailPanel(currentIndex);
+        highlightActiveCard(idx);
+      });
+      container.appendChild(card);
+    });
+    highlightActiveCard(0);
+  }
+
+  function highlightActiveCard(selectedIdx) {
+    const cards = document.querySelectorAll('#opportunitiesList .opportunity-card');
+    cards.forEach((card, i) => {
+      if (i === selectedIdx) {
+        card.classList.add('bg-indigo-100', 'border-l-4', 'border-indigo-500');
+      } else {
+        card.classList.remove('bg-indigo-100', 'border-l-4', 'border-indigo-500');
+      }
+    });
+  }
+
+  // Navigation
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    currentIndex = (currentIndex + 1) % opportunities.length;
+    updateDetailPanel(currentIndex);
+    highlightActiveCard(currentIndex);
+  });
+  document.getElementById('backBtn').addEventListener('click', () => {
+    currentIndex = (currentIndex - 1 + opportunities.length) % opportunities.length;
+    updateDetailPanel(currentIndex);
+    highlightActiveCard(currentIndex);
+  });
+  document.getElementById('homeBtn').addEventListener('click', () => {
+    currentIndex = 0;
+    updateDetailPanel(0);
+    highlightActiveCard(0);
+  });
+
+  // Initialize
+  renderOpportunityList();
+  updateDetailPanel(0);
 </script>
 </body>
 </html>
