@@ -17,7 +17,7 @@ mongoose.connect(MONGO_URI)
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Schemas (unchanged)
+// Schemas
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
@@ -36,12 +36,17 @@ const Session = mongoose.model('Session', sessionSchema);
 const hashPassword = p => crypto.createHash('sha256').update(p).digest('hex');
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
-// ---------- Global cache for opportunities ----------
-let cachedOpportunities = [];
-let lastScanTime = 0;
-const SCAN_INTERVAL = 60000; // 60 seconds
+// Helper to format phone to 254XXXXXXXXX
+function formatPhone(phone) {
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('0')) cleaned = '254' + cleaned.slice(1);
+  else if (cleaned.startsWith('254')) {} // already correct
+  else if (cleaned.startsWith('+254')) cleaned = cleaned.slice(1);
+  else cleaned = '254' + cleaned;
+  return cleaned;
+}
 
-// ---------- Helper: fetch ticker data from exchange (same as before) ----------
+// ---------- Background scanner (cached opportunities) ----------
 async function safeGet(url, name) {
   try {
     const res = await axios.get(url, { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -91,10 +96,12 @@ function extractSymbol(exchange, symbol, t) {
   } catch { return null; }
 }
 
-// ---------- Background scanner (updates cache) ----------
+let cachedOpportunities = [];
+let lastScanTime = 0;
+const SCAN_INTERVAL = 60000;
+
 async function scanArbitrage() {
   console.log('🔄 Running background arbitrage scan...');
-  const startTime = Date.now();
   try {
     const results = await Promise.all(Object.entries(EXCHANGES).map(([n, u]) => safeGet(u, n)));
     const allData = {};
@@ -122,7 +129,6 @@ async function scanArbitrage() {
         allData[ex][d.symbol] = { price: d.price, volume: d.volume };
       }
     });
-
     const symbols = new Set();
     Object.values(allData).forEach(ex => Object.keys(ex).forEach(s => symbols.add(s)));
     const opportunities = [];
@@ -151,17 +157,15 @@ async function scanArbitrage() {
     }
     cachedOpportunities = opportunities.sort((a,b) => +b.spread - +a.spread);
     lastScanTime = Date.now();
-    console.log(`✅ Scan complete. Found ${cachedOpportunities.length} opportunities in ${Date.now() - startTime}ms`);
+    console.log(`✅ Scan complete. Found ${cachedOpportunities.length} opportunities`);
   } catch (err) {
     console.error('Scan failed:', err);
   }
 }
-
-// Start background scanner immediately, then every interval
 scanArbitrage();
 setInterval(scanArbitrage, SCAN_INTERVAL);
 
-// ---------- Auth Routes (unchanged) ----------
+// ---------- Auth Routes ----------
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -211,16 +215,12 @@ app.get('/api/me', async (req, res) => {
   }
 });
 
-// ---------- Fast opportunities endpoint (cached) ----------
+// ---------- Opportunities cache endpoint ----------
 app.get('/api/opportunities', (req, res) => {
-  res.json({
-    count: cachedOpportunities.length,
-    opportunities: cachedOpportunities,
-    lastScan: lastScanTime
-  });
+  res.json({ count: cachedOpportunities.length, opportunities: cachedOpportunities, lastScan: lastScanTime });
 });
 
-// ---------- Real-time details for one opportunity ----------
+// ---------- Real network data (CCXT) ----------
 const CCXT_EXCHANGES = {
   binance: ccxt.binance, kucoin: ccxt.kucoin, okx: ccxt.okx, bybit: ccxt.bybit,
   gateio: ccxt.gateio, htx: ccxt.huobi, mexc: ccxt.mexc, bitmart: ccxt.bitmart,
@@ -265,28 +265,22 @@ async function fetchRealNetworks(exchangeId, coin) {
 
 app.get('/api/opportunity/:id/details', async (req, res) => {
   const { id } = req.params;
-  // Find the opportunity in cached list by id
   const opp = cachedOpportunities.find(o => o.id === id);
   if (!opp) return res.status(404).json({ error: 'Opportunity not found' });
-
   const coin = opp.symbol;
   const buyEx = opp.buyExchange.toLowerCase();
   const sellEx = opp.sellExchange.toLowerCase();
-
   const [buyNet, sellNet] = await Promise.all([
     fetchRealNetworks(buyEx, coin),
     fetchRealNetworks(sellEx, coin)
   ]);
-
   const tradable = buyNet?.canWithdraw === true && sellNet?.canDeposit === true;
-  // Simple risk based on spread + tradability
   const spreadNum = parseFloat(opp.spread);
   let risk = 'medium';
   if (!tradable) risk = 'high';
   else if (spreadNum < 1) risk = 'low';
   else if (spreadNum > 3) risk = 'high';
   else risk = 'medium';
-
   res.json({
     ...opp,
     tradable,
@@ -298,11 +292,50 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   });
 });
 
-// ---------- Payment endpoint (unchanged) ----------
-app.post('/api/pesapal/pay', (req, res) => {
+// ---------- REAL PAYHERO STK PUSH ----------
+app.post('/api/pesapal/pay', async (req, res) => {
   const { phone, amount, plan } = req.body;
-  console.log('PAYMENT:', phone, amount, plan);
-  res.json({ success: true, message: `STK Push sent to ${phone}` });
+  if (!phone || !amount || !plan) {
+    return res.status(400).json({ error: 'Missing phone, amount or plan' });
+  }
+  const formattedPhone = formatPhone(phone);
+  const payheroToken = process.env.PAYHERO_AUTH_TOKEN;
+  const channelId = process.env.PAYHERO_CHANNEL_ID;
+  if (!payheroToken || !channelId) {
+    console.error('PAYHERO credentials missing');
+    return res.status(500).json({ error: 'Payment gateway not configured' });
+  }
+  try {
+    const response = await axios.post('https://api.payhero.co.ke/stk-push', {
+      amount: parseInt(amount),
+      phone: formattedPhone,
+      channel_id: channelId,
+      external_reference: `arbimine_${Date.now()}_${plan}`,
+      callback_url: `${process.env.CALLBACK_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`
+    }, {
+      headers: {
+        'Authorization': payheroToken,
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log('PayHero response:', response.data);
+    // PayHero usually returns { Status: "Success", Message: "STK Push sent", ... }
+    if (response.data.Status === 'Success') {
+      res.json({ success: true, message: 'STK Push sent. Please check your phone and enter PIN to complete payment.' });
+    } else {
+      res.status(400).json({ error: response.data.Message || 'Payment initiation failed' });
+    }
+  } catch (err) {
+    console.error('PayHero error:', err.response?.data || err.message);
+    res.status(500).json({ error: 'Payment service error' });
+  }
+});
+
+// Optional callback endpoint (for PayHero to notify)
+app.post('/api/payment/callback', (req, res) => {
+  console.log('Payment callback received:', req.body);
+  // Here you would update user subscription based on Status and ExternalReference
+  res.json({ ResultCode: 0 });
 });
 
 // ---------- Start server ----------
