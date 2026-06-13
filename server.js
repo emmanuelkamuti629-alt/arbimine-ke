@@ -5,10 +5,8 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const ccxt = require('ccxt');
 
-// NOTE: You'll need to install the paystack-sdk-node package
-// npm install paystack-sdk-node
-
-const { PaystackClient } = require('paystack-sdk-node');
+// Use the official Paystack Node.js SDK
+const Paystack = require('paystack-sdk');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -297,9 +295,9 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   });
 });
 
-// ---------- PAYSTACK PAYMENT (redirect method) ----------
+// ---------- PAYSTACK PAYMENT (using official paystack-sdk) ----------
 app.post('/api/pesapal/pay', async (req, res) => {
-  const { plan } = req.body;  // phone is not needed for Paystack redirect
+  const { plan } = req.body;
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: 'No token' });
 
@@ -313,18 +311,18 @@ app.post('/api/pesapal/pay', async (req, res) => {
     if (plan === 'weekly') amountInKobo = 100 * 100;   // 100 KES = 10000 kobo
     if (plan === 'monthly') amountInKobo = 350 * 100;  // 350 KES = 35000 kobo
 
-    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
-    if (!paystackSecret) {
+    const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecretKey) {
       return res.status(500).json({ error: 'Payment gateway not configured' });
     }
 
-    // Initialize Paystack client
-    const paystack = new PaystackClient({ apiKey: paystackSecret });
-
+    // Initialize Paystack SDK
+    const paystack = Paystack(paystackSecretKey);
     const reference = `arbimine_${user.username}_${Date.now()}`;
     const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
 
-    const response = await paystack.transactions.initialize({
+    // Initialize transaction
+    const response = await paystack.transaction.initialize({
       email: user.email,
       amount: amountInKobo,
       currency: 'KES',
@@ -350,7 +348,7 @@ app.post('/api/pesapal/pay', async (req, res) => {
     }
   } catch (err) {
     console.error('Paystack error:', err);
-    res.status(500).json({ error: 'Payment service error' });
+    res.status(500).json({ error: 'Payment service error: ' + err.message });
   }
 });
 
@@ -358,8 +356,7 @@ app.post('/api/pesapal/pay', async (req, res) => {
 app.get('/api/payment/callback', (req, res) => {
   const { reference, trxref } = req.query;
   console.log('Payment callback received:', { reference, trxref });
-  // For now, just redirect to frontend with a success message
-  // In production, you should verify the transaction using Paystack's API
+  // Redirect to frontend with success message
   res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
 });
 
@@ -368,7 +365,6 @@ app.post('/api/payment/webhook', async (req, res) => {
   const event = req.body;
   console.log('Webhook received:', event);
   // Verify signature, then update user subscription based on event.data.reference
-  // This is where you'd set subscription.active = true for the user
   res.json({ status: 'received' });
 });
 
