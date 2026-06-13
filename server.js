@@ -36,14 +36,44 @@ const Session = mongoose.model('Session', sessionSchema);
 const hashPassword = p => crypto.createHash('sha256').update(p).digest('hex');
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
-// Helper to format phone (kept for registration validation)
-function formatPhone(phone) {
-  let cleaned = phone.replace(/\D/g, '');
-  if (cleaned.startsWith('0')) cleaned = '254' + cleaned.slice(1);
-  else if (cleaned.startsWith('254')) {} // already correct
-  else if (cleaned.startsWith('+254')) cleaned = cleaned.slice(1);
-  else cleaned = '254' + cleaned;
-  return cleaned;
+// ---------- Helper: build authenticated CCXT exchanges ----------
+function buildExchange(exchangeId, apiKey, secret) {
+  const exchangeMap = {
+    binance: ccxt.binance,
+    kucoin: ccxt.kucoin,
+    htx: ccxt.huobi,
+    gateio: ccxt.gateio,
+    mexc: ccxt.mexc,
+    bingx: ccxt.bingx,
+    bitmart: ccxt.bitmart,
+    okx: ccxt.okx,
+    bybit: ccxt.bybit
+  };
+  const ExchangeClass = exchangeMap[exchangeId];
+  if (!ExchangeClass) return null;
+  const config = { enableRateLimit: true };
+  if (apiKey && secret) {
+    config.apiKey = apiKey;
+    config.secret = secret;
+  }
+  return new ExchangeClass(config);
+}
+
+// Load API keys from environment
+const EXCHANGE_CREDENTIALS = {
+  binance: { apiKey: process.env.BINANCE_API_KEY, secret: process.env.BINANCE_SECRET },
+  kucoin: { apiKey: process.env.KUCOIN_API_KEY, secret: process.env.KUCOIN_SECRET },
+  htx: { apiKey: process.env.HTX_API_KEY, secret: process.env.HTX_SECRET },
+  gateio: { apiKey: process.env.GATEIO_API_KEY, secret: process.env.GATEIO_SECRET },
+  mexc: { apiKey: process.env.MEXC_API_KEY, secret: process.env.MEXC_SECRET },
+  bingx: { apiKey: process.env.BINGX_API_KEY, secret: process.env.BINGX_SECRET }
+};
+
+// Pre-initialize exchange instances (public or authenticated)
+const exchangeInstances = {};
+for (const [id, cred] of Object.entries(EXCHANGE_CREDENTIALS)) {
+  const ex = buildExchange(id, cred.apiKey, cred.secret);
+  if (ex) exchangeInstances[id] = ex;
 }
 
 // ---------- Background scanner (cached opportunities) ----------
@@ -220,14 +250,9 @@ app.get('/api/opportunities', (req, res) => {
   res.json({ count: cachedOpportunities.length, opportunities: cachedOpportunities, lastScan: lastScanTime });
 });
 
-// ---------- Real network data (CCXT) ----------
-const CCXT_EXCHANGES = {
-  binance: ccxt.binance, kucoin: ccxt.kucoin, okx: ccxt.okx, bybit: ccxt.bybit,
-  gateio: ccxt.gateio, htx: ccxt.huobi, mexc: ccxt.mexc, bitmart: ccxt.bitmart,
-  bitget: ccxt.bitget, coinex: ccxt.coinex, lbank: ccxt.lbank, poloniex: ccxt.poloniex,
-  bitfinex: ccxt.bitfinex, cryptocom: ccxt.cryptocom, upbit: ccxt.upbit
-};
+// ---------- Real network data and liquidity using API keys ----------
 const networkCache = new Map();
+const liquidityCache = new Map();
 
 async function fetchRealNetworks(exchangeId, coin) {
   const key = exchangeId.toLowerCase();
@@ -236,14 +261,22 @@ async function fetchRealNetworks(exchangeId, coin) {
     const cached = networkCache.get(cacheKey);
     if (Date.now() - cached.timestamp < 3600000) return cached.data;
   }
-  const ExchangeClass = CCXT_EXCHANGES[key];
-  if (!ExchangeClass) return null;
+
+  // Use authenticated exchange instance if available, else fallback to public CCXT
+  let ex = exchangeInstances[key];
+  if (!ex) {
+    // Fallback: create public instance
+    const ExchangeClass = ccxt[key];
+    if (!ExchangeClass) return null;
+    ex = new ExchangeClass({ enableRateLimit: true });
+  }
+
   try {
-    const ex = new ExchangeClass({ enableRateLimit: true });
     await ex.loadMarkets();
     const currencies = await ex.fetchCurrencies();
     const coinData = currencies[coin];
     if (!coinData || !coinData.networks) return null;
+
     const networks = {};
     for (const [netName, netInfo] of Object.entries(coinData.networks)) {
       networks[netName] = {
@@ -251,10 +284,16 @@ async function fetchRealNetworks(exchangeId, coin) {
         deposit: netInfo.deposit === true,
         withdraw: netInfo.withdraw === true,
         fee: netInfo.fee || 0,
-        minWithdraw: netInfo.withdrawMin || 0
+        minWithdraw: netInfo.withdrawMin || 0,
+        // Arrival time simulation (real APIs don't provide this, we estimate)
+        arrivalTime: netInfo.name === 'TRC20' ? '2-5 min' : (netInfo.name === 'BEP20' ? '3-8 min' : '10-20 min')
       };
     }
-    const result = { networks, canWithdraw: coinData.withdraw === true, canDeposit: coinData.deposit === true };
+    const result = {
+      networks,
+      canWithdraw: coinData.withdraw === true,
+      canDeposit: coinData.deposit === true
+    };
     networkCache.set(cacheKey, { timestamp: Date.now(), data: result });
     return result;
   } catch (err) {
@@ -263,17 +302,50 @@ async function fetchRealNetworks(exchangeId, coin) {
   }
 }
 
+async function fetchLiquidity(exchangeId, symbol) {
+  const key = exchangeId.toLowerCase();
+  const cacheKey = `${key}:${symbol}`;
+  if (liquidityCache.has(cacheKey)) {
+    const cached = liquidityCache.get(cacheKey);
+    if (Date.now() - cached.timestamp < 60000) return cached.data; // 1 minute cache for liquidity
+  }
+
+  let ex = exchangeInstances[key];
+  if (!ex) {
+    const ExchangeClass = ccxt[key];
+    if (!ExchangeClass) return null;
+    ex = new ExchangeClass({ enableRateLimit: true });
+  }
+
+  try {
+    const orderbook = await ex.fetchOrderBook(symbol, 5);
+    const bids = orderbook.bids.slice(0, 3);
+    const liquidity = bids.reduce((sum, [price, amount]) => sum + price * amount, 0);
+    liquidityCache.set(cacheKey, { timestamp: Date.now(), data: liquidity });
+    return liquidity;
+  } catch (err) {
+    console.log(`Liquidity error ${exchangeId} ${symbol}:`, err.message);
+    return null;
+  }
+}
+
 app.get('/api/opportunity/:id/details', async (req, res) => {
   const { id } = req.params;
   const opp = cachedOpportunities.find(o => o.id === id);
   if (!opp) return res.status(404).json({ error: 'Opportunity not found' });
+
   const coin = opp.symbol;
   const buyEx = opp.buyExchange.toLowerCase();
   const sellEx = opp.sellExchange.toLowerCase();
-  const [buyNet, sellNet] = await Promise.all([
+
+  // Fetch network data and liquidity in parallel
+  const [buyNet, sellNet, buyLiquidity, sellLiquidity] = await Promise.all([
     fetchRealNetworks(buyEx, coin),
-    fetchRealNetworks(sellEx, coin)
+    fetchRealNetworks(sellEx, coin),
+    fetchLiquidity(buyEx, opp.symbol),
+    fetchLiquidity(sellEx, opp.symbol)
   ]);
+
   const tradable = buyNet?.canWithdraw === true && sellNet?.canDeposit === true;
   const spreadNum = parseFloat(opp.spread);
   let risk = 'medium';
@@ -281,8 +353,15 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   else if (spreadNum < 1) risk = 'low';
   else if (spreadNum > 3) risk = 'high';
   else risk = 'medium';
+
+  // Use real liquidity if available, else fallback to cached liquidity from scanner
+  const finalBuyLiquidity = buyLiquidity || opp.liquidity;
+  const finalSellLiquidity = sellLiquidity || opp.liquidity;
+
   res.json({
     ...opp,
+    liquidity: finalBuyLiquidity,
+    sellLiquidity: finalSellLiquidity,
     tradable,
     risk,
     buyNetworks: buyNet?.networks || {},
@@ -292,7 +371,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   });
 });
 
-// ---------- PAYSTACK PAYMENT (using direct Axios call) ----------
+// ---------- PAYSTACK PAYMENT (direct Axios) ----------
 app.post('/api/pesapal/pay', async (req, res) => {
   const { plan } = req.body;
   const token = req.headers.authorization;
@@ -305,67 +384,51 @@ app.post('/api/pesapal/pay', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'User not found' });
 
     let amountInKobo = 0;
-    if (plan === 'weekly') amountInKobo = 100 * 100;   // 100 KES
-    if (plan === 'monthly') amountInKobo = 350 * 100;  // 350 KES
+    if (plan === 'weekly') amountInKobo = 100 * 100;
+    if (plan === 'monthly') amountInKobo = 350 * 100;
 
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!paystackSecretKey) {
-      return res.status(500).json({ error: 'Payment gateway not configured: missing secret key' });
+      return res.status(500).json({ error: 'Payment gateway not configured' });
     }
 
     const reference = `arbimine_${user.username}_${Date.now()}`;
     const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
 
-    // Direct axios call to Paystack API
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email: user.email,
       amount: amountInKobo,
       currency: 'KES',
       reference: reference,
       callback_url: callbackUrl,
-      metadata: {
-        plan: plan,
-        username: user.username,
-        user_id: user._id.toString()
-      }
+      metadata: { plan, username: user.username, user_id: user._id.toString() }
     }, {
-      headers: {
-        Authorization: `Bearer ${paystackSecretKey}`,
-        'Content-Type': 'application/json'
-      }
+      headers: { Authorization: `Bearer ${paystackSecretKey}`, 'Content-Type': 'application/json' }
     });
 
     if (response.data.status) {
-      res.json({
-        success: true,
-        authorizationUrl: response.data.data.authorization_url,
-        reference: reference,
-        message: 'Redirect to payment page'
-      });
+      res.json({ success: true, authorizationUrl: response.data.data.authorization_url, reference });
     } else {
-      res.status(400).json({ error: response.data.message || 'Payment initialization failed' });
+      res.status(400).json({ error: response.data.message });
     }
   } catch (err) {
     console.error('Paystack error:', err.response?.data || err.message);
-    res.status(500).json({ error: 'Payment service error: ' + (err.response?.data?.message || err.message) });
+    res.status(500).json({ error: 'Payment service error' });
   }
 });
 
-// Callback endpoint for Paystack redirect
 app.get('/api/payment/callback', (req, res) => {
-  const { reference, trxref } = req.query;
-  console.log('Payment callback received:', { reference, trxref });
+  const { reference } = req.query;
+  console.log('Payment callback:', reference);
   res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
 });
 
-// Webhook endpoint for Paystack to confirm payment (optional)
-app.post('/api/payment/webhook', async (req, res) => {
-  const event = req.body;
-  console.log('Webhook received:', event);
+app.post('/api/payment/webhook', (req, res) => {
+  console.log('Webhook:', req.body);
   res.json({ status: 'received' });
 });
 
-// ---------- TEMP: endpoint to get server IP for whitelisting ----------
+// Debug IP endpoint
 app.get('/api/debug/ip', async (req, res) => {
   try {
     const response = await axios.get('https://api.ipify.org?format=json');
@@ -375,5 +438,4 @@ app.get('/api/debug/ip', async (req, res) => {
   }
 });
 
-// ---------- Start server ----------
 app.listen(PORT, () => console.log(`🚀 ArbiMine running on ${PORT}`));
