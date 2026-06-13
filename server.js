@@ -5,6 +5,11 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const ccxt = require('ccxt');
 
+// NOTE: You'll need to install the paystack-sdk-node package
+// npm install paystack-sdk-node
+
+const { PaystackClient } = require('paystack-sdk-node');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -36,7 +41,7 @@ const Session = mongoose.model('Session', sessionSchema);
 const hashPassword = p => crypto.createHash('sha256').update(p).digest('hex');
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
-// Helper to format phone to 254XXXXXXXXX
+// Helper to format phone (kept for registration validation)
 function formatPhone(phone) {
   let cleaned = phone.replace(/\D/g, '');
   if (cleaned.startsWith('0')) cleaned = '254' + cleaned.slice(1);
@@ -292,52 +297,89 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   });
 });
 
-// ---------- REAL PAYHERO STK PUSH (corrected endpoint) ----------
+// ---------- PAYSTACK PAYMENT (redirect method) ----------
 app.post('/api/pesapal/pay', async (req, res) => {
-  const { phone, amount, plan } = req.body;
-  if (!phone || !amount || !plan) {
-    return res.status(400).json({ error: 'Missing phone, amount or plan' });
-  }
-  const formattedPhone = formatPhone(phone);
-  const payheroToken = process.env.PAYHERO_AUTH_TOKEN;
-  const channelId = process.env.PAYHERO_CHANNEL_ID;
-  if (!payheroToken || !channelId) {
-    console.error('PAYHERO credentials missing');
-    return res.status(500).json({ error: 'Payment gateway not configured' });
-  }
-  // Corrected endpoint (notice /api/ after the domain)
-  const payheroUrl = 'https://api.payhero.co.ke/api/stk-push';
+  const { plan } = req.body;  // phone is not needed for Paystack redirect
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).json({ error: 'No token' });
+
   try {
-    const response = await axios.post(payheroUrl, {
-      amount: parseInt(amount),
-      phone: formattedPhone,
-      channel_id: channelId,
-      external_reference: `arbimine_${Date.now()}_${plan}`,
-      callback_url: `${process.env.CALLBACK_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`
-    }, {
-      headers: {
-        'Authorization': payheroToken,
-        'Content-Type': 'application/json'
-      },
-      timeout: 30000
+    const session = await Session.findOne({ token });
+    if (!session) return res.status(401).json({ error: 'Invalid session' });
+    const user = await User.findOne({ username: session.username });
+    if (!user) return res.status(401).json({ error: 'User not found' });
+
+    let amountInKobo = 0;
+    if (plan === 'weekly') amountInKobo = 100 * 100;   // 100 KES = 10000 kobo
+    if (plan === 'monthly') amountInKobo = 350 * 100;  // 350 KES = 35000 kobo
+
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) {
+      return res.status(500).json({ error: 'Payment gateway not configured' });
+    }
+
+    // Initialize Paystack client
+    const paystack = new PaystackClient({ apiKey: paystackSecret });
+
+    const reference = `arbimine_${user.username}_${Date.now()}`;
+    const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
+
+    const response = await paystack.transactions.initialize({
+      email: user.email,
+      amount: amountInKobo,
+      currency: 'KES',
+      reference: reference,
+      callback_url: callbackUrl,
+      metadata: {
+        plan: plan,
+        username: user.username,
+        user_id: user._id.toString()
+      }
     });
-    console.log('PayHero response:', response.data);
-    if (response.data.Status === 'Success' || response.data.success === true) {
-      res.json({ success: true, message: 'STK Push sent. Please check your phone and enter PIN to complete payment.' });
+
+    if (response.status) {
+      // Return the authorization URL to frontend
+      res.json({
+        success: true,
+        authorizationUrl: response.data.authorization_url,
+        reference: reference,
+        message: 'Redirect to payment page'
+      });
     } else {
-      res.status(400).json({ error: response.data.Message || response.data.message || 'Payment initiation failed' });
+      res.status(400).json({ error: response.message || 'Payment initialization failed' });
     }
   } catch (err) {
-    console.error('PayHero error:', err.response?.data || err.message);
+    console.error('Paystack error:', err);
     res.status(500).json({ error: 'Payment service error' });
   }
 });
 
-// Optional callback endpoint for PayHero notifications
-app.post('/api/payment/callback', (req, res) => {
-  console.log('Payment callback received:', req.body);
-  // Here you would update user subscription based on Status and ExternalReference
-  res.json({ ResultCode: 0 });
+// Callback endpoint for Paystack redirect
+app.get('/api/payment/callback', (req, res) => {
+  const { reference, trxref } = req.query;
+  console.log('Payment callback received:', { reference, trxref });
+  // For now, just redirect to frontend with a success message
+  // In production, you should verify the transaction using Paystack's API
+  res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
+});
+
+// Webhook endpoint for Paystack to confirm payment (optional but recommended)
+app.post('/api/payment/webhook', async (req, res) => {
+  const event = req.body;
+  console.log('Webhook received:', event);
+  // Verify signature, then update user subscription based on event.data.reference
+  // This is where you'd set subscription.active = true for the user
+  res.json({ status: 'received' });
+});
+
+// ---------- TEMP: endpoint to get server IP for whitelisting (remove later) ----------
+app.get('/api/debug/ip', async (req, res) => {
+  try {
+    const response = await axios.get('https://api.ipify.org?format=json');
+    res.json({ serverIp: response.data.ip });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ---------- Start server ----------
