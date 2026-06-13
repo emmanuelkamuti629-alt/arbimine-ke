@@ -20,7 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Schemas
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  email: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
   mpesa: { type: String, required: true },
   passwordHash: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
@@ -74,8 +74,8 @@ app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
     if (!username || !email || !mpesa || !password) return res.status(400).json({ error: 'All fields required' });
-    const existing = await User.findOne({ username });
-    if (existing) return res.status(409).json({ error: 'Username exists' });
+    const existing = await User.findOne({ $or: [{ username }, { email }] });
+    if (existing) return res.status(409).json({ error: 'Username or email already exists' });
     const user = new User({ username, email, mpesa, passwordHash: hashPassword(password) });
     await user.save();
     const token = generateToken();
@@ -89,12 +89,32 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username });
-    if (!user || user.passwordHash !== hashPassword(password)) return res.status(401).json({ error: 'Invalid credentials' });
+    const { email, username, password } = req.body; // accept either
+    const loginId = email || username;
+    if (!loginId || !password) {
+      return res.status(400).json({ error: 'Email/Username and password required' });
+    }
+    console.log(`Login attempt for: ${loginId}`);
+
+    // Find user by email OR username
+    const user = await User.findOne({
+      $or: [{ email: loginId }, { username: loginId }]
+    });
+    if (!user) {
+      console.log(`User not found: ${loginId}`);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const valid = user.passwordHash === hashPassword(password);
+    if (!valid) {
+      console.log(`Invalid password for: ${loginId}`);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
     const token = generateToken();
-    await new Session({ token, username }).save();
-    res.json({ success: true, token, username });
+    await new Session({ token, username: user.username }).save();
+    console.log(`Login successful: ${user.username}`);
+    res.json({ success: true, token, username: user.username });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -158,13 +178,14 @@ const CCXT_EXCHANGES = {
 const networkCache = new Map();
 
 async function fetchRealNetworks(exchangeId, coin) {
-  const cacheKey = `${exchangeId}:${coin}`;
+  const key = exchangeId.toLowerCase();
+  const cacheKey = `${key}:${coin}`;
   if (networkCache.has(cacheKey)) {
     const cached = networkCache.get(cacheKey);
     if (Date.now() - cached.timestamp < 3600000) return cached.data;
   }
 
-  const ExchangeClass = CCXT_EXCHANGES[exchangeId.toLowerCase()];
+  const ExchangeClass = CCXT_EXCHANGES[key];
   if (!ExchangeClass) {
     console.log(`No CCXT support for exchange: ${exchangeId}`);
     return null;
