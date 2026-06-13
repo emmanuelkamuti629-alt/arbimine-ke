@@ -5,9 +5,6 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const ccxt = require('ccxt');
 
-// Correct import for paystack-sdk
-const Paystack = require('paystack-sdk');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -295,7 +292,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   });
 });
 
-// ---------- PAYSTACK PAYMENT (FIXED: use new Paystack()) ----------
+// ---------- PAYSTACK PAYMENT (using direct Axios call) ----------
 app.post('/api/pesapal/pay', async (req, res) => {
   const { plan } = req.body;
   const token = req.headers.authorization;
@@ -308,21 +305,19 @@ app.post('/api/pesapal/pay', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'User not found' });
 
     let amountInKobo = 0;
-    if (plan === 'weekly') amountInKobo = 100 * 100;   // 100 KES = 10000 kobo
-    if (plan === 'monthly') amountInKobo = 350 * 100;  // 350 KES = 35000 kobo
+    if (plan === 'weekly') amountInKobo = 100 * 100;   // 100 KES
+    if (plan === 'monthly') amountInKobo = 350 * 100;  // 350 KES
 
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!paystackSecretKey) {
       return res.status(500).json({ error: 'Payment gateway not configured: missing secret key' });
     }
 
-    // CORRECT: instantiate with 'new'
-    const paystack = new Paystack(paystackSecretKey);
     const reference = `arbimine_${user.username}_${Date.now()}`;
     const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
 
-    // Initialize transaction
-    const response = await paystack.transaction.initialize({
+    // Direct axios call to Paystack API
+    const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email: user.email,
       amount: amountInKobo,
       currency: 'KES',
@@ -333,21 +328,26 @@ app.post('/api/pesapal/pay', async (req, res) => {
         username: user.username,
         user_id: user._id.toString()
       }
+    }, {
+      headers: {
+        Authorization: `Bearer ${paystackSecretKey}`,
+        'Content-Type': 'application/json'
+      }
     });
 
-    if (response.status) {
+    if (response.data.status) {
       res.json({
         success: true,
-        authorizationUrl: response.data.authorization_url,
+        authorizationUrl: response.data.data.authorization_url,
         reference: reference,
         message: 'Redirect to payment page'
       });
     } else {
-      res.status(400).json({ error: response.message || 'Payment initialization failed' });
+      res.status(400).json({ error: response.data.message || 'Payment initialization failed' });
     }
   } catch (err) {
-    console.error('Paystack error:', err);
-    res.status(500).json({ error: 'Payment service error: ' + (err.message || 'Unknown error') });
+    console.error('Paystack error:', err.response?.data || err.message);
+    res.status(500).json({ error: 'Payment service error: ' + (err.response?.data?.message || err.message) });
   }
 });
 
