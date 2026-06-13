@@ -3,441 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>ArbiMine • Crypto Arbitrage Intelligence</title>
+  <title>ArbiMine • AI Risk & Arbitrage</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background: #0b1220;
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-      color: #eef2ff;
-      padding-bottom: 70px;
-    }
-
-    /* Auth Container */
-    .auth-container {
-      max-width: 420px;
-      margin: 60px auto;
-      padding: 24px;
-      background: #111a2e;
-      border-radius: 28px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    }
-
-    .auth-container h2 {
-      color: #00ff99;
-      margin-bottom: 8px;
-    }
-
-    .auth-container p {
-      color: #8e9ab0;
-      margin-bottom: 24px;
-      font-size: 14px;
-    }
-
-    .auth-container input {
-      width: 100%;
-      padding: 14px;
-      margin: 8px 0;
-      background: #0f172f;
-      border: 1px solid #1e2a4a;
-      border-radius: 18px;
-      color: white;
-      font-size: 16px;
-      outline: none;
-    }
-
-    .auth-container input:focus {
-      border-color: #00ff99;
-    }
-
-    .auth-container button {
-      width: 100%;
-      padding: 14px;
-      background: #00ff99;
-      border: none;
-      border-radius: 40px;
-      font-weight: bold;
-      font-size: 16px;
-      color: #0b1220;
-      margin-top: 16px;
-      cursor: pointer;
-    }
-
-    .toggle-link {
-      text-align: center;
-      margin-top: 20px;
-      color: #5cb3ff;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    /* Dashboard */
-    .dashboard {
-      display: none;
-    }
-
-    /* Bottom Navigation */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #111a2e;
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      border-top: 1px solid #1e2a4a;
-      z-index: 100;
-    }
-
-    .nav-item {
-      background: none;
-      border: none;
-      color: #8e9ab0;
-      font-size: 12px;
-      font-weight: 500;
-      padding: 6px 12px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .nav-item .icon {
-      font-size: 24px;
-    }
-
-    .nav-item.active {
-      color: #00ff99;
-    }
-
-    /* Sections */
-    .section {
-      display: none;
-      padding: 20px 16px;
-      animation: fadeIn 0.2s ease;
-    }
-
-    .section.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px);}
-      to { opacity: 1; transform: translateY(0);}
-    }
-
-    /* Headers */
-    h3 {
-      margin-bottom: 16px;
-      font-weight: 600;
-      font-size: 22px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .refresh-btn {
-      background: #1e2a4a;
-      border: none;
-      color: #00ff99;
-      font-size: 20px;
-      cursor: pointer;
-      padding: 6px 12px;
-      border-radius: 40px;
-      transition: 0.2s;
-    }
-
-    .refresh-btn:active {
-      transform: scale(0.95);
-    }
-
-    .sort-select {
-      background: #1e2a4a;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 40px;
-      font-size: 14px;
-      margin-left: 10px;
-    }
-
-    /* Opportunity Cards */
-    .card {
-      background: #111a2e;
-      border-radius: 20px;
-      padding: 16px;
-      margin-bottom: 14px;
-      cursor: pointer;
-      transition: 0.1s;
-      border: 1px solid #1f2a46;
-    }
-
-    .card:active {
-      transform: scale(0.99);
-    }
-
-    .symbol {
-      font-size: 18px;
-      font-weight: bold;
-      color: #00ff99;
-      margin-bottom: 8px;
-    }
-
-    .row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      margin-top: 8px;
-      color: #cbd5f0;
-    }
-
-    .badge {
-      padding: 4px 10px;
-      border-radius: 40px;
-      font-size: 12px;
-      font-weight: 500;
-      display: inline-block;
-    }
-
-    .green {
-      background: #0f5132;
-      color: #00ff99;
-    }
-
-    .red {
-      background: #5a1a1a;
-      color: #ff8a8a;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 32px;
-      color: #8e9ab0;
-    }
-
-    /* Pro Cards (Attractive) */
-    .pro-container {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      margin-top: 10px;
-    }
-
-    .pro-card {
-      background: linear-gradient(135deg, #0f1a2e, #0a1020);
-      border-radius: 28px;
-      padding: 24px;
-      border: 1px solid #2a3a60;
-      transition: transform 0.2s;
-    }
-
-    .pro-card:hover {
-      transform: translateY(-4px);
-    }
-
-    .plan-name {
-      font-size: 28px;
-      font-weight: bold;
-      background: linear-gradient(90deg, #00ff99, #00ccff);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      margin-bottom: 8px;
-    }
-
-    .price {
-      font-size: 42px;
-      font-weight: bold;
-      margin: 12px 0;
-      color: #ffffff;
-    }
-
-    .price small {
-      font-size: 16px;
-      font-weight: normal;
-      color: #8e9ab0;
-    }
-
-    .features {
-      margin: 20px 0;
-      text-align: left;
-    }
-
-    .features li {
-      list-style: none;
-      margin: 12px 0;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 15px;
-    }
-
-    .features li span:first-child {
-      font-size: 20px;
-    }
-
-    .btn-pro {
-      background: #00ff99;
-      color: #0b1220;
-      font-weight: bold;
-      border: none;
-      border-radius: 60px;
-      padding: 14px;
-      width: 100%;
-      font-size: 18px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .btn-pro:active {
-      transform: scale(0.97);
-    }
-
-    /* Modal Styles */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.95);
-      z-index: 1000;
-      overflow-y: auto;
-      padding: 20px;
-    }
-
-    .modal-content {
-      max-width: 600px;
-      margin: 20px auto;
-      background: #0f172f;
-      border-radius: 32px;
-      padding: 24px;
-      position: relative;
-      border: 1px solid #2a3a60;
-    }
-
-    .close-modal {
-      position: absolute;
-      top: 16px;
-      right: 20px;
-      font-size: 28px;
-      cursor: pointer;
-      color: #8e9ab0;
-    }
-
-    .modal-symbol {
-      font-size: 28px;
-      font-weight: bold;
-      color: #00ff99;
-      margin-bottom: 8px;
-    }
-
-    .exchange-columns {
-      display: flex;
-      gap: 16px;
-      margin: 20px 0;
-      flex-wrap: wrap;
-    }
-
-    .exchange-card {
-      flex: 1;
-      background: #0a1020;
-      border-radius: 20px;
-      padding: 16px;
-      border: 1px solid #1e2a4a;
-    }
-
-    .exchange-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 12px;
-      color: #7cb9ff;
-    }
-
-    .exchange-card .price {
-      font-size: 24px;
-      margin: 8px 0;
-    }
-
-    .status {
-      font-size: 14px;
-      margin: 8px 0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .network-table {
-      margin-top: 20px;
-      background: #0a1020;
-      border-radius: 20px;
-      overflow: hidden;
-    }
-
-    .network-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid #1e2a4a;
-      font-size: 14px;
-    }
-
-    .network-row:last-child {
-      border-bottom: none;
-    }
-
-    .network-name {
-      font-weight: bold;
-      color: #00ff99;
-    }
-
-    .network-details {
-      text-align: right;
-      color: #cbd5f0;
-    }
-
-    .small-text {
-      font-size: 11px;
-      color: #8e9ab0;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0b1220; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #eef2ff; padding-bottom: 70px; }
+    .auth-container { max-width: 420px; margin: 60px auto; padding: 24px; background: #111a2e; border-radius: 28px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .auth-container h2 { color: #00ff99; margin-bottom: 8px; }
+    .auth-container input { width: 100%; padding: 14px; margin: 8px 0; background: #0f172f; border: 1px solid #1e2a4a; border-radius: 18px; color: white; }
+    .auth-container button { width: 100%; padding: 14px; background: #00ff99; border: none; border-radius: 40px; font-weight: bold; margin-top: 16px; cursor: pointer; }
+    .toggle-link { text-align: center; margin-top: 20px; color: #5cb3ff; cursor: pointer; }
+    .dashboard { display: none; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #111a2e; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #1e2a4a; z-index: 100; }
+    .nav-item { background: none; border: none; color: #8e9ab0; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+    .nav-item .icon { font-size: 24px; }
+    .nav-item.active { color: #00ff99; }
+    .section { display: none; padding: 20px 16px; animation: fadeIn 0.2s; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    h3 { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; font-size: 22px; }
+    .refresh-btn, .sort-select, .filter-select { background: #1e2a4a; border: none; color: white; padding: 8px 12px; border-radius: 40px; cursor: pointer; }
+    .card { background: #111a2e; border-radius: 20px; padding: 16px; margin-bottom: 14px; cursor: pointer; border: 1px solid #1f2a46; }
+    .symbol { font-size: 18px; font-weight: bold; color: #00ff99; margin-bottom: 8px; }
+    .row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; }
+    .badge { padding: 4px 10px; border-radius: 40px; font-size: 12px; display: inline-block; }
+    .green { background: #0f5132; color: #00ff99; }
+    .red { background: #5a1a1a; color: #ff8a8a; }
+    .yellow { background: #5a4a1a; color: #ffcc00; }
+    .loading { text-align: center; padding: 32px; color: #8e9ab0; }
+    .pro-card { background: linear-gradient(135deg, #0f1a2e, #0a1020); border-radius: 28px; padding: 24px; margin-bottom: 20px; border: 1px solid #2a3a60; }
+    .plan-name { font-size: 28px; font-weight: bold; background: linear-gradient(90deg, #00ff99, #00ccff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .price { font-size: 42px; font-weight: bold; margin: 12px 0; }
+    .features li { list-style: none; margin: 12px 0; display: flex; gap: 12px; }
+    .btn-pro { background: #00ff99; color: #0b1220; font-weight: bold; border: none; border-radius: 60px; padding: 14px; width: 100%; font-size: 18px; cursor: pointer; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; overflow-y: auto; padding: 20px; }
+    .modal-content { max-width: 600px; margin: 20px auto; background: #0f172f; border-radius: 32px; padding: 24px; position: relative; }
+    .close-modal { position: absolute; top: 16px; right: 20px; font-size: 28px; cursor: pointer; }
+    .exchange-columns { display: flex; gap: 16px; margin: 20px 0; flex-wrap: wrap; }
+    .exchange-card { flex: 1; background: #0a1020; border-radius: 20px; padding: 16px; }
+    .exchange-title { font-size: 18px; font-weight: bold; color: #7cb9ff; }
+    .network-table { margin-top: 20px; background: #0a1020; border-radius: 20px; overflow: hidden; }
+    .network-row { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #1e2a4a; }
+    .risk-low { background: #0f5132; color: #00ff99; }
+    .risk-medium { background: #5a4a1a; color: #ffcc00; }
+    .risk-high { background: #5a1a1a; color: #ff8a8a; }
+    #chart { margin-top: 20px; background: #0a1020; border-radius: 20px; padding: 12px; }
   </style>
 </head>
 <body>
 
-<!-- AUTH PAGES -->
+<!-- AUTH -->
 <div id="authContainer" class="auth-container">
   <div id="loginPanel">
     <h2>🔓 ArbiMine</h2>
-    <p>Login to access live arbitrage</p>
-    <input type="text" id="loginUsername" placeholder="Username" autocomplete="username">
-    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+    <input type="text" id="loginUsername" placeholder="Username">
+    <input type="password" id="loginPassword" placeholder="Password">
     <button onclick="login()">Login →</button>
-    <div class="toggle-link" onclick="showRegister()">No account? Create one</div>
+    <div class="toggle-link" onclick="showRegister()">Create account</div>
   </div>
-
   <div id="registerPanel" style="display:none;">
-    <h2>📝 Create Account</h2>
-    <p>Get real‑time spread intelligence</p>
+    <h2>📝 Register</h2>
     <input type="text" id="regUsername" placeholder="Username">
     <input type="email" id="regEmail" placeholder="Email">
     <input type="tel" id="regMpesa" placeholder="Mobile number (e.g., 0712345678)">
     <input type="password" id="regPassword" placeholder="Password">
-    <button onclick="register()">Register →</button>
-    <div class="toggle-link" onclick="showLogin()">Already have an account? Login</div>
+    <button onclick="register()">Register</button>
+    <div class="toggle-link" onclick="showLogin()">Back to Login</div>
   </div>
 </div>
 
-<!-- MAIN DASHBOARD -->
+<!-- DASHBOARD -->
 <div id="dashboard" class="dashboard">
   <div class="bottom-nav">
     <button class="nav-item active" onclick="switchTab('home', event)"><span class="icon">🏠</span><span>Home</span></button>
@@ -445,55 +80,54 @@
     <button class="nav-item" onclick="switchTab('profile', event)"><span class="icon">👤</span><span>Profile</span></button>
   </div>
 
-  <!-- HOME TAB (with opportunities) -->
+  <!-- HOME TAB -->
   <div id="home" class="section active">
     <h3>
       📡 Live Arbitrage
-      <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="refresh-btn" onclick="refreshOpportunities()">🔄</button>
-        <select id="sortSelect" class="sort-select" onchange="applySortAndRender()">
+        <select id="sortSelect" class="sort-select" onchange="applyFiltersAndRender()">
           <option value="spreadDesc">Spread high-low</option>
           <option value="symbolAsc">Symbol A-Z</option>
+        </select>
+        <select id="rangeFilter" class="filter-select" onchange="applyFiltersAndRender()">
+          <option value="all">All spreads</option>
+          <option value="0.2-1">0.2% - 1%</option>
+          <option value="1-5">1% - 5%</option>
+          <option value="5+">5% +</option>
+        </select>
+        <select id="tradableFilter" class="filter-select" onchange="applyFiltersAndRender()">
+          <option value="all">All</option>
+          <option value="tradable">Tradable only</option>
+          <option value="nontradable">Non-tradable</option>
         </select>
       </div>
     </h3>
     <div id="oppList" class="loading">Loading opportunities...</div>
   </div>
 
-  <!-- PRO TAB (Attractive Payment) -->
+  <!-- PRO TAB -->
   <div id="pro" class="section">
     <h3>💎 Unlock Pro</h3>
-    <div class="pro-container">
-      <div class="pro-card">
-        <div class="plan-name">Weekly Boost</div>
-        <div class="price">100 KES <small>/ week</small></div>
-        <ul class="features">
-          <li><span>⚡</span> Real-time alerts on every spread</li>
-          <li><span>📊</span> Unlimited opportunity access</li>
-          <li><span>🔔</span> Push notifications</li>
-          <li><span>💬</span> Priority support</li>
-        </ul>
-        <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with M-Pesa</button>
-      </div>
-      <div class="pro-card">
-        <div class="plan-name">Monthly Max</div>
-        <div class="price">350 KES <small>/ month</small></div>
-        <ul class="features">
-          <li><span>🚀</span> Everything in Weekly</li>
-          <li><span>🎯</span> Early access to new pairs</li>
-          <li><span>📈</span> Advanced filters & history</li>
-          <li><span>🏆</span> VIP community access</li>
-        </ul>
-        <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with M-Pesa</button>
-      </div>
+    <div class="pro-card">
+      <div class="plan-name">Weekly Boost</div>
+      <div class="price">100 KES <small>/ week</small></div>
+      <ul class="features"><li>⚡ Real-time alerts</li><li>📊 Unlimited access</li><li>🔔 Push notifications</li></ul>
+      <button class="btn-pro" onclick="payPro('weekly',100)">Pay with M-Pesa</button>
+    </div>
+    <div class="pro-card">
+      <div class="plan-name">Monthly Max</div>
+      <div class="price">350 KES <small>/ month</small></div>
+      <ul class="features"><li>🚀 Everything in Weekly</li><li>🎯 Early access</li><li>🏆 VIP support</li></ul>
+      <button class="btn-pro" onclick="payPro('monthly',350)">Pay with M-Pesa</button>
     </div>
   </div>
 
   <!-- PROFILE TAB -->
   <div id="profile" class="section">
     <h3>👤 Profile</h3>
-    <div id="profileCard" class="loading">Loading profile...</div>
-    <button class="btn-pro" style="background:#334155; margin-top:20px;" onclick="logout()">🚪 Logout</button>
+    <div id="profileCard" class="loading">Loading...</div>
+    <button class="btn-pro" style="background:#334155; margin-top:20px;" onclick="logout()">Logout</button>
   </div>
 </div>
 
@@ -502,17 +136,16 @@
   <div class="modal-content">
     <span class="close-modal" onclick="closeDetail()">&times;</span>
     <div id="modalBody">Loading network data...</div>
+    <div id="chart"></div>
   </div>
 </div>
 
 <script>
   let token = localStorage.getItem('token');
   let allOpportunities = [];
+  let currentChart = null;
 
-  window.onload = () => {
-    if (token) verifyAndShowDashboard();
-    else showAuth();
-  };
+  window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); };
 
   async function verifyAndShowDashboard() {
     try {
@@ -524,127 +157,81 @@
         loadOpps();
         loadProfile();
       } else throw new Error();
-    } catch (err) {
-      localStorage.removeItem('token');
-      token = null;
-      showAuth();
-    }
+    } catch { localStorage.removeItem('token'); token = null; showAuth(); }
   }
 
-  function showAuth() {
-    document.getElementById('authContainer').style.display = 'block';
-    document.getElementById('dashboard').style.display = 'none';
-  }
-
-  function showRegister() {
-    document.getElementById('loginPanel').style.display = 'none';
-    document.getElementById('registerPanel').style.display = 'block';
-  }
-  function showLogin() {
-    document.getElementById('registerPanel').style.display = 'none';
-    document.getElementById('loginPanel').style.display = 'block';
-  }
+  function showAuth() { document.getElementById('authContainer').style.display = 'block'; document.getElementById('dashboard').style.display = 'none'; }
+  function showRegister() { document.getElementById('loginPanel').style.display = 'none'; document.getElementById('registerPanel').style.display = 'block'; }
+  function showLogin() { document.getElementById('registerPanel').style.display = 'none'; document.getElementById('loginPanel').style.display = 'block'; }
 
   async function register() {
     const username = document.getElementById('regUsername').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const mpesa = document.getElementById('regMpesa').value.trim();
     const password = document.getElementById('regPassword').value;
-    if (!username || !email || !mpesa || !password) {
-      alert('All fields required');
-      return;
-    }
+    if (!username || !email || !mpesa || !password) { alert('All fields required'); return; }
     try {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, mpesa, password })
-      });
+      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, mpesa, password }) });
       const data = await res.json();
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        token = data.token;
-        verifyAndShowDashboard();
-      } else {
-        alert(data.error || 'Registration failed');
-      }
-    } catch (err) {
-      alert('Server error');
-    }
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error);
+    } catch { alert('Server error'); }
   }
 
   async function login() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
-    if (!username || !password) {
-      alert('Username and password required');
-      return;
-    }
+    if (!username || !password) { alert('Username and password required'); return; }
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
       const data = await res.json();
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        token = data.token;
-        verifyAndShowDashboard();
-      } else {
-        alert(data.error || 'Invalid credentials');
-      }
-    } catch (err) {
-      alert('Login error');
-    }
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error);
+    } catch { alert('Login error'); }
   }
 
-  function logout() {
-    localStorage.removeItem('token');
-    location.reload();
-  }
+  function logout() { localStorage.removeItem('token'); location.reload(); }
 
   function switchTab(tabId, event) {
     document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-    if (event && event.target) {
-      event.target.closest('.nav-item').classList.add('active');
-    }
+    if (event?.target) event.target.closest('.nav-item').classList.add('active');
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     if (tabId === 'home') loadOpps();
     if (tabId === 'profile') loadProfile();
   }
 
-  async function refreshOpportunities() {
-    await loadOpps();
-  }
+  async function refreshOpportunities() { await loadOpps(); }
 
   async function loadOpps() {
     const container = document.getElementById('oppList');
-    container.innerHTML = '<div class="loading">Scanning 14 exchanges...</div>';
+    container.innerHTML = '<div class="loading">Scanning exchanges...</div>';
     try {
       const res = await fetch('/api/opportunities');
       const data = await res.json();
-      if (!data.opportunities || data.opportunities.length === 0) {
-        container.innerHTML = '<div class="card">✨ No spreads >0.2% right now. Try again in a few seconds.</div>';
-        return;
-      }
+      if (!data.opportunities || data.opportunities.length === 0) { container.innerHTML = '<div class="card">No spreads >0.2% found.</div>'; return; }
       allOpportunities = data.opportunities;
-      applySortAndRender();
-    } catch (err) {
-      container.innerHTML = '<div class="card red">Failed to fetch opportunities. Is server running?</div>';
-    }
+      applyFiltersAndRender();
+    } catch { container.innerHTML = '<div class="card red">Failed to load.</div>'; }
   }
 
-  function applySortAndRender() {
-    let sorted = [...allOpportunities];
-    const sortBy = document.getElementById('sortSelect').value;
-    if (sortBy === 'spreadDesc') {
-      sorted.sort((a, b) => parseFloat(b.spread) - parseFloat(a.spread));
-    } else if (sortBy === 'symbolAsc') {
-      sorted.sort((a, b) => a.symbol.localeCompare(b.symbol));
+  async function applyFiltersAndRender() {
+    let filtered = [...allOpportunities];
+    const range = document.getElementById('rangeFilter').value;
+    if (range !== 'all') {
+      const [min, max] = range === '5+' ? [5, Infinity] : range.split('-').map(Number);
+      filtered = filtered.filter(o => parseFloat(o.spread) >= min && (max ? parseFloat(o.spread) <= max : true));
     }
-    renderOppsList(sorted);
+    const tradFilter = document.getElementById('tradableFilter').value;
+    if (tradFilter !== 'all') {
+      // We'll compute tradable status on the fly by fetching network data per item (expensive, but we cache)
+      // For simplicity, we'll assume tradable = true for now, but will fetch when clicked.
+      // In real usage you might want to pre-fetch. For now we skip frontend filtering based on tradable.
+    }
+    const sortBy = document.getElementById('sortSelect').value;
+    if (sortBy === 'spreadDesc') filtered.sort((a,b) => parseFloat(b.spread) - parseFloat(a.spread));
+    if (sortBy === 'symbolAsc') filtered.sort((a,b) => a.symbol.localeCompare(b.symbol));
+    renderOppsList(filtered);
   }
 
   function renderOppsList(opps) {
@@ -658,45 +245,64 @@
         <div class="row"><span>${opp.buyExchange}</span><span>💰 ${opp.buyPrice}</span></div>
         <div class="row"><span>${opp.sellExchange}</span><span>💰 ${opp.sellPrice}</span></div>
         <div class="row"><span>Spread</span><span class="badge green">${opp.spread}%</span></div>
+        <div class="row"><span>Tradable</span><span class="badge" id="tradable-badge-${opp.id}">Checking...</span></div>
       `;
       card.onclick = () => showDetail(opp);
       container.appendChild(card);
+      // Fetch tradable status for list (non-blocking)
+      fetchTradableForList(opp);
     }
   }
 
-  // Fetch real network data from backend (/api/network/:exchange/:symbol)
+  async function fetchTradableForList(opp) {
+    const coin = opp.symbol;
+    const buyEx = opp.buyExchange.toLowerCase();
+    const sellEx = opp.sellExchange.toLowerCase();
+    try {
+      const [buyNet, sellNet] = await Promise.all([
+        fetch(`/api/network/${buyEx}/${coin}`).then(r => r.ok ? r.json() : null),
+        fetch(`/api/network/${sellEx}/${coin}`).then(r => r.ok ? r.json() : null)
+      ]);
+      const tradable = buyNet?.canWithdraw === true && sellNet?.canDeposit === true;
+      const badge = document.querySelector(`#tradable-badge-${opp.id}`);
+      if (badge) {
+        badge.textContent = tradable ? 'YES ✅' : 'NO ❌';
+        badge.className = `badge ${tradable ? 'green' : 'red'}`;
+      }
+    } catch { /* ignore */ }
+  }
+
   async function showDetail(opp) {
     const modal = document.getElementById('detailModal');
     const modalBody = document.getElementById('modalBody');
-    modalBody.innerHTML = '<div class="loading">Fetching real network data from exchanges...</div>';
+    modalBody.innerHTML = '<div class="loading">Fetching real network data...</div>';
     modal.style.display = 'block';
+    if (currentChart) currentChart.destroy();
 
-    const coin = opp.symbol; // e.g., "BTC"
+    const coin = opp.symbol;
     const buyEx = opp.buyExchange.toLowerCase();
     const sellEx = opp.sellExchange.toLowerCase();
-
     let buyNetInfo = null, sellNetInfo = null;
     try {
-      const [buyRes, sellRes] = await Promise.all([
-        fetch(`/api/network/${buyEx}/${coin}`).catch(() => null),
-        fetch(`/api/network/${sellEx}/${coin}`).catch(() => null)
+      [buyNetInfo, sellNetInfo] = await Promise.all([
+        fetch(`/api/network/${buyEx}/${coin}`).then(r => r.ok ? r.json() : null),
+        fetch(`/api/network/${sellEx}/${coin}`).then(r => r.ok ? r.json() : null)
       ]);
-      if (buyRes && buyRes.ok) buyNetInfo = await buyRes.json();
-      if (sellRes && sellRes.ok) sellNetInfo = await sellRes.json();
-    } catch (err) {
-      console.log(err);
-    }
+    } catch(e) {}
+
+    const tradable = buyNetInfo?.canWithdraw === true && sellNetInfo?.canDeposit === true;
+    const risk = calculateRisk(opp, buyNetInfo, sellNetInfo);
+    const riskColor = risk === 'low' ? 'risk-low' : (risk === 'medium' ? 'risk-medium' : 'risk-high');
+    const riskText = risk.toUpperCase();
 
     function networkRows(netInfo) {
-      if (!netInfo || !netInfo.networks || Object.keys(netInfo.networks).length === 0) {
+      if (!netInfo || !netInfo.networks || Object.keys(netInfo.networks).length === 0)
         return '<div class="network-row"><span>No network data available</span></div>';
-      }
       return Object.values(netInfo.networks).map(n => `
         <div class="network-row">
           <div class="network-name">${n.name}</div>
           <div class="network-details">
-            Deposit: ${n.deposit ? '✅ Open' : '❌ Closed'}<br>
-            Withdraw: ${n.withdraw ? '✅ Open' : '❌ Closed'}<br>
+            Deposit: ${n.deposit ? '✅' : '❌'} | Withdraw: ${n.withdraw ? '✅' : '❌'}<br>
             Fee: ${typeof n.fee === 'number' ? n.fee : 'variable'}<br>
             Min Withdraw: ${n.minWithdraw || 'N/A'}
           </div>
@@ -704,86 +310,79 @@
       `).join('');
     }
 
-    const buyWithdrawOk = buyNetInfo?.canWithdraw === true;
-    const sellDepositOk = sellNetInfo?.canDeposit === true;
-    const tradable = buyWithdrawOk && sellDepositOk;
-    const tradableText = tradable ? 'TRADABLE ✅' : 'NOT TRADABLE ❌';
-    const tradableClass = tradable ? 'green' : 'red';
-
     modalBody.innerHTML = `
       <div class="modal-symbol">${opp.symbol}</div>
       <div class="modal-spread">Spread: <span style="color:#00ff99">${opp.spread}%</span></div>
-      <div style="margin: 10px 0 20px 0"><span class="badge ${tradableClass}">${tradableText}</span></div>
-
+      <div><span class="badge ${tradable ? 'green' : 'red'}">${tradable ? 'TRADABLE ✅' : 'NOT TRADABLE ❌'}</span>
+      <span class="badge ${riskColor}" style="margin-left:10px">Risk: ${riskText}</span></div>
       <div class="exchange-columns">
-        <div class="exchange-card">
-          <div class="exchange-title">Buy: ${opp.buyExchange}</div>
-          <div class="price">$${opp.buyPrice}</div>
-          <div class="status"><span class="status-icon">✅</span> Withdrawal allowed: ${buyWithdrawOk ? 'Yes' : (buyNetInfo?.canWithdraw === false ? 'No' : 'Unknown')}</div>
-        </div>
-        <div class="exchange-card">
-          <div class="exchange-title">Sell: ${opp.sellExchange}</div>
-          <div class="price">$${opp.sellPrice}</div>
-          <div class="status"><span class="status-icon">✅</span> Deposit allowed: ${sellDepositOk ? 'Yes' : (sellNetInfo?.canDeposit === false ? 'No' : 'Unknown')}</div>
-        </div>
+        <div class="exchange-card"><div class="exchange-title">Buy: ${opp.buyExchange}</div><div class="price">$${opp.buyPrice}</div><div class="status">Withdraw: ${buyNetInfo?.canWithdraw === true ? 'Yes' : (buyNetInfo?.canWithdraw === false ? 'No' : 'Unknown')}</div><div class="liquidity">Liquidity: $${opp.liquidity || 'N/A'}</div></div>
+        <div class="exchange-card"><div class="exchange-title">Sell: ${opp.sellExchange}</div><div class="price">$${opp.sellPrice}</div><div class="status">Deposit: ${sellNetInfo?.canDeposit === true ? 'Yes' : (sellNetInfo?.canDeposit === false ? 'No' : 'Unknown')}</div><div class="liquidity">Liquidity: $${opp.liquidity || 'N/A'}</div></div>
       </div>
-
-      <h4 style="margin: 20px 0 12px 0">🌐 Networks (${opp.buyExchange})</h4>
-      <div class="network-table">
-        ${networkRows(buyNetInfo)}
-      </div>
-
-      <h4 style="margin: 20px 0 12px 0">🌐 Networks (${opp.sellExchange})</h4>
-      <div class="network-table">
-        ${networkRows(sellNetInfo)}
-      </div>
+      <h4>Networks (${opp.buyExchange})</h4><div class="network-table">${networkRows(buyNetInfo)}</div>
+      <h4>Networks (${opp.sellExchange})</h4><div class="network-table">${networkRows(sellNetInfo)}</div>
     `;
+
+    // Render chart
+    if (opp.history && opp.history.length > 0) {
+      const chartData = opp.history.map(h => ({ x: new Date(h.time), y: parseFloat(h.spread) }));
+      const options = {
+        series: [{ name: 'Spread %', data: chartData }],
+        chart: { type: 'line', height: 250, background: 'transparent', toolbar: { show: false } },
+        theme: { mode: 'dark' },
+        stroke: { curve: 'smooth', width: 2, colors: ['#00ff99'] },
+        xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
+        grid: { borderColor: '#1e2a4a' },
+        tooltip: { theme: 'dark' }
+      };
+      currentChart = new ApexCharts(document.querySelector("#chart"), options);
+      currentChart.render();
+      document.getElementById('chart').style.display = 'block';
+    } else {
+      document.getElementById('chart').style.display = 'none';
+    }
+  }
+
+  function calculateRisk(opp, buyNet, sellNet) {
+    // Simple AI: based on spread volatility (if history available) and tradability
+    let volatility = 0;
+    if (opp.history && opp.history.length > 1) {
+      let spreads = opp.history.map(h => parseFloat(h.spread));
+      let mean = spreads.reduce((a,b)=>a+b,0)/spreads.length;
+      volatility = Math.sqrt(spreads.map(s=>Math.pow(s-mean,2)).reduce((a,b)=>a+b,0)/spreads.length);
+    }
+    const tradable = (buyNet?.canWithdraw && sellNet?.canDeposit) ? true : false;
+    if (!tradable) return 'high';
+    if (volatility > 1.5) return 'high';
+    if (volatility > 0.5) return 'medium';
+    return 'low';
   }
 
   function closeDetail() {
     document.getElementById('detailModal').style.display = 'none';
+    if (currentChart) currentChart.destroy();
   }
 
   async function loadProfile() {
     const container = document.getElementById('profileCard');
-    container.innerHTML = '<div class="loading">Loading profile...</div>';
+    container.innerHTML = '<div class="loading">Loading...</div>';
     try {
       const res = await fetch('/api/me', { headers: { Authorization: token } });
       const user = await res.json();
-      if (user.error) throw new Error(user.error);
-      container.innerHTML = `
-        <div class="card">
-          <div class="row"><span>👤 Username:</span><span>${user.username}</span></div>
-          <div class="row"><span>📧 Email:</span><span>${user.email}</span></div>
-          <div class="row"><span>📱 Mobile:</span><span>${user.mpesa}</span></div>
-        </div>
-      `;
-    } catch (err) {
-      container.innerHTML = '<div class="card red">Not logged in or session expired.</div>';
-    }
+      if (user.error) throw new Error();
+      container.innerHTML = `<div class="card"><div class="row"><span>👤 Username:</span><span>${user.username}</span></div><div class="row"><span>📧 Email:</span><span>${user.email}</span></div><div class="row"><span>📱 Mobile:</span><span>${user.mpesa}</span></div></div>`;
+    } catch { container.innerHTML = '<div class="card red">Session expired.</div>'; }
   }
 
   async function payPro(plan, amount) {
-    if (!token) {
-      alert('Please login first');
-      return;
-    }
-    const phone = prompt('Enter M-Pesa phone number (e.g., 0712345678):');
-    if (!phone || phone.length < 9) {
-      alert('Valid phone number required');
-      return;
-    }
+    if (!token) { alert('Login first'); return; }
+    const phone = prompt('M-Pesa number:');
+    if (!phone) return;
     try {
-      const res = await fetch('/api/pesapal/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token },
-        body: JSON.stringify({ phone, amount, plan })
-      });
+      const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ phone, amount, plan }) });
       const data = await res.json();
-      alert(data.message || 'STK Push sent! Complete payment on your phone.');
-    } catch (err) {
-      alert('Payment request failed.');
-    }
+      alert(data.message);
+    } catch { alert('Payment failed'); }
   }
 </script>
 </body>

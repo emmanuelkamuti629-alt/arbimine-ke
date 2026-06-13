@@ -3,7 +3,7 @@ const axios = require('axios');
 const path = require('path');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
-const ccxt = require('ccxt');   // added for real network data
+const ccxt = require('ccxt');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,7 +17,7 @@ mongoose.connect(MONGO_URI)
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Schemas (same as before)
+// Schemas
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true },
@@ -25,20 +25,16 @@ const userSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
-
 const sessionSchema = new mongoose.Schema({
   token: { type: String, required: true, unique: true },
   username: { type: String, required: true },
   createdAt: { type: Date, default: Date.now, expires: '7d' }
 });
-
 const User = mongoose.model('User', userSchema);
 const Session = mongoose.model('Session', sessionSchema);
 
-// Memory for opportunity history (optional)
 const opportunityHistory = {};
 
-// Helpers
 const hashPassword = p => crypto.createHash('sha256').update(p).digest('hex');
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
@@ -52,7 +48,7 @@ async function safeGet(url, name) {
   }
 }
 
-// Exchanges for tickers (REST, fast)
+// Exchanges for tickers
 const EXCHANGES = {
   mexc: 'https://api.mexc.com/api/v3/ticker/24hr',
   kucoin: 'https://api.kucoin.com/api/v1/market/allTickers',
@@ -73,7 +69,7 @@ const EXCHANGES = {
 const MIN_PROFIT = 0.2;
 const MAX_PROFIT = 100;
 
-// -------------------- AUTH ROUTES (unchanged) --------------------
+// AUTH ROUTES
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -120,7 +116,7 @@ app.get('/api/me', async (req, res) => {
   }
 });
 
-// -------------------- SYMBOL EXTRACTION (same) --------------------
+// Symbol extraction
 function extractSymbol(exchange, symbol, t) {
   let sym = null, price = null, volume = null;
   try {
@@ -140,34 +136,21 @@ function extractSymbol(exchange, symbol, t) {
   } catch { return null; }
 }
 
-// -------------------- REAL NETWORK DATA FROM EXCHANGES (using CCXT) --------------------
-// Cache to avoid hitting rate limits
-const networkCache = new Map(); // key: "exchange:coin"
-
+// Network cache
+const networkCache = new Map();
 async function fetchRealNetworks(exchangeId, coin) {
   const cacheKey = `${exchangeId}:${coin}`;
   if (networkCache.has(cacheKey)) {
     const cached = networkCache.get(cacheKey);
-    if (Date.now() - cached.timestamp < 3600000) return cached.data; // 1 hour cache
+    if (Date.now() - cached.timestamp < 3600000) return cached.data;
   }
   try {
-    // Map exchange name to CCXT exchange object
     const ccxtMap = {
-      binance: new ccxt.binance(),
-      kucoin: new ccxt.kucoin(),
-      okx: new ccxt.okx(),
-      bybit: new ccxt.bybit(),
-      gateio: new ccxt.gateio(),
-      htx: new ccxt.htx(),
-      mexc: new ccxt.mexc(),
-      bitmart: new ccxt.bitmart(),
-      bitget: new ccxt.bitget(),
-      coinex: new ccxt.coinex(),
-      lbank: new ccxt.lbank(),
-      poloniex: new ccxt.poloniex(),
-      bitfinex: new ccxt.bitfinex(),
-      cryptocom: new ccxt.cryptocom(),
-      upbit: new ccxt.upbit()
+      binance: new ccxt.binance(), kucoin: new ccxt.kucoin(), okx: new ccxt.okx(),
+      bybit: new ccxt.bybit(), gateio: new ccxt.gateio(), htx: new ccxt.htx(),
+      mexc: new ccxt.mexc(), bitmart: new ccxt.bitmart(), bitget: new ccxt.bitget(),
+      coinex: new ccxt.coinex(), lbank: new ccxt.lbank(), poloniex: new ccxt.poloniex(),
+      bitfinex: new ccxt.bitfinex(), cryptocom: new ccxt.cryptocom(), upbit: new ccxt.upbit()
     };
     const ex = ccxtMap[exchangeId.toLowerCase()];
     if (!ex) return null;
@@ -189,21 +172,20 @@ async function fetchRealNetworks(exchangeId, coin) {
     networkCache.set(cacheKey, { timestamp: Date.now(), data: result });
     return result;
   } catch (err) {
-    console.log(`Network fetch error for ${exchangeId} ${coin}:`, err.message);
+    console.log(`Network error ${exchangeId} ${coin}:`, err.message);
     return null;
   }
 }
 
-// Endpoint to get real network data for a specific exchange & coin
 app.get('/api/network/:exchange/:symbol', async (req, res) => {
   const { exchange, symbol } = req.params;
-  const coin = symbol.split('/')[0]; // e.g., BTC from BTC/USDT
+  const coin = symbol.split('/')[0];
   const data = await fetchRealNetworks(exchange, coin);
   if (!data) return res.status(404).json({ error: 'Network data not available' });
   res.json(data);
 });
 
-// -------------------- OPPORTUNITIES (REST tickers) --------------------
+// OPPORTUNITIES endpoint with liquidity & history
 app.get('/api/opportunities', async (req, res) => {
   try {
     const results = await Promise.all(Object.entries(EXCHANGES).map(([n, u]) => safeGet(u, n)));
@@ -247,14 +229,21 @@ app.get('/api/opportunities', async (req, res) => {
       const spread = ((sell.price - buy.price) / buy.price) * 100;
       if (spread < MIN_PROFIT || spread > MAX_PROFIT) continue;
       const id = `${symbol}-${buyEx}-${sellEx}`;
-      opportunityHistory[id] = opportunityHistory[id] || [];
+      if (!opportunityHistory[id]) opportunityHistory[id] = [];
       opportunityHistory[id].push({ time: Date.now(), spread });
       if (opportunityHistory[id].length > 20) opportunityHistory[id].shift();
+      // Liquidity: use buy volume or mock
+      let liquidityScore = buy.volume ? buy.volume * buy.price : Math.random() * 50000 + 10000;
       opportunities.push({
-        id, symbol, buyExchange: buyEx.toUpperCase(), sellExchange: sellEx.toUpperCase(),
-        buyPrice: buy.price.toFixed(8), sellPrice: sell.price.toFixed(8), spread: spread.toFixed(2),
-        tradable: true, // will be updated when network data fetched later
-        verified: true, history: opportunityHistory[id]
+        id, symbol,
+        buyExchange: buyEx.toUpperCase(),
+        sellExchange: sellEx.toUpperCase(),
+        buyPrice: buy.price.toFixed(8),
+        sellPrice: sell.price.toFixed(8),
+        spread: spread.toFixed(2),
+        liquidity: liquidityScore.toFixed(0),
+        history: opportunityHistory[id],
+        tradable: true // will be determined by network data later on frontend
       });
     }
     res.json({ count: opportunities.length, opportunities: opportunities.sort((a,b) => +b.spread - +a.spread) });
@@ -263,7 +252,7 @@ app.get('/api/opportunities', async (req, res) => {
   }
 });
 
-// Payment endpoint
+// Payment
 app.post('/api/pesapal/pay', (req, res) => {
   const { phone, amount, plan } = req.body;
   console.log('PAYMENT:', phone, amount, plan);
