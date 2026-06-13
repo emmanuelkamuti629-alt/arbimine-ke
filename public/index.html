@@ -1,618 +1,475 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ArbiMine Pro</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body{
-    background:#020617;
-    color:white;
-    font-family:Arial,sans-serif;
-}
-
-.glass{
-    background:rgba(15,23,42,.8);
-    border:1px solid rgba(255,255,255,.05);
-    backdrop-filter:blur(10px);
-}
-
-.card{
-    transition:.2s;
-}
-
-.card:hover{
-    transform:translateY(-2px);
-}
-
-.hiddenPage{
-    display:none;
-}
-
-.activePage{
-    display:block;
-}
-
-.navBtn{
-    flex:1;
-    padding:12px;
-    text-align:center;
-    font-size:13px;
-    color:#94a3b8;
-}
-
-.navBtn.active{
-    color:white;
-    background:#1e293b;
-}
-
-.networkBox{
-    background:#0f172a;
-    border:1px solid rgba(255,255,255,.05);
-    border-radius:12px;
-    padding:10px;
-    margin-top:8px;
-}
-
-.green{
-    color:#22c55e;
-}
-
-.red{
-    color:#ef4444;
-}
-
-.yellow{
-    color:#f59e0b;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Arbitrage Nexus · Networks & Deep Details</title>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- TailwindCSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* custom transitions for "new page inside" effect */
+    .page-transition {
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .opportunity-card {
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .opportunity-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .risk-badge-low { background: #10b981; }
+    .risk-badge-med { background: #f59e0b; }
+    .risk-badge-high { background: #ef4444; }
+    button:active { transform: scale(0.97); }
+    .detail-view {
+      display: none;
+      opacity: 0;
+    }
+    .detail-view.active {
+      display: block;
+      opacity: 1;
+    }
+    .list-view {
+      display: block;
+    }
+    .list-view.hide {
+      display: none;
+    }
+  </style>
 </head>
+<body class="bg-gradient-to-br from-slate-50 to-gray-100 font-sans antialiased">
 
-<body>
+<div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+  <!-- Header -->
+  <div class="flex flex-wrap justify-between items-center mb-6 border-b border-gray-200 pb-3">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-800">⚡ Arbitrage Nexus</h1>
+      <p class="text-gray-500 text-sm mt-1">networks & deep arbitrage insights</p>
+    </div>
+    <div class="text-xs text-gray-400 bg-white/60 px-3 py-1 rounded-full shadow-sm"><i class="fas fa-robot mr-1"></i> AI risk + on-chain networks</div>
+  </div>
 
-<!-- AUTH PAGE -->
-<div id="authPage" class="min-h-screen flex items-center justify-center p-4">
+  <!-- OPPORTUNITIES LIST VIEW (home) -->
+  <div id="listView" class="list-view">
+    <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+      <div class="p-4 bg-gray-50/80 border-b border-gray-200 flex justify-between items-center">
+        <h2 class="font-semibold text-gray-700"><i class="fas fa-chart-line mr-2 text-indigo-500"></i>Live Opportunities</h2>
+        <div class="flex gap-2">
+          <button id="homeListBtn" class="bg-white hover:bg-indigo-50 text-gray-700 text-sm px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 border"><i class="fas fa-home"></i> Home</button>
+          <button id="backListBtn" class="bg-white hover:bg-indigo-50 text-gray-700 text-sm px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 border"><i class="fas fa-arrow-left"></i> Back</button>
+          <button id="nextListBtn" class="bg-white hover:bg-indigo-50 text-gray-700 text-sm px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 border">Next <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+      <div id="opportunitiesListContainer" class="divide-y divide-gray-100 max-h-[540px] overflow-y-auto">
+        <!-- dynamic cards injected -->
+      </div>
+      <div class="p-3 text-center text-xs text-gray-400 bg-gray-50 border-t border-gray-100">
+        <i class="fas fa-clock"></i> click any card → open detailed page (networks & fees)
+      </div>
+    </div>
+  </div>
 
-<div class="glass w-full max-w-md rounded-3xl p-6">
+  <!-- DETAIL VIEW (new page inside) -->
+  <div id="detailView" class="detail-view">
+    <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4 border-b border-indigo-100 flex justify-between items-center">
+        <div>
+          <span class="text-xs font-medium text-indigo-600 uppercase tracking-wide">Arbitrage Details</span>
+          <h2 id="detailOppName" class="text-2xl font-bold text-gray-800 mt-0">—</h2>
+        </div>
+        <button id="closeDetailBtn" class="bg-white/80 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition"><i class="fas fa-arrow-left"></i> Back to Opportunities</button>
+      </div>
 
-<h1 class="text-3xl font-bold text-center mb-2">
-⚡ ArbiMine
-</h1>
+      <div class="p-5 space-y-5">
+        <!-- buy/sell summary -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+            <div class="flex items-center gap-2 mb-2"><i class="fas fa-shopping-cart text-emerald-600"></i><span class="font-bold">BUY EXCHANGE</span></div>
+            <div class="text-lg font-mono" id="buyExchangeName">-</div>
+            <div class="text-sm">Price: $<span id="buyPriceDetail">-</span></div>
+          </div>
+          <div class="bg-rose-50 p-4 rounded-xl border border-rose-200">
+            <div class="flex items-center gap-2 mb-2"><i class="fas fa-tags text-rose-600"></i><span class="font-bold">SELL EXCHANGE</span></div>
+            <div class="text-lg font-mono" id="sellExchangeName">-</div>
+            <div class="text-sm">Price: $<span id="sellPriceDetail">-</span></div>
+          </div>
+        </div>
 
-<p class="text-center text-slate-400 mb-6">
-Crypto Arbitrage Intelligence
-</p>
+        <!-- Spread & tradable -->
+        <div class="flex flex-wrap justify-between items-center bg-gray-50 p-3 rounded-lg">
+          <div><span class="text-gray-500">Spread:</span> <strong id="detailSpreadPercent" class="text-indigo-700">—%</strong></div>
+          <div><span class="text-gray-500">Status:</span> <span id="detailTradableBadge" class="px-3 py-1 rounded-full text-xs font-semibold">—</span></div>
+        </div>
 
-<input id="username"
-class="w-full bg-slate-900 rounded-xl p-4 mb-4 outline-none"
-placeholder="Username">
+        <!-- NETWORKS SECTION (withdraw networks on buy exchange, deposit networks on sell exchange) -->
+        <div class="border-t border-gray-200 pt-3">
+          <h3 class="font-semibold text-gray-800 flex items-center gap-2"><i class="fas fa-network-wired"></i> Network details</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+            <!-- Buy exchange: Withdraw networks -->
+            <div class="bg-gray-50 rounded-xl p-3">
+              <div class="font-medium text-emerald-700"><i class="fas fa-arrow-up"></i> Withdraw networks (Buy side)</div>
+              <div id="buyWithdrawNetworks" class="text-sm text-gray-700 mt-1 space-y-1">—</div>
+            </div>
+            <!-- Sell exchange: Deposit networks -->
+            <div class="bg-gray-50 rounded-xl p-3">
+              <div class="font-medium text-rose-700"><i class="fas fa-arrow-down"></i> Deposit networks (Sell side)</div>
+              <div id="sellDepositNetworks" class="text-sm text-gray-700 mt-1 space-y-1">—</div>
+            </div>
+          </div>
+        </div>
 
-<input id="password"
-type="password"
-class="w-full bg-slate-900 rounded-xl p-4 mb-4 outline-none"
-placeholder="Password">
+        <!-- Fees in USDT -->
+        <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+          <div class="flex items-center gap-2 mb-2"><i class="fas fa-dollar-sign text-amber-600"></i><span class="font-semibold">Estimated network fees (USDT)</span></div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div>Buy side fee: <span id="buyFeeUsdtDetail" class="font-mono font-bold">—</span></div>
+            <div>Sell side fee: <span id="sellFeeUsdtDetail" class="font-mono font-bold">—</span></div>
+          </div>
+        </div>
 
-<button onclick="register()"
-class="w-full bg-indigo-600 py-4 rounded-xl font-bold mb-3">
-Create Account
-</button>
+        <!-- AI Risk + explanation -->
+        <div class="bg-gray-50/80 rounded-xl p-4 border border-gray-200">
+          <div class="flex items-center gap-2 mb-3"><i class="fas fa-brain text-purple-600"></i><span class="font-semibold">AI Risk Prediction</span></div>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div><span id="riskRatingDetail" class="text-2xl font-bold px-3 py-1 rounded-full text-white">—</span></div>
+            <div class="text-xs text-gray-500 bg-white rounded-full px-3 py-1">risk score <span id="riskScoreDetail">0</span>/10</div>
+          </div>
+          <div id="riskExplanationDetail" class="mt-3 text-sm text-gray-600 bg-white p-3 rounded-lg border-l-4 border-purple-300">—</div>
+        </div>
 
-<button onclick="login()"
-class="w-full bg-slate-800 py-4 rounded-xl font-bold">
-Login
-</button>
+        <!-- Spread trend graph -->
+        <div>
+          <div class="flex items-center justify-between mb-2"><span class="text-sm font-medium"><i class="fas fa-chart-line text-indigo-500"></i> Spread trend (%)</span></div>
+          <div class="bg-white p-2 rounded-xl border border-gray-200"><canvas id="detailTrendChart" width="400" height="200" style="max-height: 220px; width: 100%"></canvas></div>
+        </div>
 
-<p id="authMsg" class="text-center text-sm mt-4 text-slate-400"></p>
-
-</div>
-</div>
-
-<!-- APP PAGE -->
-<div id="appPage" class="hiddenPage">
-
-<!-- HEADER -->
-<div class="p-4 border-b border-slate-800 flex justify-between items-center">
-
-<div>
-<h1 class="text-2xl font-bold">
-⚡ ArbiMine Pro
-</h1>
-<p class="text-slate-400 text-sm">
-Real Networks • Real Liquidity
-</p>
-</div>
-
-<div class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm">
-LIVE
-</div>
-
-</div>
-
-<!-- HOME PAGE -->
-<div id="homePage" class="activePage p-4 pb-28">
-
-<div id="opportunitiesContainer" class="space-y-4"></div>
-
-</div>
-
-<!-- DETAILS PAGE -->
-<div id="detailsPage" class="hiddenPage p-4 pb-28">
-
-<button onclick="backHome()"
-class="mb-4 bg-slate-800 px-4 py-3 rounded-xl">
-← Back
-</button>
-
-<div class="glass rounded-3xl p-5">
-
-<h2 id="coinName"
-class="text-3xl font-bold mb-4">
-BTC
-</h2>
-
-<div class="grid grid-cols-2 gap-3 mb-4">
-
-<div class="bg-green-500/10 p-4 rounded-2xl">
-<p class="text-slate-400 text-sm">BUY</p>
-<h3 id="buyExchange" class="text-xl font-bold"></h3>
-<p id="buyPrice" class="green"></p>
-</div>
-
-<div class="bg-red-500/10 p-4 rounded-2xl">
-<p class="text-slate-400 text-sm">SELL</p>
-<h3 id="sellExchange" class="text-xl font-bold"></h3>
-<p id="sellPrice" class="red"></p>
-</div>
-
-</div>
-
-<div class="glass rounded-2xl p-4 mb-4">
-
-<div class="flex justify-between mb-2">
-<span>Spread</span>
-<span id="spread" class="green font-bold"></span>
-</div>
-
-<div class="flex justify-between mb-2">
-<span>Liquidity</span>
-<span id="liquidity"></span>
-</div>
-
-<div class="flex justify-between">
-<span>Arrival Time</span>
-<span id="arrival"></span>
-</div>
-
-</div>
-
-<!-- NETWORKS -->
-<div class="glass rounded-2xl p-4 mb-4">
-
-<h3 class="text-xl font-bold mb-3">
-Networks
-</h3>
-
-<div>
-
-<p class="green font-bold mb-2">
-Withdraw Networks
-</p>
-
-<div id="withdrawNetworks"></div>
-
-</div>
-
-<div class="mt-4">
-
-<p class="red font-bold mb-2">
-Deposit Networks
-</p>
-
-<div id="depositNetworks"></div>
-
-</div>
-
-</div>
-
-<!-- RISK -->
-<div class="glass rounded-2xl p-4 mb-4">
-
-<h3 class="text-xl font-bold mb-3">
-AI Risk Analysis
-</h3>
-
-<div id="riskBox"
-class="bg-slate-900 rounded-2xl p-4">
-</div>
-
-</div>
-
-<!-- GRAPH -->
-<div class="glass rounded-2xl p-4">
-
-<h3 class="text-xl font-bold mb-4">
-Spread Trend
-</h3>
-
-<canvas id="trendChart"></canvas>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- BOTTOM NAV -->
-<div class="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 flex">
-
-<button class="navBtn active">
-🏠 Home
-</button>
-
-<button class="navBtn">
-📈 Opportunities
-</button>
-
-<button class="navBtn">
-👤 Profile
-</button>
-
-</div>
-
+        <!-- Additional notes -->
+        <div class="text-xs text-gray-400 border-t pt-3"><i class="fas fa-info-circle"></i> Network data includes availability & fees (converted to USDT). Withdraw networks shown for the exchange where you buy, deposit networks for the exchange where you sell.</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-
-const API = "";
-
-let chart;
-
-const opportunities = [
-{
-    coin:"BTC",
-    buyExchange:"Binance",
-    sellExchange:"KuCoin",
-    buyPrice:65000,
-    sellPrice:66500,
-    spread:2.3,
-    liquidity:"$4.2M",
-    arrival:"4 mins",
-    risk:"LOW",
-    withdrawNetworks:[
-        {
-            name:"BTC",
-            fee:"0.0002 BTC",
-            eta:"10 mins",
-            status:"OPEN"
-        },
-        {
-            name:"Lightning",
-            fee:"0.00001 BTC",
-            eta:"2 mins",
-            status:"OPEN"
-        }
-    ],
-    depositNetworks:[
-        {
-            name:"BTC",
-            fee:"FREE",
-            eta:"5 mins",
-            status:"OPEN"
-        }
-    ],
-    trend:[1.2,1.4,1.7,1.9,2.1,2.3]
-},
-
-{
-    coin:"ETH",
-    buyExchange:"MEXC",
-    sellExchange:"HTX",
-    buyPrice:3400,
-    sellPrice:3560,
-    spread:4.7,
-    liquidity:"$1.8M",
-    arrival:"3 mins",
-    risk:"MEDIUM",
-    withdrawNetworks:[
-        {
-            name:"Arbitrum",
-            fee:"0.001 ETH",
-            eta:"1 min",
-            status:"OPEN"
-        },
-        {
-            name:"ERC20",
-            fee:"0.004 ETH",
-            eta:"8 mins",
-            status:"OPEN"
-        }
-    ],
-    depositNetworks:[
-        {
-            name:"Arbitrum",
-            fee:"FREE",
-            eta:"1 min",
-            status:"OPEN"
-        }
-    ],
-    trend:[2.1,2.5,2.8,3.2,4.1,4.7]
-}
-];
-
-function register(){
-
-    const u=document.getElementById("username").value;
-    const p=document.getElementById("password").value;
-
-    if(!u || !p){
-        document.getElementById("authMsg").innerText="Fill all fields";
-        return;
+  // ======================== ENRICHED OPPORTUNITIES DATA (with networks) ========================
+  const opportunities = [
+    {
+      id: 0,
+      name: "SWEAT",
+      buyExchange: "HTX",
+      sellExchange: "GATEIO",
+      buyPrice: 0.00070100,
+      sellPrice: 0.00086490,
+      spreadPercent: 23.38,
+      historicalSpreads: [22.1, 22.5, 22.9, 23.2, 23.4, 23.5, 23.4, 23.3, 23.38, 23.38],
+      liquidityScore: 6.2,
+      volumeScore: 7.0,
+      // Buy exchange (HTX) withdraw networks
+      buyWithdrawNetworks: [
+        { name: "ERC20", available: true, feeTokenUnits: 3.2, minWithdraw: 50 },
+        { name: "TRC20", available: true, feeTokenUnits: 1.5, minWithdraw: 20 },
+        { name: "BEP20", available: true, feeTokenUnits: 0.8, minWithdraw: 30 }
+      ],
+      // Sell exchange (GATEIO) deposit networks
+      sellDepositNetworks: [
+        { name: "ERC20", available: true, feeTokenUnits: 2.5, minDeposit: 10 },
+        { name: "TRC20", available: true, feeTokenUnits: 1.0, minDeposit: 5 },
+        { name: "BEP20", available: true, feeTokenUnits: 0.6, minDeposit: 8 }
+      ],
+      buyDepositAvailable: true,
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: true,
+      sellWithdrawAvailable: true,
+      buyRep: 8,
+      sellRep: 7,
+      buyLiquidity: "$124K",
+      sellLiquidity: "$98K"
+    },
+    {
+      id: 1,
+      name: "FCT2",
+      buyExchange: "HTX",
+      sellExchange: "MEXC",
+      buyPrice: 0.00688600,
+      sellPrice: 0.00839000,
+      spreadPercent: 21.84,
+      historicalSpreads: [20.5, 21.0, 21.3, 21.6, 21.8, 21.9, 21.85, 21.84, 21.84, 21.84],
+      liquidityScore: 5.5,
+      volumeScore: 6.0,
+      buyWithdrawNetworks: [
+        { name: "ERC20", available: true, feeTokenUnits: 4.0, minWithdraw: 100 },
+        { name: "TRC20", available: true, feeTokenUnits: 1.8, minWithdraw: 40 }
+      ],
+      sellDepositNetworks: [
+        { name: "ERC20", available: true, feeTokenUnits: 3.0, minDeposit: 20 },
+        { name: "BEP20", available: true, feeTokenUnits: 1.2, minDeposit: 15 }
+      ],
+      buyDepositAvailable: true,
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: true,
+      sellWithdrawAvailable: true,
+      buyRep: 8,
+      sellRep: 9,
+      buyLiquidity: "$87K",
+      sellLiquidity: "$112K"
+    },
+    {
+      id: 2,
+      name: "HIPPO",
+      buyExchange: "BITMART",
+      sellExchange: "HTX",
+      buyPrice: 0.00016000,
+      sellPrice: 0.00019400,
+      spreadPercent: 21.25,
+      historicalSpreads: [19.8, 20.2, 20.7, 21.0, 21.2, 21.3, 21.25, 21.25, 21.25, 21.25],
+      liquidityScore: 0,
+      volumeScore: 0.5,
+      // BITMART withdraw networks (from image: SUI)
+      buyWithdrawNetworks: [
+        { name: "SUI (SUI Network)", available: true, feeTokenUnits: 12509, minWithdraw: "N/A", feeNote: "very high fee in token units" },
+        { name: "BEP20", available: false, feeTokenUnits: 0, minWithdraw: 0 }
+      ],
+      // HTX deposit networks (disabled)
+      sellDepositNetworks: [
+        { name: "SUI (SUI Network)", available: false, feeTokenUnits: 5, minDeposit: "N/A", note: "Deposit Disabled" },
+        { name: "ERC20", available: false, feeTokenUnits: 0, minDeposit: 0 }
+      ],
+      buyDepositAvailable: true,
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: false,
+      sellWithdrawAvailable: false,
+      buyRep: 6,
+      sellRep: 8,
+      buyLiquidity: "$0",
+      sellLiquidity: "$0"
+    },
+    {
+      id: 3,
+      name: "GMX",
+      buyExchange: "HTX",
+      sellExchange: "BITMART",
+      buyPrice: 4.64910000,
+      sellPrice: 5.62999000,
+      spreadPercent: 21.10,
+      historicalSpreads: [20.3, 20.7, 20.9, 21.1, 21.2, 21.15, 21.1, 21.1, 21.1, 21.1],
+      liquidityScore: 7.2,
+      volumeScore: 7.8,
+      buyWithdrawNetworks: [
+        { name: "ARBITRUM", available: true, feeTokenUnits: 0.5, minWithdraw: 0.2 },
+        { name: "AVALANCHE", available: true, feeTokenUnits: 0.8, minWithdraw: 0.3 }
+      ],
+      sellDepositNetworks: [
+        { name: "ARBITRUM", available: true, feeTokenUnits: 0.6, minDeposit: 0.1 },
+        { name: "BEP20", available: false, feeTokenUnits: 1.2, minDeposit: 0 }
+      ],
+      buyDepositAvailable: true,
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: true,
+      sellWithdrawAvailable: true,
+      buyRep: 8,
+      sellRep: 6,
+      buyLiquidity: "$210K",
+      sellLiquidity: "$45K"
+    },
+    {
+      id: 4,
+      name: "CC",
+      buyExchange: "KUCOIN",
+      sellExchange: "HTX",
+      buyPrice: 0.15994000,
+      sellPrice: 0.19180000,
+      spreadPercent: 19.92,
+      historicalSpreads: [18.5, 19.0, 19.4, 19.7, 19.9, 20.0, 19.95, 19.92, 19.92, 19.92],
+      liquidityScore: 6.8,
+      volumeScore: 7.1,
+      buyWithdrawNetworks: [
+        { name: "ERC20", available: true, feeTokenUnits: 2.2, minWithdraw: 50 },
+        { name: "TRC20", available: true, feeTokenUnits: 1.1, minWithdraw: 20 },
+        { name: "KCC", available: true, feeTokenUnits: 0.3, minWithdraw: 10 }
+      ],
+      sellDepositNetworks: [
+        { name: "ERC20", available: true, feeTokenUnits: 2.5, minDeposit: 15 },
+        { name: "TRC20", available: true, feeTokenUnits: 1.0, minDeposit: 10 }
+      ],
+      buyDepositAvailable: true,
+      buyWithdrawAvailable: true,
+      sellDepositAvailable: true,
+      sellWithdrawAvailable: true,
+      buyRep: 9,
+      sellRep: 8,
+      buyLiquidity: "$150K",
+      sellLiquidity: "$180K"
     }
+  ];
 
-    localStorage.setItem("arbimineUser",u);
+  // Helper: determine tradable
+  function isTradable(opp) {
+    return opp.spreadPercent > 0 && opp.sellDepositAvailable && opp.buyWithdrawAvailable && opp.liquidityScore > 0.1;
+  }
 
-    openApp();
-}
+  // AI Risk engine
+  function computeAIRisk(opp) {
+    const hist = opp.historicalSpreads;
+    const mean = hist.reduce((a,b)=>a+b,0)/hist.length;
+    let variance = hist.map(v=>Math.pow(v-mean,2)).reduce((a,b)=>a+b,0)/hist.length;
+    let cv = Math.sqrt(variance) / (Math.abs(mean)+0.01);
+    let spreadRisk = opp.spreadPercent > 25 ? 3.5 : (opp.spreadPercent > 18 ? 2.0 : 1.2);
+    let volatilityRisk = cv > 0.25 ? 2.5 : (cv > 0.12 ? 1.2 : 0.4);
+    let liquidityRisk = (10 - opp.liquidityScore) * 0.5;
+    let depositRisk = (!opp.sellDepositAvailable ? 3.0 : 0) + (!opp.buyWithdrawAvailable ? 2.0 : 0);
+    let repRisk = (10-opp.buyRep)*0.2 + (10-opp.sellRep)*0.2;
+    let rawScore = spreadRisk + volatilityRisk + liquidityRisk + depositRisk + repRisk;
+    rawScore = Math.min(Math.max(rawScore,0.5),9.9);
+    let level = rawScore < 3.2 ? "LOW" : (rawScore < 6.0 ? "MEDIUM" : "HIGH");
+    let reasons = [];
+    if (!isTradable(opp)) reasons.push(`⚠️ NOT TRADABLE: ${!opp.sellDepositAvailable ? 'sell deposit disabled' : ''} ${!opp.buyWithdrawAvailable ? 'buy withdraw disabled' : ''}`);
+    if (opp.spreadPercent > 20) reasons.push(`📈 High spread ${opp.spreadPercent}%`);
+    if (cv > 0.25) reasons.push(`🌊 Volatile spread (CV=${cv.toFixed(2)})`);
+    if (opp.liquidityScore < 3) reasons.push(`💧 Low liquidity`);
+    if (depositRisk > 2) reasons.push(`🚫 Network restrictions`);
+    if (level === "HIGH") reasons.unshift(`❗ HIGH RISK`);
+    else if (level === "MEDIUM") reasons.unshift(`🔶 MEDIUM RISK`);
+    else reasons.unshift(`✅ LOW RISK`);
+    return { level, score: rawScore.toFixed(1), explanation: reasons.slice(0,4).join(" · ") };
+  }
 
-function login(){
+  // compute network fee in USDT
+  function getFeeUsdt(networks, tokenPrice, isWithdraw = true) {
+    if (!networks.length) return 0;
+    const anyAvailable = networks.find(n => n.available);
+    if (!anyAvailable) return 0;
+    const feeUnits = anyAvailable.feeTokenUnits || 0;
+    return feeUnits * tokenPrice;
+  }
 
-    openApp();
-}
+  // Render networks HTML
+  function renderNetworks(networks, type) {
+    if (!networks || networks.length === 0) return `<div class="text-gray-400">No network info</div>`;
+    return networks.map(n => {
+      const status = n.available ? '✅ Available' : '❌ Disabled';
+      const feeText = n.feeTokenUnits ? `${n.feeTokenUnits} tokens` : 'N/A';
+      const extra = n.minWithdraw ? `min withdraw: ${n.minWithdraw}` : (n.minDeposit ? `min deposit: ${n.minDeposit}` : '');
+      return `<div class="border-b border-gray-200 pb-1"><span class="font-mono">${n.name}</span> — ${status} • fee: ${feeText} ${extra ? ` • ${extra}` : ''}</div>`;
+    }).join('');
+  }
 
-function openApp(){
-
-    document.getElementById("authPage").style.display="none";
-
-    document.getElementById("appPage").classList.remove("hiddenPage");
-
-    renderOpportunities();
-}
-
-function renderOpportunities(){
-
-    const container=document.getElementById("opportunitiesContainer");
-
-    container.innerHTML="";
-
-    opportunities.forEach((o,index)=>{
-
-        container.innerHTML += `
-        
-        <div onclick="openDetails(${index})"
-        class="card glass rounded-3xl p-5">
-
-        <div class="flex justify-between items-center">
-
-        <div>
-
-        <h2 class="text-2xl font-bold mb-1">
-        ${o.coin}
-        </h2>
-
-        <p class="text-slate-400 text-sm">
-        ${o.buyExchange} → ${o.sellExchange}
-        </p>
-
-        </div>
-
-        <div class="text-right">
-
-        <p class="green text-2xl font-bold">
-        ${o.spread}%
-        </p>
-
-        <p class="text-slate-400 text-sm">
-        spread
-        </p>
-
-        </div>
-
-        </div>
-
-        <div class="flex justify-between mt-4 text-sm">
-
-        <div>
-        <p class="text-slate-500">
-        Liquidity
-        </p>
-
-        <p>
-        ${o.liquidity}
-        </p>
-        </div>
-
-        <div>
-        <p class="text-slate-500">
-        Arrival
-        </p>
-
-        <p>
-        ${o.arrival}
-        </p>
-        </div>
-
-        <div>
-        <p class="text-slate-500">
-        Risk
-        </p>
-
-        <p class="${
-            o.risk=="LOW"
-            ?"green"
-            :o.risk=="MEDIUM"
-            ?"yellow"
-            :"red"
-        }">
-        ${o.risk}
-        </p>
-        </div>
-
-        </div>
-
-        </div>
-        
-        `;
+  // Chart for detail page
+  let detailChart = null;
+  function renderDetailChart(historical, name) {
+    const ctx = document.getElementById('detailTrendChart').getContext('2d');
+    if (detailChart) detailChart.destroy();
+    detailChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: historical.map((_,i)=>`t-${historical.length-i}`), datasets: [{ label: `${name} spread %`, data: historical, borderColor: '#4f46e5', tension: 0.2, fill: true }] },
+      options: { responsive: true, maintainAspectRatio: true }
     });
-}
+  }
 
-function openDetails(index){
-
-    const o=opportunities[index];
-
-    document.getElementById("homePage").classList.add("hiddenPage");
-
-    document.getElementById("detailsPage").classList.remove("hiddenPage");
-
-    document.getElementById("coinName").innerText=o.coin;
-
-    document.getElementById("buyExchange").innerText=o.buyExchange;
-
-    document.getElementById("sellExchange").innerText=o.sellExchange;
-
-    document.getElementById("buyPrice").innerText="$"+o.buyPrice;
-
-    document.getElementById("sellPrice").innerText="$"+o.sellPrice;
-
-    document.getElementById("spread").innerText=o.spread+"%";
-
-    document.getElementById("liquidity").innerText=o.liquidity;
-
-    document.getElementById("arrival").innerText=o.arrival;
-
-    document.getElementById("riskBox").innerHTML=`
+  // fill detail view with selected opportunity
+  let currentOpp = null;
+  function showDetailView(opp) {
+    currentOpp = opp;
+    // Basic info
+    document.getElementById('detailOppName').innerText = opp.name;
+    document.getElementById('buyExchangeName').innerHTML = `${opp.buyExchange} <span class="text-xs text-gray-500">(buy)</span>`;
+    document.getElementById('sellExchangeName').innerHTML = `${opp.sellExchange} <span class="text-xs text-gray-500">(sell)</span>`;
+    document.getElementById('buyPriceDetail').innerText = opp.buyPrice.toFixed(8);
+    document.getElementById('sellPriceDetail').innerText = opp.sellPrice.toFixed(8);
+    document.getElementById('detailSpreadPercent').innerText = `${opp.spreadPercent.toFixed(2)}%`;
     
-    <div class="flex justify-between items-center">
-
-    <div>
-
-    <p class="text-lg font-bold">
-    ${o.risk} RISK
-    </p>
-
-    <p class="text-slate-400 text-sm mt-1">
-    AI analyzed spread volatility, liquidity and transfer networks.
-    </p>
-
-    </div>
-
-    <div class="${
-        o.risk=="LOW"
-        ?"green"
-        :o.risk=="MEDIUM"
-        ?"yellow"
-        :"red"
-    } text-2xl">
-    ●
-    </div>
-
-    </div>
+    const tradable = isTradable(opp);
+    const tradableHtml = tradable ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ TRADABLE</span>' : '<span class="bg-red-100 text-red-700 px-2 py-1 rounded-full">✗ NOT TRADABLE</span>';
+    document.getElementById('detailTradableBadge').innerHTML = tradableHtml;
     
-    `;
-
-    document.getElementById("withdrawNetworks").innerHTML=
-    o.withdrawNetworks.map(n=>`
-
-        <div class="networkBox">
-
-        <div class="flex justify-between">
-        <span>${n.name}</span>
-        <span class="green">${n.status}</span>
+    // Networks: withdraw networks for buy exchange, deposit networks for sell exchange
+    document.getElementById('buyWithdrawNetworks').innerHTML = renderNetworks(opp.buyWithdrawNetworks, 'withdraw');
+    document.getElementById('sellDepositNetworks').innerHTML = renderNetworks(opp.sellDepositNetworks, 'deposit');
+    
+    // fees USDT
+    const buyFeeUsdt = getFeeUsdt(opp.buyWithdrawNetworks, opp.buyPrice, true);
+    const sellFeeUsdt = getFeeUsdt(opp.sellDepositNetworks, opp.sellPrice, false);
+    document.getElementById('buyFeeUsdtDetail').innerHTML = `$${buyFeeUsdt.toFixed(4)}`;
+    document.getElementById('sellFeeUsdtDetail').innerHTML = `$${sellFeeUsdt.toFixed(4)}`;
+    
+    // AI risk
+    const risk = computeAIRisk(opp);
+    let riskClass = risk.level === 'LOW' ? 'risk-badge-low' : (risk.level === 'MEDIUM' ? 'risk-badge-med' : 'risk-badge-high');
+    document.getElementById('riskRatingDetail').innerHTML = `${risk.level} RISK`;
+    document.getElementById('riskRatingDetail').className = `text-2xl font-bold px-3 py-1 rounded-full text-white ${riskClass}`;
+    document.getElementById('riskScoreDetail').innerText = risk.score;
+    document.getElementById('riskExplanationDetail').innerHTML = `<i class="fas fa-microchip"></i> ${risk.explanation}`;
+    
+    // chart
+    renderDetailChart(opp.historicalSpreads, opp.name);
+    
+    // switch views
+    document.getElementById('listView').classList.add('hide');
+    document.getElementById('detailView').classList.add('active');
+  }
+  
+  function hideDetailView() {
+    document.getElementById('listView').classList.remove('hide');
+    document.getElementById('detailView').classList.remove('active');
+    if (detailChart) { detailChart.destroy(); detailChart = null; }
+  }
+  
+  // Render opportunities list (cards with tradable & risk badges)
+  function renderOpportunitiesList() {
+    const container = document.getElementById('opportunitiesListContainer');
+    container.innerHTML = '';
+    opportunities.forEach(opp => {
+      const tradable = isTradable(opp);
+      const risk = computeAIRisk(opp);
+      const tradableBadge = tradable ? '<span class="bg-emerald-100 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">✅ Tradable</span>' : '<span class="bg-rose-100 text-rose-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">❌ Not tradable</span>';
+      let riskBadge = '';
+      if (risk.level === 'LOW') riskBadge = '<span class="bg-green-100 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">🟢 Low Risk</span>';
+      else if (risk.level === 'MEDIUM') riskBadge = '<span class="bg-yellow-100 text-yellow-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">🟡 Medium Risk</span>';
+      else riskBadge = '<span class="bg-red-100 text-red-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">🔴 High Risk</span>';
+      
+      const card = document.createElement('div');
+      card.className = 'opportunity-card p-4 flex justify-between items-center hover:bg-indigo-50/40 border-b border-gray-100';
+      card.innerHTML = `
+        <div>
+          <div class="font-bold text-gray-800 text-lg">${opp.name}</div>
+          <div class="flex gap-2 text-xs text-gray-500 flex-wrap">${opp.buyExchange} → ${opp.sellExchange}  <span class="text-indigo-600 font-mono">${opp.spreadPercent.toFixed(2)}%</span></div>
+          <div class="flex gap-1 mt-1">${tradableBadge} ${riskBadge}</div>
         </div>
-
-        <div class="text-sm text-slate-400 mt-1">
-        Fee: ${n.fee}
-        </div>
-
-        <div class="text-sm text-slate-400">
-        ETA: ${n.eta}
-        </div>
-
-        </div>
-
-    `).join("");
-
-    document.getElementById("depositNetworks").innerHTML=
-    o.depositNetworks.map(n=>`
-
-        <div class="networkBox">
-
-        <div class="flex justify-between">
-        <span>${n.name}</span>
-        <span class="green">${n.status}</span>
-        </div>
-
-        <div class="text-sm text-slate-400 mt-1">
-        Fee: ${n.fee}
-        </div>
-
-        <div class="text-sm text-slate-400">
-        ETA: ${n.eta}
-        </div>
-
-        </div>
-
-    `).join("");
-
-    if(chart){
-        chart.destroy();
-    }
-
-    const ctx=document.getElementById("trendChart");
-
-    chart=new Chart(ctx,{
-        type:"line",
-        data:{
-            labels:["1","2","3","4","5","6"],
-            datasets:[{
-                label:"Spread %",
-                data:o.trend,
-                borderColor:"#22c55e",
-                backgroundColor:"rgba(34,197,94,.2)",
-                tension:.4,
-                fill:true
-            }]
-        },
-        options:{
-            responsive:true,
-            plugins:{
-                legend:{
-                    labels:{
-                        color:"white"
-                    }
-                }
-            },
-            scales:{
-                x:{
-                    ticks:{
-                        color:"white"
-                    }
-                },
-                y:{
-                    ticks:{
-                        color:"white"
-                    }
-                }
-            }
-        }
+        <i class="fas fa-chevron-right text-gray-400"></i>
+      `;
+      card.addEventListener('click', () => showDetailView(opp));
+      container.appendChild(card);
     });
-}
-
-function backHome(){
-
-    document.getElementById("detailsPage").classList.add("hiddenPage");
-
-    document.getElementById("homePage").classList.remove("hiddenPage");
-}
-
-if(localStorage.getItem("arbimineUser")){
-    openApp();
-}
-
+  }
+  
+  // Navigation on list view (optional home/back/next)
+  let listIndex = 0;
+  function updateListSelection(delta) {
+    listIndex = (listIndex + delta + opportunities.length) % opportunities.length;
+    // scroll to card? simple: just highlight
+    const cards = document.querySelectorAll('#opportunitiesListContainer .opportunity-card');
+    cards.forEach((c, i) => {
+      if (i === listIndex) c.style.backgroundColor = '#eef2ff';
+      else c.style.backgroundColor = '';
+    });
+    // auto-open detail? not required but we can show preview? not needed.
+  }
+  document.getElementById('homeListBtn').addEventListener('click', () => { listIndex = 0; updateListSelection(0); });
+  document.getElementById('backListBtn').addEventListener('click', () => updateListSelection(-1));
+  document.getElementById('nextListBtn').addEventListener('click', () => updateListSelection(1));
+  document.getElementById('closeDetailBtn').addEventListener('click', hideDetailView);
+  
+  // initial render
+  renderOpportunitiesList();
+  updateListSelection(0);
+  // pre-load first? ensure detail view hidden
+  document.getElementById('detailView').classList.remove('active');
+  document.getElementById('listView').classList.remove('hide');
 </script>
-
 </body>
 </html>
