@@ -6,132 +6,250 @@
 <title>ArbiMine</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0b1220;
+  color:#fff;
 }
 
-.container {
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 20px;
-  background: #1e293b;
-  border-radius: 10px;
+/* NAV */
+.nav{
+  display:flex;
+  justify-content:space-around;
+  background:#111a2e;
+  padding:12px;
+  position:sticky;
+  top:0;
 }
 
-input, button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 6px;
-  border: none;
+.nav button{
+  background:none;
+  border:none;
+  color:#aaa;
+  font-size:14px;
+  cursor:pointer;
 }
 
-button {
-  background: #22c55e;
-  color: white;
-  cursor: pointer;
+.nav button.active{
+  color:#00ff99;
+  border-bottom:2px solid #00ff99;
 }
 
-button:hover {
-  background: #16a34a;
+/* SECTIONS */
+.section{
+  display:none;
+  padding:15px;
 }
 
-.hidden {
-  display: none;
+.section.active{
+  display:block;
 }
 
-.card {
-  background: #111827;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 8px;
+/* CARD */
+.card{
+  background:#121c33;
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:10px;
+  cursor:pointer;
+}
+
+.symbol{
+  font-size:16px;
+  font-weight:bold;
+  color:#00ff99;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  margin-top:6px;
+  color:#ccc;
+}
+
+.badge{
+  padding:3px 6px;
+  border-radius:5px;
+  font-size:12px;
+}
+
+.green{background:#0f5132;color:#00ff99;}
+.red{background:#5a1a1a;color:#ff5c5c;}
+.blue{background:#1a2a5a;color:#5cb3ff;}
+
+.networks{
+  font-size:11px;
+  color:#aaa;
+  margin-top:8px;
+}
+
+.loading{
+  text-align:center;
+  color:#777;
+  padding:20px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="nav">
+  <button class="active" onclick="tab('home',event)">Home</button>
+  <button onclick="tab('opps',event)">Opportunities</button>
+  <button onclick="tab('pro',event)">Pro</button>
+  <button onclick="tab('profile',event)">Profile</button>
+</div>
 
-  <h2>ArbiMine Login</h2>
+<!-- HOME -->
+<div id="home" class="section active">
+  <h3>ArbiMine Scanner</h3>
+  <p>Live crypto arbitrage opportunities across exchanges.</p>
+</div>
 
-  <div id="auth">
-    <input id="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
+<!-- OPPORTUNITIES -->
+<div id="opps" class="section">
+  <h3>Opportunities</h3>
+  <div id="list" class="loading">Loading...</div>
+</div>
 
-    <button onclick="register()">Register</button>
-    <button onclick="login()">Login</button>
+<!-- PRO -->
+<div id="pro" class="section">
+  <h3>Pro Plan</h3>
+  <p>Upgrade for faster scans & premium alerts.</p>
+</div>
 
-    <p id="msg"></p>
-  </div>
-
-  <div id="app" class="hidden">
-    <h3>Opportunities</h3>
-    <button onclick="loadOpps()">Refresh</button>
-    <div id="opps"></div>
-  </div>
-
+<!-- PROFILE -->
+<div id="profile" class="section">
+  <h3>Profile</h3>
+  <div id="user">Loading...</div>
 </div>
 
 <script>
-const API = "";
 
-async function register() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+function tab(id,e){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
 
-  const res = await fetch("/api/register", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({email, password})
-  });
+  document.getElementById(id).classList.add('active');
+  e.target.classList.add('active');
 
-  const data = await res.json();
-  document.getElementById("msg").innerText =
-    data.error || "Registered successfully";
+  if(id === 'opps') loadOpps();
+  if(id === 'profile') loadUser();
 }
 
-async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+/*
+========================
+LOAD OPPORTUNITIES
+========================
+*/
+async function loadOpps(){
+  const box = document.getElementById('list');
+  box.innerHTML = "Loading...";
 
-  const res = await fetch("/api/login", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({email, password})
-  });
+  try{
+    const res = await fetch('/api/opportunities');
+    const data = await res.json();
 
-  const data = await res.json();
+    if(!data.opportunities || data.opportunities.length === 0){
+      box.innerHTML = "No opportunities found";
+      return;
+    }
 
-  if (data.success) {
-    document.getElementById("auth").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
-    loadOpps();
-  } else {
-    document.getElementById("msg").innerText = data.error;
+    box.innerHTML = "";
+
+    data.opportunities.forEach(op => {
+
+      const buyN = (op.buyNetworks || [])
+        .map(n => `${n.name}:${n.withdraw ? "✔" : "❌"}`)
+        .join(" | ");
+
+      const sellN = (op.sellNetworks || [])
+        .map(n => `${n.name}:${n.deposit ? "✔" : "❌"}`)
+        .join(" | ");
+
+      const card = document.createElement('div');
+      card.className = "card";
+
+      card.innerHTML = `
+        <div class="symbol">${op.symbol}</div>
+
+        <div class="row">
+          <span>${op.buyExchange}</span>
+          <span>${op.buyPrice}</span>
+        </div>
+
+        <div class="row">
+          <span>${op.sellExchange}</span>
+          <span>${op.sellPrice}</span>
+        </div>
+
+        <div class="row">
+          <span class="badge blue">Spread</span>
+          <span class="badge green">${op.spread}%</span>
+        </div>
+
+        <div class="row">
+          <span>Tradable</span>
+          <span class="${op.tradable ? 'green' : 'red'} badge">
+            ${op.tradable ? 'YES' : 'NO'}
+          </span>
+        </div>
+
+        <div class="networks">
+          Buy: ${buyN || "N/A"}<br/>
+          Sell: ${sellN || "N/A"}
+        </div>
+      `;
+
+      card.onclick = () => {
+        alert(
+          `${op.symbol}\nSpread: ${op.spread}%\nBuy: ${op.buyExchange}\nSell: ${op.sellExchange}`
+        );
+      };
+
+      box.appendChild(card);
+    });
+
+  } catch(e){
+    box.innerHTML = "Failed to load data";
   }
 }
 
-async function loadOpps() {
-  const res = await fetch("/api/opportunities");
-  const data = await res.json();
+/*
+========================
+PROFILE
+========================
+*/
+async function loadUser(){
+  const box = document.getElementById('user');
 
-  const box = document.getElementById("opps");
-  box.innerHTML = "";
+  try{
+    const token = localStorage.getItem('token');
 
-  data.forEach(o => {
-    box.innerHTML += `
-      <div class="card">
-        <b>${o.pair}</b><br>
-        Profit: ${o.profit}<br>
-        Route: ${o.exchange}
-      </div>
+    const res = await fetch('/api/me',{
+      headers:{ Authorization: token }
+    });
+
+    const data = await res.json();
+
+    if(data.error){
+      box.innerHTML = "Not logged in";
+      return;
+    }
+
+    box.innerHTML = `
+      <p><b>User:</b> ${data.username}</p>
+      <p><b>Email:</b> ${data.email}</p>
+      <p><b>M-Pesa:</b> ${data.mpesa}</p>
     `;
-  });
+
+  }catch(e){
+    box.innerHTML = "Error loading profile";
+  }
 }
+
 </script>
 
 </body>
