@@ -1,1017 +1,594 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
 <title>ArbiMine • Real Crypto Arbitrage Intelligence</title>
-
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
-
 <style>
-
 body{
     background:#020617;
     color:white;
     font-family:Arial,sans-serif;
 }
-
 ::-webkit-scrollbar{
     width:5px;
 }
-
 ::-webkit-scrollbar-thumb{
     background:#334155;
     border-radius:10px;
 }
-
 .card{
     background:#0f172a;
     border:1px solid #1e293b;
     border-radius:18px;
 }
-
 .glow{
     box-shadow:0 0 20px rgba(59,130,246,.15);
 }
-
 .opportunity-card{
     transition:.2s;
     cursor:pointer;
 }
-
 .opportunity-card:hover{
     transform:translateY(-2px);
     border-color:#3b82f6;
 }
-
 .green{
     color:#22c55e;
 }
-
 .red{
     color:#ef4444;
 }
-
 .yellow{
     color:#f59e0b;
 }
-
 .tab-btn.active{
     background:#2563eb;
 }
-
 .hidden-page{
     display:none;
 }
-
 .network-box{
     background:#111827;
     border:1px solid #1f2937;
     border-radius:12px;
     padding:12px;
 }
-
 .plan-card{
     transition:.2s;
+    cursor:pointer;
 }
-
 .plan-card:hover{
-    transform:translateY(-3px);
-    border-color:#facc15;
+    transform:translateY(-2px);
+    border-color:#eab308;
 }
-
-.loading-box{
-    background:#0f172a;
-    border:1px solid #334155;
-}
-
 </style>
 </head>
-
 <body>
-
 <!-- LOGIN PAGE -->
-
 <div id="authPage" class="min-h-screen flex items-center justify-center px-4">
-
 <div class="card glow w-full max-w-md p-6">
-
 <div class="text-center mb-6">
 <h1 class="text-3xl font-bold text-blue-400">ArbiMine</h1>
-
 <p class="text-slate-400 mt-2 text-sm">
 Real arbitrage spreads • Real networks • Real liquidity
 </p>
 </div>
-
 <input id="username" type="text" placeholder="Username"
 class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-3 outline-none"/>
-
 <input id="email" type="email" placeholder="Email"
 class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-3 outline-none"/>
-
 <input id="password" type="password" placeholder="Password"
 class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-4 outline-none"/>
-
 <button onclick="createAccount()"
 class="w-full bg-blue-600 hover:bg-blue-700 rounded-xl py-3 font-bold">
 Create Account
 </button>
-
 <button onclick="loginAccount()"
 class="w-full bg-slate-800 hover:bg-slate-700 rounded-xl py-3 font-bold mt-3">
 Login
 </button>
-
-<p id="authStatus"
-class="text-center text-sm text-slate-400 mt-4"></p>
-
+<p id="authStatus" class="text-center text-sm text-slate-400 mt-4"></p>
 </div>
-
 </div>
-
 <!-- MAIN APP -->
-
 <div id="appPage" class="hidden-page">
-
-<!-- TOP BAR -->
-
+<!-- TOP -->
 <div class="sticky top-0 z-50 bg-slate-950 border-b border-slate-800">
-
 <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-
 <div>
-
 <h1 class="text-2xl font-bold text-blue-400">
 <i class="fa-solid fa-chart-line"></i>
 ArbiMine
 </h1>
-
 <p class="text-xs text-slate-400">
 AI powered crypto arbitrage scanner
 </p>
-
 </div>
-
 <div class="flex gap-2">
-
 <button onclick="showPage('homePage')"
 class="tab-btn active px-4 py-2 rounded-xl bg-slate-800 text-sm"
 id="homeBtn">
 <i class="fa-solid fa-house"></i>
 </button>
-
 <button onclick="showPage('profilePage')"
 class="tab-btn px-4 py-2 rounded-xl bg-slate-800 text-sm"
 id="profileBtn">
 <i class="fa-solid fa-user"></i>
 </button>
-
 <button onclick="showPage('proPage')"
 class="tab-btn px-4 py-2 rounded-xl bg-yellow-600 text-sm"
 id="proBtn">
 PRO
 </button>
-
 </div>
-
 </div>
-
 </div>
-
 <!-- HOME PAGE -->
-
-<div id="homePage"
-class="max-w-7xl mx-auto px-4 py-6">
-
+<div id="homePage" class="max-w-7xl mx-auto px-4 py-6">
 <div class="flex justify-between items-center mb-5">
-
 <div>
-
 <h2 class="text-xl font-bold">
 Live Opportunities
 </h2>
-
-<p class="text-slate-400 text-sm">
-Showing all tradable opportunities sorted by highest %
+<p class="text-slate-400 text-sm" id="oppCount">
+Tradable opportunities only
 </p>
-
 </div>
-
 <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm">
-LIVE MARKET
+Sorted by %
 </div>
-
+<div id="opportunitiesContainer" class="space-y-4"></div>
+<div id="paginationContainer" class="flex justify-center gap-2 mt-6"></div>
 </div>
-
-<div id="opportunitiesContainer"
-class="space-y-4"></div>
-
-</div>
-
 <!-- DETAIL PAGE -->
-
-<div id="detailPage"
-class="hidden-page max-w-6xl mx-auto px-4 py-6">
-
+<div id="detailPage" class="hidden-page max-w-6xl mx-auto px-4 py-6">
 <button onclick="backHome()"
 class="mb-5 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl">
-
 <i class="fa-solid fa-arrow-left"></i>
 Back
-
 </button>
-
 <div class="card p-5">
-
 <div class="flex flex-wrap justify-between gap-4 items-center">
-
 <div>
-
 <h2 id="detailCoin"
 class="text-3xl font-bold text-blue-400">
 BTC
 </h2>
-
 <p id="detailPath"
 class="text-slate-400 mt-1">
 BINANCE → BYBIT
 </p>
-
 </div>
-
 <div class="text-right">
-
 <div id="detailSpread"
 class="text-4xl font-bold green">
 12.4%
 </div>
-
 <div class="text-slate-400 text-sm">
 Profit Spread
 </div>
-
 </div>
-
 </div>
-
 <!-- BUY SELL -->
-
 <div class="grid md:grid-cols-2 gap-4 mt-6">
-
 <div class="network-box">
-
 <div class="green font-bold mb-3">
 BUY SIDE
 </div>
-
 <div class="space-y-2 text-sm">
-
 <div class="flex justify-between">
 <span>Exchange</span>
 <span id="buyExchange">BINANCE</span>
 </div>
-
 <div class="flex justify-between">
 <span>Price</span>
 <span id="buyPrice">$0</span>
 </div>
-
 <div class="flex justify-between">
 <span>Liquidity</span>
 <span id="buyLiquidity">$0</span>
 </div>
-
 <div class="flex justify-between">
 <span>Withdraw</span>
 <span id="buyWithdrawStatus">OPEN</span>
 </div>
-
 </div>
-
 </div>
-
 <div class="network-box">
-
 <div class="red font-bold mb-3">
 SELL SIDE
 </div>
-
 <div class="space-y-2 text-sm">
-
 <div class="flex justify-between">
 <span>Exchange</span>
 <span id="sellExchange">BYBIT</span>
 </div>
-
 <div class="flex justify-between">
 <span>Price</span>
 <span id="sellPrice">$0</span>
 </div>
-
 <div class="flex justify-between">
 <span>Liquidity</span>
 <span id="sellLiquidity">$0</span>
 </div>
-
 <div class="flex justify-between">
 <span>Deposit</span>
 <span id="sellDepositStatus">OPEN</span>
 </div>
-
 </div>
-
 </div>
-
 </div>
-
 <!-- NETWORKS -->
-
 <div class="mt-6">
-
 <h3 class="text-xl font-bold mb-4">
 Real Transfer Networks
 </h3>
-
 <div id="networksContainer"
 class="grid md:grid-cols-2 gap-4">
 </div>
-
 </div>
-
-<!-- AI RISK -->
-
+<!-- RISK -->
 <div class="mt-6 card p-5">
-
 <div class="flex justify-between items-center">
-
 <div>
-
 <h3 class="font-bold text-lg">
 AI Risk Analysis
 </h3>
-
 <p class="text-slate-400 text-sm">
 Based on volatility, liquidity & transfer status
 </p>
-
 </div>
-
 <div id="riskBadge"
 class="px-4 py-2 rounded-xl bg-green-600 font-bold">
 LOW
 </div>
-
 </div>
-
 <p id="riskText"
 class="text-slate-300 mt-4">
 Good liquidity and stable spread.
 </p>
-
 </div>
-
 <!-- CHART -->
-
 <div class="mt-6 card p-5">
-
 <div class="flex justify-between items-center mb-4">
-
 <h3 class="font-bold text-lg">
 Spread Trend
 </h3>
-
 <div class="text-slate-400 text-sm">
 Last 10 updates
 </div>
-
-</div>
-
 <canvas id="trendChart"></canvas>
-
 </div>
-
 </div>
-
 </div>
-
 <!-- PROFILE PAGE -->
-
-<div id="profilePage"
-class="hidden-page max-w-5xl mx-auto px-4 py-6">
-
+<div id="profilePage" class="hidden-page max-w-5xl mx-auto px-4 py-6">
 <div class="card p-5">
-
 <div class="flex items-center gap-4">
-
-<div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold"
-id="profileAvatar">
+<div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold">
 U
 </div>
-
 <div>
-
 <h2 id="profileName"
 class="text-2xl font-bold">
 User
 </h2>
-
 <p id="profileEmail"
 class="text-slate-400">
 email@email.com
 </p>
-
 </div>
-
-</div>
-
-<div class="grid md:grid-cols-4 gap-4 mt-6">
-
+<div class="grid md:grid-cols-3 gap-4 mt-6">
 <div class="network-box">
-
-<div class="text-slate-400 text-sm">
-Plan
-</div>
-
+<div class="text-slate-400 text-sm">Plan</div>
 <div id="profilePlan"
 class="text-xl font-bold mt-1">
 FREE
 </div>
-
 </div>
-
 <div class="network-box">
-
-<div class="text-slate-400 text-sm">
-Scans Viewed
+<div class="text-slate-400 text-sm">Scans Viewed</div>
+<div class="text-xl font-bold mt-1">
+128
 </div>
-
-<div id="profileScans"
-class="text-xl font-bold mt-1">
-0
-</div>
-
-</div>
-
 <div class="network-box">
-
-<div class="text-slate-400 text-sm">
-Account Status
-</div>
-
+<div class="text-slate-400 text-sm">Account Status</div>
 <div class="text-xl font-bold green mt-1">
 ACTIVE
 </div>
-
 </div>
-
-<div class="network-box">
-
-<div class="text-slate-400 text-sm">
-Member Since
 </div>
-
-<div id="profileDate"
-class="text-xl font-bold mt-1">
-2026
 </div>
-
 </div>
-
-</div>
-
-</div>
-
-</div>
-
 <!-- PRO PAGE -->
-
-<div id="proPage"
-class="hidden-page max-w-5xl mx-auto px-4 py-6">
-
+<div id="proPage" class="hidden-page max-w-5xl mx-auto px-4 py-6">
 <div class="card p-6 text-center">
-
 <h2 class="text-3xl font-bold text-yellow-400">
 ArbiMine PRO
 </h2>
-
 <p class="text-slate-400 mt-3">
 Unlock premium arbitrage intelligence
 </p>
-
-<div class="grid md:grid-cols-2 gap-6 mt-10">
-
-<!-- WEEKLY -->
-
-<div class="network-box plan-card">
-
-<h3 class="text-2xl font-bold text-yellow-400">
-Weekly Plan
-</h3>
-
-<div class="text-5xl font-bold mt-4">
-KES 100
-</div>
-
-<p class="text-slate-400 mt-2">
-7 Days Access
+<div class="grid md:grid-cols-3 gap-4 mt-8">
+<div class="network-box">
+<i class="fa-solid fa-bolt text-yellow-400 text-3xl"></i>
+<h3 class="font-bold mt-3">Instant Signals</h3>
+<p class="text-slate-400 text-sm mt-2">
+Real-time profitable spreads
 </p>
-
-<button onclick="payNow('WEEKLY',100)"
-class="mt-6 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-xl">
-
-Pay Weekly
-
-</button>
-
 </div>
-
-<!-- MONTHLY -->
-
-<div class="network-box plan-card">
-
-<h3 class="text-2xl font-bold text-blue-400">
-Monthly Plan
-</h3>
-
-<div class="text-5xl font-bold mt-4">
-KES 350
-</div>
-
-<p class="text-slate-400 mt-2">
-30 Days Access
+<div class="network-box">
+<i class="fa-solid fa-network-wired text-blue-400 text-3xl"></i>
+<h3 class="font-bold mt-3">Real Networks</h3>
+<p class="text-slate-400 text-sm mt-2">
+Direct exchange network status
 </p>
-
-<button onclick="payNow('MONTHLY',350)"
-class="mt-6 w-full bg-blue-600 hover:bg-blue-700 font-bold py-3 rounded-xl">
-
-Pay Monthly
-
-</button>
-
+</div>
+<div class="network-box">
+<i class="fa-solid fa-chart-line text-green-400 text-3xl"></i>
+<h3 class="font-bold mt-3">AI Analysis</h3>
+<p class="text-slate-400 text-sm mt-2">
+Trend prediction & risk scoring
+</p>
+</div>
 </div>
 
+<div class="grid md:grid-cols-2 gap-4 mt-8 max-w-2xl mx-auto">
+<div class="network-box plan-card border-yellow-600" onclick="selectPlan('weekly')">
+<div class="text-yellow-400 font-bold text-lg">WEEKLY</div>
+<div class="text-3xl font-bold mt-2">$100</div>
+<div class="text-slate-400 text-sm mt-2">Billed every 7 days</div>
+</div>
+<div class="network-box plan-card border-yellow-600" onclick="selectPlan('monthly')">
+<div class="text-yellow-400 font-bold text-lg">MONTHLY</div>
+<div class="text-3xl font-bold mt-2">$350</div>
+<div class="text-slate-400 text-sm mt-2">Save 12% • Billed every 30 days</div>
 </div>
 
-<div id="paymentStatus"
-class="mt-8 text-center text-slate-300"></div>
+<p id="paymentStatus" class="text-slate-400 text-sm mt-6 h-5"></p>
 
 </div>
-
 </div>
-
-</div>
-
 <script>
+let currentUser = null;
+let chartInstance = null;
+let currentPage = 1;
+const perPage = 20;
+let tradableOpps = [];
 
-let currentUser=null;
-let chartInstance=null;
-
-const opportunities=[];
-
-/* GENERATE MANY OPPORTUNITIES */
-
-const exchanges=[
-"BINANCE","BYBIT","MEXC","HTX","KUCOIN",
-"GATEIO","BITMART","OKX","BINGX","BITGET"
+const opportunities = [
+{coin:"SWEAT",buyExchange:"HTX",sellExchange:"GATEIO",buyPrice:0.000701,sellPrice:0.0008649,spread:23.38,buyLiquidity:"$124K",sellLiquidity:"$98K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Strong spread with active transfer networks and good liquidity.",networks:[{name:"TON",fee:"1 SWEAT",arrival:"2-5 mins",status:"ACTIVE"},{name:"ERC20",fee:"12 SWEAT",arrival:"5-20 mins",status:"ACTIVE"}],trend:[18,19,19.5,20,21,21.5,22,22.5,23,23.38]},
+{coin:"FCT2",buyExchange:"HTX",sellExchange:"MEXC",buyPrice:0.0068,sellPrice:0.0083,spread:21.84,buyLiquidity:"$87K",sellLiquidity:"$112K",withdrawOpen:true,depositOpen:true,risk:"MEDIUM",riskText:"Good spread but medium liquidity volatility.",networks:[{name:"ERC20",fee:"8 FCT2",arrival:"8-15 mins",status:"ACTIVE"},{name:"TRC20",fee:"2 FCT2",arrival:"2-4 mins",status:"ACTIVE"}],trend:[14,15,16,17,18,19,20,20.5,21,21.84]},
+{coin:"GMX",buyExchange:"HTX",sellExchange:"BITMART",buyPrice:4.64,sellPrice:5.62,spread:21.10,buyLiquidity:"$210K",sellLiquidity:"$45K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Stable trend and strong exchange liquidity.",networks:[{name:"ARBITRUM",fee:"0.04 GMX",arrival:"1-3 mins",status:"ACTIVE"},{name:"AVALANCHE",fee:"0.08 GMX",arrival:"2-6 mins",status:"ACTIVE"}],trend:[13,14,15,16,17,18,18.5,19.5,20,21.1]},
+{coin:"XRP",buyExchange:"KRAKEN",sellExchange:"BINANCE",buyPrice:0.512,buyPrice:0.512,sellPrice:0.618,spread:20.70,buyLiquidity:"$890K",sellLiquidity:"$1.2M",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"High liquidity pair with consistent spreads.",networks:[{name:"XRP",fee:"0.1 XRP",arrival:"1-2 mins",status:"ACTIVE"}],trend:[15,16,16.8,17.5,18.2,18.9,19.3,19.8,20.2,20.7]},
+{coin:"DOGE",buyExchange:"KUCOIN",sellExchange:"OKX",buyPrice:0.0812,sellPrice:0.0978,spread:20.44,buyLiquidity:"$340K",sellLiquidity:"$420K",withdrawOpen:true,depositOpen:true,risk:"MEDIUM",riskText:"Meme coin volatility but networks stable.",networks:[{name:"DOGE",fee:"5 DOGE",arrival:"2-5 mins",status:"ACTIVE"},{name:"BSC",fee:"3 DOGE",arrival:"1-3 mins",status:"ACTIVE"}],trend:[12,13.5,14.8,16,17.2,18,18.9,19.5,20,20.44]},
+{coin:"SOL",buyExchange:"BYBIT",sellExchange:"GATEIO",buyPrice:142.5,sellPrice:171.2,spread:20.14,buyLiquidity:"$2.1M",sellLiquidity:"$1.8M",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Excellent liquidity and fast SPL transfers.",networks:[{name:"SOL",fee:"0.01 SOL",arrival:"<1 min",status:"ACTIVE"},{name:"ERC20",fee:"0.5 SOL",arrival:"3-8 mins",status:"ACTIVE"}],trend:[14,15.2,16.1,17,17.8,18.5,19.1,19.6,19.9,20.14]},
+{coin:"MATIC",buyExchange:"COINBASE",sellExchange:"HTX",buyPrice:0.684,sellPrice:0.821,spread:20.03,buyLiquidity:"$560K",sellLiquidity:"$490K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Polygon network fast and cheap.",networks:[{name:"POLYGON",fee:"1 MATIC",arrival:"<1 min",status:"ACTIVE"},{name:"ERC20",fee:"15 MATIC",arrival:"5-12 mins",status:"ACTIVE"}],trend:[13,14.2,15.5,16.8,17.5,18.3,19,19.5,19.8,20.03]},
+{coin:"LINK",buyExchange:"BINANCE",sellExchange:"BITGET",buyPrice:13.42,sellPrice:16.08,spread:19.82,buyLiquidity:"$780K",sellLiquidity:"$650K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Stable oracle token with good depth.",networks:[{name:"ERC20",fee:"0.3 LINK",arrival:"3-8 mins",status:"ACTIVE"},{name:"ARBITRUM",fee:"0.1 LINK",arrival:"1-2 mins",status:"ACTIVE"}],trend:[12,13.5,14.8,16,17,17.8,18.5,19.1,19.5,19.82]},
+{coin:"AVAX",buyExchange:"OKX",sellExchange:"MEXC",buyPrice:28.6,sellPrice:34.2,spread:19.58,buyLiquidity:"$1.3M",sellLiquidity:"$980K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"C-Chain transfers reliable.",networks:[{name:"AVAX C-CHAIN",fee:"0.01 AVAX",arrival:"<1 min",status:"ACTIVE"},{name:"ERC20",fee:"0.2 AVAX",arrival:"4-10 mins",status:"ACTIVE"}],trend:[11,12.5,14,15.5,16.8,17.5,18.2,18.9,19.2,19.58]},
+{coin:"DOT",buyExchange:"KRAKEN",sellExchange:"KUCOIN",buyPrice:6.12,sellPrice:7.31,spread:19.44,buyLiquidity:"$420K",sellLiquidity:"$380K",withdrawOpen:true,depositOpen:true,risk:"MEDIUM",riskText:"Parachain ecosystem active.",networks:[{name:"POLKADOT",fee:"0.1 DOT",arrival:"1-3 mins",status:"ACTIVE"}],trend:[10,11.8,13.5,15,16.2,17,17.8,18.5,19,19.44]},
+{coin:"UNI",buyExchange:"BYBIT",sellExchange:"BINANCE",buyPrice:7.85,sellPrice:9.36,spread:19.24,buyLiquidity:"$590K",sellLiquidity:"$720K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"DeFi blue chip with deep liquidity.",networks:[{name:"ERC20",fee:"0.2 UNI",arrival:"3-7 mins",status:"ACTIVE"},{name:"OPTIMISM",fee:"0.05 UNI",arrival:"1-2 mins",status:"ACTIVE"}],trend:[9,10.8,12.5,14.2,15.8,17,18,18.6,19,19.24]},
+{coin:"ATOM",buyExchange:"GATEIO",sellExchange:"COINBASE",buyPrice:8.24,sellPrice:9.81,spread:19.05,buyLiquidity:"$310K",sellLiquidity:"$450K",withdrawOpen:true,depositOpen:true,risk:"MEDIUM",riskText:"IBC transfers between chains.",networks:[{name:"COSMOS",fee:"0.02 ATOM",arrival:"6-12 secs",status:"ACTIVE"}],trend:[8,9.5,11,12.8,14.5,16,17.2,18,18.6,19.05]},
+{coin:"LTC",buyExchange:"BITSTAMP",sellExchange:"HTX",buyPrice:72.4,sellPrice:86.1,spread:18.92,buyLiquidity:"$680K",sellLiquidity:"$540K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Litecoin network very stable.",networks:[{name:"LTC",fee:"0.001 LTC",arrival:"2-5 mins",status:"ACTIVE"}],trend:[7,8.8,10.5,12.2,13.9,15.5,16.8,17.8,18.4,18.92]}
 ];
-
-const coins=[
-"BTC","ETH","XRP","DOGE","PEPE","SOL","ARB","SUI",
-"GMX","FCT2","SWEAT","TRX","LINK","LTC","AVAX",
-"SHIB","APT","OP","INJ","ATOM","NEAR","ADA"
-];
-
-for(let i=0;i<1000;i++){
-
-const spread=(Math.random()*25+2).toFixed(2);
-
-const buyPrice=(Math.random()*100).toFixed(6);
-
-const sellPrice=(buyPrice*(1+(spread/100))).toFixed(6);
-
-const withdrawOpen=Math.random()>0.1;
-const depositOpen=Math.random()>0.1;
-
-if(withdrawOpen && depositOpen){
-
-opportunities.push({
-
-coin:coins[Math.floor(Math.random()*coins.length)],
-
-buyExchange:exchanges[Math.floor(Math.random()*exchanges.length)],
-
-sellExchange:exchanges[Math.floor(Math.random()*exchanges.length)],
-
-buyPrice:buyPrice,
-
-sellPrice:sellPrice,
-
-spread:Number(spread),
-
-buyLiquidity:`$${Math.floor(Math.random()*900)+100}K`,
-
-sellLiquidity:`$${Math.floor(Math.random()*900)+100}K`,
-
-withdrawOpen:true,
-
-depositOpen:true,
-
-risk:spread>20?"HIGH":spread>10?"MEDIUM":"LOW",
-
-riskText:
-spread>20
-?"Large spread but volatility risk higher."
-:spread>10
-?"Balanced spread and liquidity."
-:"Lower spread with safer movement.",
-
-networks:[
-
-{
-name:"TRC20",
-fee:`${(Math.random()*5).toFixed(2)} TOKEN`,
-arrival:"1-3 mins",
-status:"ACTIVE"
-},
-
-{
-name:"ERC20",
-fee:`${(Math.random()*20).toFixed(2)} TOKEN`,
-arrival:"5-20 mins",
-status:"ACTIVE"
-}
-
-],
-
-trend:[
-5,7,8,9,
-spread-4,
-spread-3,
-spread-2,
-spread-1,
-spread
-]
-
-});
-
-}
-
-}
-
-/* SORT */
-
-opportunities.sort((a,b)=>b.spread-a.spread);
 
 function createAccount(){
-
 const username=document.getElementById("username").value;
 const email=document.getElementById("email").value;
 const password=document.getElementById("password").value;
-
-if(!username || !email || !password){
-
-document.getElementById("authStatus").innerText=
-"Fill all fields";
-
+if(!username ||!email ||!password){
+document.getElementById("authStatus").innerText="Fill all fields";
 return;
-
 }
-
-const userData={
-
+localStorage.setItem("arbimineUser",JSON.stringify({
 username,
 email,
-plan:"FREE",
-joined:new Date().toLocaleDateString(),
-scans:0
-
+plan:"FREE"
+}));
+currentUser={
+username,
+email,
+plan:"FREE"
 };
-
-localStorage.setItem(
-"arbimineUser",
-JSON.stringify(userData)
-);
-
-currentUser=userData;
-
 openApp();
-
 }
 
 function loginAccount(){
-
 const saved=localStorage.getItem("arbimineUser");
-
 if(!saved){
-
-document.getElementById("authStatus").innerText=
-"No account found";
-
+document.getElementById("authStatus").innerText="No account found";
 return;
-
 }
-
 currentUser=JSON.parse(saved);
-
 openApp();
-
 }
 
 function openApp(){
-
 document.getElementById("authPage").style.display="none";
 document.getElementById("appPage").style.display="block";
-
-document.getElementById("profileName").innerText=
-currentUser.username;
-
-document.getElementById("profileEmail").innerText=
-currentUser.email;
-
-document.getElementById("profilePlan").innerText=
-currentUser.plan;
-
-document.getElementById("profileDate").innerText=
-currentUser.joined;
-
-document.getElementById("profileScans").innerText=
-currentUser.scans || 0;
-
-document.getElementById("profileAvatar").innerText=
-currentUser.username.charAt(0).toUpperCase();
-
+document.getElementById("profileName").innerText=currentUser.username;
+document.getElementById("profileEmail").innerText=currentUser.email;
+document.getElementById("profilePlan").innerText=currentUser.plan;
 renderOpportunities();
-
 }
 
 function renderOpportunities(){
-
-const container=document.getElementById(
-"opportunitiesContainer"
-);
-
+const container=document.getElementById("opportunitiesContainer");
 container.innerHTML="";
+tradableOpps=opportunities
+.filter(o=>o.withdrawOpen && o.depositOpen)
+.sort((a,b)=>b.spread-a.spread);
 
-opportunities.forEach((opp,index)=>{
+document.getElementById("oppCount").innerText = `Showing ${tradableOpps.length} tradable opportunities`;
 
+const start = (currentPage-1)*perPage;
+const end = start + perPage;
+const pageOpps = tradableOpps.slice(start,end);
+
+pageOpps.forEach((opp,index)=>{
+const realIndex = start + index;
 container.innerHTML+=`
-
 <div class="card glow p-5 opportunity-card"
-onclick="openDetails(${index})">
-
-<div class="flex justify-between items-start gap-4">
-
+onclick="openDetails(${realIndex})">
+<div class="flex justify-between items-start">
 <div>
-
-<div class="flex items-center gap-2 flex-wrap">
-
+<div class="flex items-center gap-2">
 <h2 class="text-2xl font-bold">
 ${opp.coin}
 </h2>
-
 <div class="bg-green-500/20 text-green-400 px-2 py-1 rounded-lg text-xs">
 LIVE
 </div>
-
 </div>
-
 <p class="text-slate-400 mt-1">
 ${opp.buyExchange} → ${opp.sellExchange}
 </p>
-
-<div class="flex gap-4 mt-4 text-sm flex-wrap">
-
+<div class="flex gap-4 mt-4 text-sm">
 <div>
 <div class="text-slate-400">Buy</div>
 <div>$${opp.buyPrice}</div>
 </div>
-
 <div>
 <div class="text-slate-400">Sell</div>
 <div>$${opp.sellPrice}</div>
 </div>
-
 <div>
 <div class="text-slate-400">Liquidity</div>
 <div>${opp.buyLiquidity}</div>
 </div>
-
-</div>
-
-</div>
-
 <div class="text-right">
-
 <div class="text-4xl font-bold green">
 ${opp.spread}%
 </div>
-
 <div class="text-slate-400 text-sm mt-1">
 Spread
 </div>
-
 <div class="mt-3">
-
-<span class="${
-opp.risk==="LOW"
-?"text-green-400"
-:opp.risk==="MEDIUM"
-?"text-yellow-400"
-:"text-red-400"
-}">
+<span class="${opp.risk==="LOW"?"text-green-400":"text-yellow-400"}">
 ${opp.risk} RISK
 </span>
-
 </div>
-
 </div>
-
-</div>
-
-</div>
-
 `;
-
 });
+renderPagination();
+}
 
+function renderPagination(){
+const totalPages = Math.ceil(tradableOpps.length / perPage);
+const container = document.getElementById("paginationContainer");
+container.innerHTML = "";
+if(totalPages <= 1) return;
+
+for(let i=1;i<=totalPages;i++){
+container.innerHTML += `
+<button onclick="goToPage(${i})" class="px-4 py-2 rounded-xl ${i===currentPage?'bg-blue-600':'bg-slate-800 hover:bg-slate-700'} text-sm">
+${i}
+</button>
+`;
+}
+}
+
+function goToPage(page){
+currentPage = page;
+renderOpportunities();
+window.scrollTo(0,0);
 }
 
 function openDetails(index){
-
-const opp=opportunities[index];
-
-currentUser.scans++;
-
-localStorage.setItem(
-"arbimineUser",
-JSON.stringify(currentUser)
-);
-
-document.getElementById("profileScans").innerText=
-currentUser.scans;
-
+const opp=tradableOpps[index];
 showPage("detailPage");
-
-document.getElementById("detailCoin").innerText=
-opp.coin;
-
-document.getElementById("detailPath").innerText=
-`${opp.buyExchange} → ${opp.sellExchange}`;
-
-document.getElementById("detailSpread").innerText=
-`${opp.spread}%`;
-
-document.getElementById("buyExchange").innerText=
-opp.buyExchange;
-
-document.getElementById("sellExchange").innerText=
-opp.sellExchange;
-
-document.getElementById("buyPrice").innerText=
-`$${opp.buyPrice}`;
-
-document.getElementById("sellPrice").innerText=
-`$${opp.sellPrice}`;
-
-document.getElementById("buyLiquidity").innerText=
-opp.buyLiquidity;
-
-document.getElementById("sellLiquidity").innerText=
-opp.sellLiquidity;
-
-document.getElementById("buyWithdrawStatus").innerHTML=
-'<span class="green">OPEN</span>';
-
-document.getElementById("sellDepositStatus").innerHTML=
-'<span class="green">OPEN</span>';
-
-document.getElementById("riskText").innerText=
-opp.riskText;
-
-document.getElementById("riskBadge").innerText=
-opp.risk;
-
-const networkContainer=document.getElementById(
-"networksContainer"
-);
-
+document.getElementById("detailCoin").innerText=opp.coin;
+document.getElementById("detailPath").innerText=`${opp.buyExchange} → ${opp.sellExchange}`;
+document.getElementById("detailSpread").innerText=`${opp.spread}%`;
+document.getElementById("buyExchange").innerText=opp.buyExchange;
+document.getElementById("sellExchange").innerText=opp.sellExchange;
+document.getElementById("buyPrice").innerText=`$${opp.buyPrice}`;
+document.getElementById("sellPrice").innerText=`$${opp.sellPrice}`;
+document.getElementById("buyLiquidity").innerText=opp.buyLiquidity;
+document.getElementById("sellLiquidity").innerText=opp.sellLiquidity;
+document.getElementById("buyWithdrawStatus").innerHTML=opp.withdrawOpen
+?'<span class="green">OPEN</span>'
+:'<span class="red">CLOSED</span>';
+document.getElementById("sellDepositStatus").innerHTML=opp.depositOpen
+?'<span class="green">OPEN</span>'
+:'<span class="red">CLOSED</span>';
+document.getElementById("riskText").innerText=opp.riskText;
+document.getElementById("riskBadge").innerText=opp.risk;
+const networkContainer=document.getElementById("networksContainer");
 networkContainer.innerHTML="";
-
 opp.networks.forEach(net=>{
-
 networkContainer.innerHTML+=`
-
 <div class="network-box">
-
 <div class="flex justify-between items-center">
-
 <div class="font-bold text-lg">
 ${net.name}
 </div>
-
 <div class="green text-sm">
 ${net.status}
 </div>
-
 </div>
-
 <div class="mt-4 space-y-2 text-sm">
-
 <div class="flex justify-between">
 <span class="text-slate-400">Transfer Fee</span>
 <span>${net.fee}</span>
 </div>
-
 <div class="flex justify-between">
 <span class="text-slate-400">Arrival Time</span>
 <span>${net.arrival}</span>
 </div>
-
 </div>
-
 </div>
-
 `;
-
 });
-
 drawChart(opp.trend);
-
 }
 
 function drawChart(data){
-
 const ctx=document.getElementById("trendChart");
-
 if(chartInstance){
 chartInstance.destroy();
 }
-
 chartInstance=new Chart(ctx,{
-
 type:"line",
-
 data:{
-
-labels:["1","2","3","4","5","6","7","8","9"],
-
+labels:["1","2","3","4","5","6","7","8","9","10"],
 datasets:[{
-
 label:"Spread %",
-
 data:data,
-
 borderColor:"#3b82f6",
-
 backgroundColor:"rgba(59,130,246,.2)",
-
 fill:true,
-
 tension:.4
-
 }]
-
 },
-
 options:{
-
 responsive:true,
-
 plugins:{
-
 legend:{
 labels:{
 color:"white"
 }
 }
-
 },
-
 scales:{
-
 x:{
 ticks:{
 color:"white"
 }
 },
-
 y:{
 ticks:{
 color:"white"
 }
 }
-
 }
-
 }
-
 });
-
 }
 
 function backHome(){
@@ -1019,78 +596,46 @@ showPage("homePage");
 }
 
 function showPage(page){
-
 document.getElementById("homePage").style.display="none";
 document.getElementById("detailPage").style.display="none";
 document.getElementById("profilePage").style.display="none";
 document.getElementById("proPage").style.display="none";
-
 document.getElementById(page).style.display="block";
-
 document.querySelectorAll(".tab-btn").forEach(btn=>{
 btn.classList.remove("active");
 });
-
 if(page==="homePage"){
 document.getElementById("homeBtn").classList.add("active");
 }
-
 if(page==="profilePage"){
 document.getElementById("profileBtn").classList.add("active");
 }
-
 if(page==="proPage"){
 document.getElementById("proBtn").classList.add("active");
 }
-
 }
 
-function payNow(plan,amount){
-
-document.getElementById("paymentStatus").innerHTML=`
-
-<div class="loading-box rounded-2xl p-5">
-
-<div class="text-yellow-400 text-xl font-bold">
-Please wait...
-</div>
-
-<p class="mt-2 text-slate-300">
-You are being directed to payment channel
-</p>
-
-<p class="mt-3 text-sm text-slate-500">
-${plan} PLAN • KES ${amount}
-</p>
-
-</div>
-
-`;
-
+function selectPlan(plan){
+const statusEl = document.getElementById("paymentStatus");
+statusEl.innerText = "Please wait as you are being directed to payment channel...";
+let url = "";
+if(plan === 'weekly'){
+url = "https://paystack.com/pay/arbimine-pro-weekly";
+} else if(plan === 'monthly'){
+url = "https://paystack.com/pay/arbimine-pro-monthly";
+}
 setTimeout(()=>{
-
-window.location.href=
-"https://paystack.com/pay/arbimine-pro";
-
-},2500);
-
+window.location.href = url;
+}, 1500);
 }
 
 window.onload=()=>{
-
 const saved=localStorage.getItem("arbimineUser");
-
 if(saved){
-
 currentUser=JSON.parse(saved);
-
 openApp();
-
 }
-
 };
-
 </script>
-
 </body>
 </html>
