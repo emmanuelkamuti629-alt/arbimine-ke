@@ -1,107 +1,40 @@
 const express = require('express');
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+const User = require('../models/User');
 const router = express.Router();
 
-const User = require('../models/User');
+router.post('/register', async (req, res) => {
+  try {
+    const { username, email, mpesa, password } = req.body;
+    const exists = await User.findOne({ $or: [{ username }, { email }] });
+    if (exists) return res.status(400).json({ error: 'User already exists' });
 
-function hashPassword(password){
+    const hashed = await bcrypt.hash(password, 10);
+    const user = new User({ username, email, mpesa, password: hashed });
+    await user.save();
 
-    return crypto
-    .createHash('sha256')
-    .update(password)
-    .digest('hex');
-}
-
-/*
-========================================
-REGISTER
-========================================
-*/
-
-router.post('/register', async(req,res)=>{
-
-    try{
-
-        const {
-            username,
-            email,
-            mpesa,
-            password
-        } = req.body;
-
-        if(
-            !username ||
-            !email ||
-            !mpesa ||
-            !password
-        ){
-
-            return res.status(400).json({
-                error:'All fields required'
-            });
-        }
-
-        const existingUser = await User.findOne({ 
-            $or:[
-                {username}, {email} ]
-        });
-        if(existingUser){ return 
-            res.status(409).json({
-                error: 'User already exists, try 
-                login'
-            });
-        }
-        const user = await User.create({ username, 
-            email, mpesa, passwordHash: 
-            hashPassword(password)
-        });
-        const token = jwt.sign({ id:user._id, 
-            username:user.username
-        },
-        process.env.JWT_SECRET, { expiresIn:'30d'
-        });
-        res.json({ success:true, token, user:{ 
-                username: user.username, email: 
-                user.email, mpesa: user.mpesa, 
-                plan: user.plan
-            }
-        });
-    }catch(err){
-        res.status(500).json({ error:err.message
-        });
-    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { username, email, mpesa } });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
-/* ======================================== LOGIN 
-======================================== */ 
-router.post('/login', async(req,res)=>{
-    try{ const { username, password
-        } = req.body;
-        const user = await User.findOne({ username
-        });
-        if(
-            !user ||
-            user.passwordHash !== 
-            hashPassword(password)
-        ){ return res.status(401).json({ error: 
-                'Invalid credentials'
-            });
-        }
-        const token = jwt.sign({ id:user._id, 
-            username:user.username
-        },
-        process.env.JWT_SECRET, { expiresIn:'30d'
-        });
-        res.json({ success:true, token, user:{ 
-                username: user.username, email: 
-                user.email, mpesa: user.mpesa, 
-                plan: user.plan
-            }
-        });
-    }catch(err){
-        res.status(500).json({ error:err.message
-        });
-    }
+
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: 'Invalid credentials' });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(400).json({ error: 'Invalid credentials' });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { username: user.username, email, mpesa: user.mpesa } });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
+
 module.exports = router;

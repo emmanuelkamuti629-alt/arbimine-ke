@@ -1,25 +1,25 @@
 {
   "name": "arbimine",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "axios": "^1.17.0",
-    "bcryptjs": "^3.0.3",
-    "ccxt": "^4.5.58",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.7.0",
-    "node-cron": "^4.2.1",
-    "ws": "^8.21.0"
+    "bcryptjs": "^3.0.2",
+    "ccxt": "^4.4.62",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.24.0",
+    "node-cron": "^3.0.3",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
   }
 }

@@ -1,256 +1,514 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ArbiMine</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>ArbiMine • Live Arbitrage Scanner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-<style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#0b1220;
-  color:#fff;
-}
+    body {
+      background: #0b1220;
+      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+      color: #eef2ff;
+      padding-bottom: 20px;
+    }
 
-/* NAV */
-.nav{
-  display:flex;
-  justify-content:space-around;
-  background:#111a2e;
-  padding:12px;
-  position:sticky;
-  top:0;
-}
+    /* auth container */
+    .auth-container {
+      max-width: 420px;
+      margin: 60px auto;
+      padding: 24px;
+      background: #111a2e;
+      border-radius: 28px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
 
-.nav button{
-  background:none;
-  border:none;
-  color:#aaa;
-  font-size:14px;
-  cursor:pointer;
-}
+    .auth-container h2 {
+      color: #00ff99;
+      margin-bottom: 8px;
+    }
 
-.nav button.active{
-  color:#00ff99;
-  border-bottom:2px solid #00ff99;
-}
+    .auth-container p {
+      color: #8e9ab0;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
 
-/* SECTIONS */
-.section{
-  display:none;
-  padding:15px;
-}
+    .auth-container input {
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0;
+      background: #0f172f;
+      border: 1px solid #1e2a4a;
+      border-radius: 18px;
+      color: white;
+      font-size: 16px;
+      outline: none;
+      transition: 0.2s;
+    }
 
-.section.active{
-  display:block;
-}
+    .auth-container input:focus {
+      border-color: #00ff99;
+    }
 
-/* CARD */
-.card{
-  background:#121c33;
-  padding:12px;
-  border-radius:10px;
-  margin-bottom:10px;
-  cursor:pointer;
-}
+    .auth-container button {
+      width: 100%;
+      padding: 14px;
+      background: #00ff99;
+      border: none;
+      border-radius: 40px;
+      font-weight: bold;
+      font-size: 16px;
+      color: #0b1220;
+      margin-top: 16px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
 
-.symbol{
-  font-size:16px;
-  font-weight:bold;
-  color:#00ff99;
-}
+    .auth-container button:hover {
+      background: #00cc7a;
+    }
 
-.row{
-  display:flex;
-  justify-content:space-between;
-  font-size:13px;
-  margin-top:6px;
-  color:#ccc;
-}
+    .toggle-link {
+      text-align: center;
+      margin-top: 20px;
+      color: #5cb3ff;
+      cursor: pointer;
+      font-size: 14px;
+    }
 
-.badge{
-  padding:3px 6px;
-  border-radius:5px;
-  font-size:12px;
-}
+    /* main dashboard (hidden until login) */
+    .dashboard {
+      display: none;
+    }
 
-.green{background:#0f5132;color:#00ff99;}
-.red{background:#5a1a1a;color:#ff5c5c;}
-.blue{background:#1a2a5a;color:#5cb3ff;}
+    /* top nav */
+    .nav {
+      display: flex;
+      justify-content: space-around;
+      background: #111a2e;
+      padding: 12px 0;
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(4px);
+      z-index: 10;
+      border-bottom: 1px solid #1e2a4a;
+    }
 
-.networks{
-  font-size:11px;
-  color:#aaa;
-  margin-top:8px;
-}
+    .nav button {
+      background: none;
+      border: none;
+      color: #8e9ab0;
+      font-size: 16px;
+      font-weight: 500;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
 
-.loading{
-  text-align:center;
-  color:#777;
-  padding:20px;
-}
-</style>
+    .nav button.active {
+      color: #00ff99;
+      border-bottom: 2px solid #00ff99;
+    }
+
+    /* sections */
+    .section {
+      display: none;
+      padding: 20px 16px;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    h3 {
+      margin-bottom: 16px;
+      font-weight: 600;
+      font-size: 22px;
+    }
+
+    .card {
+      background: #111a2e;
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 14px;
+      cursor: pointer;
+      transition: 0.1s;
+      border: 1px solid #1f2a46;
+    }
+
+    .card:active {
+      transform: scale(0.99);
+    }
+
+    .symbol {
+      font-size: 18px;
+      font-weight: bold;
+      color: #00ff99;
+      margin-bottom: 8px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-top: 8px;
+      color: #cbd5f0;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 40px;
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-block;
+    }
+
+    .green {
+      background: #0f5132;
+      color: #00ff99;
+    }
+
+    .red {
+      background: #5a1a1a;
+      color: #ff8a8a;
+    }
+
+    .blue {
+      background: #1a2a5a;
+      color: #7cb9ff;
+    }
+
+    .networks {
+      font-size: 11px;
+      color: #8e9ab0;
+      margin-top: 12px;
+      border-top: 1px solid #1e2a4a;
+      padding-top: 10px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 32px;
+      color: #8e9ab0;
+    }
+
+    .pro-plan {
+      background: linear-gradient(145deg, #0f1a2e, #0a1020);
+      border: 1px solid #2a3a60;
+    }
+
+    .btn-pro {
+      background: #00ff99;
+      color: #0b1220;
+      font-weight: bold;
+      margin-top: 12px;
+      border: none;
+      border-radius: 40px;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="nav">
-  <button class="active" onclick="tab('home',event)">Home</button>
-  <button onclick="tab('opps',event)">Opportunities</button>
-  <button onclick="tab('pro',event)">Pro</button>
-  <button onclick="tab('profile',event)">Profile</button>
+<!-- AUTH PAGES (login/register) -->
+<div id="authContainer" class="auth-container">
+  <div id="loginPanel">
+    <h2>🔓 ArbiMine</h2>
+    <p>Login to access live arbitrage</p>
+    <input type="text" id="loginUsername" placeholder="Username" autocomplete="username">
+    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+    <button onclick="login()">Login →</button>
+    <div class="toggle-link" onclick="showRegister()">No account? Create one</div>
+  </div>
+
+  <div id="registerPanel" style="display:none;">
+    <h2>📝 Create Account</h2>
+    <p>Get real‑time spread intelligence</p>
+    <input type="text" id="regUsername" placeholder="Username">
+    <input type="email" id="regEmail" placeholder="Email">
+    <input type="tel" id="regMpesa" placeholder="M-Pesa number (e.g., 0712345678)">
+    <input type="password" id="regPassword" placeholder="Password">
+    <button onclick="register()">Register →</button>
+    <div class="toggle-link" onclick="showLogin()">Already have an account? Login</div>
+  </div>
 </div>
 
-<!-- HOME -->
-<div id="home" class="section active">
-  <h3>ArbiMine Scanner</h3>
-  <p>Live crypto arbitrage opportunities across exchanges.</p>
-</div>
+<!-- MAIN DASHBOARD (after login) -->
+<div id="dashboard" class="dashboard">
+  <div class="nav">
+    <button class="active" onclick="switchTab('home', event)">🏠 Home</button>
+    <button onclick="switchTab('opps', event)">⚡ Opportunities</button>
+    <button onclick="switchTab('pro', event)">💎 Pro</button>
+    <button onclick="switchTab('profile', event)">👤 Profile</button>
+  </div>
 
-<!-- OPPORTUNITIES -->
-<div id="opps" class="section">
-  <h3>Opportunities</h3>
-  <div id="list" class="loading">Loading...</div>
-</div>
+  <!-- HOME TAB -->
+  <div id="home" class="section active">
+    <h3>📡 Live Arbitrage Scanner</h3>
+    <div class="card" style="background: #0f172f;">
+      <p>✔ Real spreads from 14 exchanges<br>
+      ✔ M-Pesa upgrade unlocks advanced filters<br>
+      ✔ Deposits & withdrawals simulated (realistic)</p>
+    </div>
+    <div class="card">
+      <div class="symbol">How it works</div>
+      <div class="row">We compare buy/sell prices across Binance, OKX, Bybit, KuCoin, Gate.io, and more.</div>
+      <div class="row">Spreads > 0.2% are displayed.</div>
+    </div>
+  </div>
 
-<!-- PRO -->
-<div id="pro" class="section">
-  <h3>Pro Plan</h3>
-  <p>Upgrade for faster scans & premium alerts.</p>
-</div>
+  <!-- OPPORTUNITIES TAB -->
+  <div id="opps" class="section">
+    <h3>📊 Opportunities</h3>
+    <div id="oppList" class="loading">Loading opportunities...</div>
+  </div>
 
-<!-- PROFILE -->
-<div id="profile" class="section">
-  <h3>Profile</h3>
-  <div id="user">Loading...</div>
+  <!-- PRO TAB (payment) -->
+  <div id="pro" class="section">
+    <h3>💎 Unlock Pro</h3>
+    <div class="card pro-plan">
+      <div class="symbol">Weekly Plan</div>
+      <div class="row"><span>💰 Price:</span><span>100 KES</span></div>
+      <div class="row"><span>🔔 Alerts:</span><span>Real‑time notifications</span></div>
+      <div class="row"><span>📈 Spreads:</span><span>Unlimited access</span></div>
+      <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with M‑Pesa</button>
+    </div>
+    <div class="card pro-plan">
+      <div class="symbol">Monthly Plan</div>
+      <div class="row"><span>💰 Price:</span><span>350 KES</span></div>
+      <div class="row"><span>🎁 Bonus:</span><span>Priority support</span></div>
+      <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with M‑Pesa</button>
+    </div>
+  </div>
+
+  <!-- PROFILE TAB -->
+  <div id="profile" class="section">
+    <h3>👤 Profile</h3>
+    <div id="profileCard" class="loading">Loading profile...</div>
+    <button class="btn-pro" style="background:#334155; margin-top:20px;" onclick="logout()">🚪 Logout</button>
+  </div>
 </div>
 
 <script>
+  // Helper: check auth token on load
+  let token = localStorage.getItem('token');
 
-function tab(id,e){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  window.onload = () => {
+    if (token) {
+      verifyAndShowDashboard();
+    } else {
+      document.getElementById('authContainer').style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+    }
+  };
 
-  document.getElementById(id).classList.add('active');
-  e.target.classList.add('active');
+  async function verifyAndShowDashboard() {
+    try {
+      const res = await fetch('/api/me', { headers: { Authorization: token } });
+      const data = await res.json();
+      if (data.username) {
+        // valid token
+        document.getElementById('authContainer').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        loadOpps();       // preload opportunities
+        loadProfile();    // load user info
+      } else {
+        // token invalid
+        localStorage.removeItem('token');
+        token = null;
+        document.getElementById('authContainer').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'none';
+      }
+    } catch (err) {
+      localStorage.removeItem('token');
+      token = null;
+      document.getElementById('authContainer').style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+    }
+  }
 
-  if(id === 'opps') loadOpps();
-  if(id === 'profile') loadUser();
-}
+  // AUTH UI toggles
+  function showRegister() {
+    document.getElementById('loginPanel').style.display = 'none';
+    document.getElementById('registerPanel').style.display = 'block';
+  }
+  function showLogin() {
+    document.getElementById('registerPanel').style.display = 'none';
+    document.getElementById('loginPanel').style.display = 'block';
+  }
 
-/*
-========================
-LOAD OPPORTUNITIES
-========================
-*/
-async function loadOpps(){
-  const box = document.getElementById('list');
-  box.innerHTML = "Loading...";
+  // REGISTER
+  async function register() {
+    const username = document.getElementById('regUsername').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const mpesa = document.getElementById('regMpesa').value.trim();
+    const password = document.getElementById('regPassword').value;
 
-  try{
-    const res = await fetch('/api/opportunities');
-    const data = await res.json();
-
-    if(!data.opportunities || data.opportunities.length === 0){
-      box.innerHTML = "No opportunities found";
+    if (!username || !email || !mpesa || !password) {
+      alert('All fields required');
       return;
     }
 
-    box.innerHTML = "";
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, mpesa, password })
+      });
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        token = data.token;
+        verifyAndShowDashboard();
+      } else {
+        alert(data.error || 'Registration failed');
+      }
+    } catch (err) {
+      alert('Server error. Try again.');
+    }
+  }
 
-    data.opportunities.forEach(op => {
+  // LOGIN
+  async function login() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
 
-      const buyN = (op.buyNetworks || [])
-        .map(n => `${n.name}:${n.withdraw ? "✔" : "❌"}`)
-        .join(" | ");
+    if (!username || !password) {
+      alert('Username and password required');
+      return;
+    }
 
-      const sellN = (op.sellNetworks || [])
-        .map(n => `${n.name}:${n.deposit ? "✔" : "❌"}`)
-        .join(" | ");
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        token = data.token;
+        verifyAndShowDashboard();
+      } else {
+        alert(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      alert('Login error');
+    }
+  }
 
-      const card = document.createElement('div');
-      card.className = "card";
+  // LOGOUT
+  function logout() {
+    localStorage.removeItem('token');
+    token = null;
+    document.getElementById('authContainer').style.display = 'block';
+    document.getElementById('dashboard').style.display = 'none';
+    showLogin(); // reset to login panel
+  }
 
-      card.innerHTML = `
-        <div class="symbol">${op.symbol}</div>
+  // TAB SWITCHING
+  function switchTab(tabId, event) {
+    // update active class on nav buttons
+    document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
+    if (event && event.target) event.target.classList.add('active');
+    // update sections
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
 
-        <div class="row">
-          <span>${op.buyExchange}</span>
-          <span>${op.buyPrice}</span>
-        </div>
+    if (tabId === 'opps') loadOpps();
+    if (tabId === 'profile') loadProfile();
+  }
 
-        <div class="row">
-          <span>${op.sellExchange}</span>
-          <span>${op.sellPrice}</span>
-        </div>
+  // LOAD OPPORTUNITIES from /api/opportunities
+  async function loadOpps() {
+    const container = document.getElementById('oppList');
+    container.innerHTML = '<div class="loading">Scanning 14 exchanges...</div>';
+    try {
+      const res = await fetch('/api/opportunities');
+      const data = await res.json();
 
-        <div class="row">
-          <span class="badge blue">Spread</span>
-          <span class="badge green">${op.spread}%</span>
-        </div>
+      if (!data.opportunities || data.opportunities.length === 0) {
+        container.innerHTML = '<div class="card">✨ No spreads >0.2% right now. Try again in a few seconds.</div>';
+        return;
+      }
 
-        <div class="row">
-          <span>Tradable</span>
-          <span class="${op.tradable ? 'green' : 'red'} badge">
-            ${op.tradable ? 'YES' : 'NO'}
-          </span>
-        </div>
+      container.innerHTML = '';
+      data.opportunities.forEach(opp => {
+        const buyNetworks = (opp.buyNetworks || []).map(n => `${n.name}:${n.withdraw ? '✅' : '❌'}`).join(' | ');
+        const sellNetworks = (opp.sellNetworks || []).map(n => `${n.name}:${n.deposit ? '✅' : '❌'}`).join(' | ');
 
-        <div class="networks">
-          Buy: ${buyN || "N/A"}<br/>
-          Sell: ${sellN || "N/A"}
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="symbol">${opp.symbol}</div>
+          <div class="row"><span>${opp.buyExchange}</span><span>💰 ${opp.buyPrice}</span></div>
+          <div class="row"><span>${opp.sellExchange}</span><span>💰 ${opp.sellPrice}</span></div>
+          <div class="row"><span>Spread</span><span class="badge green">${opp.spread}%</span></div>
+          <div class="row"><span>Tradable</span><span class="badge ${opp.tradable ? 'green' : 'red'}">${opp.tradable ? 'YES' : 'NO'}</span></div>
+          <div class="networks">🔁 Buy net: ${buyNetworks || 'N/A'}<br>📦 Sell net: ${sellNetworks || 'N/A'}</div>
+        `;
+        card.onclick = () => {
+          alert(`${opp.symbol}\nSpread: ${opp.spread}%\nBuy: ${opp.buyExchange} @ ${opp.buyPrice}\nSell: ${opp.sellExchange} @ ${opp.sellPrice}`);
+        };
+        container.appendChild(card);
+      });
+    } catch (err) {
+      container.innerHTML = '<div class="card red">Failed to fetch opportunities. Is server running?</div>';
+    }
+  }
+
+  // LOAD PROFILE
+  async function loadProfile() {
+    const container = document.getElementById('profileCard');
+    container.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+      const res = await fetch('/api/me', { headers: { Authorization: token } });
+      const user = await res.json();
+      if (user.error) throw new Error(user.error);
+      container.innerHTML = `
+        <div class="card">
+          <div class="row"><span>👤 Username:</span><span>${user.username}</span></div>
+          <div class="row"><span>📧 Email:</span><span>${user.email}</span></div>
+          <div class="row"><span>📱 M-Pesa:</span><span>${user.mpesa}</span></div>
         </div>
       `;
-
-      card.onclick = () => {
-        alert(
-          `${op.symbol}\nSpread: ${op.spread}%\nBuy: ${op.buyExchange}\nSell: ${op.sellExchange}`
-        );
-      };
-
-      box.appendChild(card);
-    });
-
-  } catch(e){
-    box.innerHTML = "Failed to load data";
+    } catch (err) {
+      container.innerHTML = '<div class="card red">Not logged in or session expired.</div>';
+    }
   }
-}
 
-/*
-========================
-PROFILE
-========================
-*/
-async function loadUser(){
-  const box = document.getElementById('user');
-
-  try{
-    const token = localStorage.getItem('token');
-
-    const res = await fetch('/api/me',{
-      headers:{ Authorization: token }
-    });
-
-    const data = await res.json();
-
-    if(data.error){
-      box.innerHTML = "Not logged in";
+  // PAYMENT (PesaPal endpoint)
+  async function payPro(plan, amount) {
+    if (!token) {
+      alert('Please login first');
       return;
     }
-
-    box.innerHTML = `
-      <p><b>User:</b> ${data.username}</p>
-      <p><b>Email:</b> ${data.email}</p>
-      <p><b>M-Pesa:</b> ${data.mpesa}</p>
-    `;
-
-  }catch(e){
-    box.innerHTML = "Error loading profile";
+    const phone = prompt('Enter M-Pesa phone number (e.g., 0712345678):');
+    if (!phone || phone.length < 9) {
+      alert('Valid phone number required');
+      return;
+    }
+    try {
+      const res = await fetch('/api/pesapal/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token },
+        body: JSON.stringify({ phone, amount, plan })
+      });
+      const data = await res.json();
+      alert(data.message || 'STK Push sent! Complete payment on your phone.');
+    } catch (err) {
+      alert('Payment request failed. Try again later.');
+    }
   }
-}
-
 </script>
-
 </body>
 </html>
