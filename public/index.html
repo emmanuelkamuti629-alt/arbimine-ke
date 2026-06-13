@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>ArbiMine • Arbitrage Intelligence</title>
+  <title>ArbiMine • Crypto Arbitrage Intelligence</title>
   <style>
     * {
       margin: 0;
@@ -15,10 +15,10 @@
       background: #0b1220;
       font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
       color: #eef2ff;
-      padding-bottom: 20px;
+      padding-bottom: 70px;
     }
 
-    /* auth container */
+    /* Auth Container */
     .auth-container {
       max-width: 420px;
       margin: 60px auto;
@@ -49,7 +49,6 @@
       color: white;
       font-size: 16px;
       outline: none;
-      transition: 0.2s;
     }
 
     .auth-container input:focus {
@@ -67,7 +66,6 @@
       color: #0b1220;
       margin-top: 16px;
       cursor: pointer;
-      transition: 0.2s;
     }
 
     .toggle-link {
@@ -78,57 +76,101 @@
       font-size: 14px;
     }
 
-    /* dashboard */
+    /* Dashboard */
     .dashboard {
       display: none;
     }
 
-    /* top nav */
-    .nav {
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #111a2e;
       display: flex;
       justify-content: space-around;
-      background: #111a2e;
-      padding: 12px 0;
-      position: sticky;
-      top: 0;
-      backdrop-filter: blur(4px);
-      z-index: 10;
-      border-bottom: 1px solid #1e2a4a;
+      padding: 10px 0;
+      border-top: 1px solid #1e2a4a;
+      z-index: 100;
     }
 
-    .nav button {
+    .nav-item {
       background: none;
       border: none;
       color: #8e9ab0;
-      font-size: 16px;
+      font-size: 12px;
       font-weight: 500;
-      padding: 8px 16px;
+      padding: 6px 12px;
       cursor: pointer;
-      transition: 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
     }
 
-    .nav button.active {
+    .nav-item .icon {
+      font-size: 24px;
+    }
+
+    .nav-item.active {
       color: #00ff99;
-      border-bottom: 2px solid #00ff99;
     }
 
-    /* sections */
+    /* Sections */
     .section {
       display: none;
       padding: 20px 16px;
+      animation: fadeIn 0.2s ease;
     }
 
     .section.active {
       display: block;
     }
 
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+
+    /* Headers */
     h3 {
       margin-bottom: 16px;
       font-weight: 600;
       font-size: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
-    /* opportunity card (list) */
+    .refresh-btn {
+      background: #1e2a4a;
+      border: none;
+      color: #00ff99;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 40px;
+      transition: 0.2s;
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.95);
+    }
+
+    .sort-select {
+      background: #1e2a4a;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 40px;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+
+    /* Opportunity Cards */
     .card {
       background: #111a2e;
       border-radius: 20px;
@@ -176,26 +218,91 @@
       color: #ff8a8a;
     }
 
-    .blue {
-      background: #1a2a5a;
-      color: #7cb9ff;
-    }
-
-    .networks {
-      font-size: 11px;
-      color: #8e9ab0;
-      margin-top: 12px;
-      border-top: 1px solid #1e2a4a;
-      padding-top: 10px;
-    }
-
     .loading {
       text-align: center;
       padding: 32px;
       color: #8e9ab0;
     }
 
-    /* ========= DETAIL MODAL ========= */
+    /* Pro Cards (Attractive) */
+    .pro-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 10px;
+    }
+
+    .pro-card {
+      background: linear-gradient(135deg, #0f1a2e, #0a1020);
+      border-radius: 28px;
+      padding: 24px;
+      border: 1px solid #2a3a60;
+      transition: transform 0.2s;
+    }
+
+    .pro-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .plan-name {
+      font-size: 28px;
+      font-weight: bold;
+      background: linear-gradient(90deg, #00ff99, #00ccff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .price {
+      font-size: 42px;
+      font-weight: bold;
+      margin: 12px 0;
+      color: #ffffff;
+    }
+
+    .price small {
+      font-size: 16px;
+      font-weight: normal;
+      color: #8e9ab0;
+    }
+
+    .features {
+      margin: 20px 0;
+      text-align: left;
+    }
+
+    .features li {
+      list-style: none;
+      margin: 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+    }
+
+    .features li span:first-child {
+      font-size: 20px;
+    }
+
+    .btn-pro {
+      background: #00ff99;
+      color: #0b1220;
+      font-weight: bold;
+      border: none;
+      border-radius: 60px;
+      padding: 14px;
+      width: 100%;
+      font-size: 18px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-pro:active {
+      transform: scale(0.97);
+    }
+
+    /* Modal Styles */
     .modal {
       display: none;
       position: fixed;
@@ -203,7 +310,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.9);
+      background: rgba(0,0,0,0.95);
       z-index: 1000;
       overflow-y: auto;
       padding: 20px;
@@ -235,28 +342,6 @@
       margin-bottom: 8px;
     }
 
-    .modal-spread {
-      font-size: 20px;
-      font-weight: bold;
-      margin: 8px 0;
-    }
-
-    .tradable-badge {
-      background: #00ff99;
-      color: #0b1220;
-      padding: 4px 12px;
-      border-radius: 40px;
-      font-size: 14px;
-      font-weight: bold;
-      display: inline-block;
-    }
-
-    .not-tradable-badge {
-      background: #ff4444;
-      color: white;
-    }
-
-    /* buy/sell columns */
     .exchange-columns {
       display: flex;
       gap: 16px;
@@ -279,9 +364,8 @@
       color: #7cb9ff;
     }
 
-    .price {
+    .exchange-card .price {
       font-size: 24px;
-      font-weight: bold;
       margin: 8px 0;
     }
 
@@ -293,17 +377,6 @@
       gap: 8px;
     }
 
-    .status-icon {
-      font-size: 18px;
-    }
-
-    .liquidity, .min-amount {
-      font-size: 13px;
-      color: #8e9ab0;
-      margin-top: 8px;
-    }
-
-    /* network table */
     .network-table {
       margin-top: 20px;
       background: #0a1020;
@@ -357,7 +430,7 @@
     <p>Get real‑time spread intelligence</p>
     <input type="text" id="regUsername" placeholder="Username">
     <input type="email" id="regEmail" placeholder="Email">
-    <input type="tel" id="regMpesa" placeholder="M-Pesa number (e.g., 0712345678)">
+    <input type="tel" id="regMpesa" placeholder="Mobile number (e.g., 0712345678)">
     <input type="password" id="regPassword" placeholder="Password">
     <button onclick="register()">Register →</button>
     <div class="toggle-link" onclick="showLogin()">Already have an account? Login</div>
@@ -366,41 +439,53 @@
 
 <!-- MAIN DASHBOARD -->
 <div id="dashboard" class="dashboard">
-  <div class="nav">
-    <button class="active" onclick="switchTab('home', event)">🏠 Home</button>
-    <button onclick="switchTab('opps', event)">⚡ Opportunities</button>
-    <button onclick="switchTab('pro', event)">💎 Pro</button>
-    <button onclick="switchTab('profile', event)">👤 Profile</button>
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('home', event)"><span class="icon">🏠</span><span>Home</span></button>
+    <button class="nav-item" onclick="switchTab('pro', event)"><span class="icon">💎</span><span>Pro</span></button>
+    <button class="nav-item" onclick="switchTab('profile', event)"><span class="icon">👤</span><span>Profile</span></button>
   </div>
 
-  <!-- HOME TAB -->
+  <!-- HOME TAB (with opportunities) -->
   <div id="home" class="section active">
-    <h3>📡 Live Arbitrage Scanner</h3>
-    <div class="card" style="background: #0f172f;">
-      <p>✔ Real spreads from 14 exchanges<br>✔ M-Pesa upgrade unlocks advanced filters<br>✔ Deposits & withdrawals simulated</p>
-    </div>
-  </div>
-
-  <!-- OPPORTUNITIES TAB -->
-  <div id="opps" class="section">
-    <h3>📊 Opportunities</h3>
+    <h3>
+      📡 Live Arbitrage
+      <div style="display: flex; gap: 8px;">
+        <button class="refresh-btn" onclick="refreshOpportunities()">🔄</button>
+        <select id="sortSelect" class="sort-select" onchange="applySortAndRender()">
+          <option value="spreadDesc">Spread high-low</option>
+          <option value="symbolAsc">Symbol A-Z</option>
+        </select>
+      </div>
+    </h3>
     <div id="oppList" class="loading">Loading opportunities...</div>
   </div>
 
-  <!-- PRO TAB -->
+  <!-- PRO TAB (Attractive Payment) -->
   <div id="pro" class="section">
     <h3>💎 Unlock Pro</h3>
-    <div class="card" style="background: linear-gradient(145deg, #0f1a2e, #0a1020);">
-      <div class="symbol">Weekly Plan</div>
-      <div class="row"><span>💰 Price:</span><span>100 KES</span></div>
-      <div class="row"><span>🔔 Alerts:</span><span>Real‑time notifications</span></div>
-      <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with M‑Pesa</button>
-    </div>
-    <div class="card" style="background: linear-gradient(145deg, #0f1a2e, #0a1020);">
-      <div class="symbol">Monthly Plan</div>
-      <div class="row"><span>💰 Price:</span><span>350 KES</span></div>
-      <div class="row"><span>🎁 Bonus:</span><span>Priority support</span></div>
-      <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with M‑Pesa</button>
+    <div class="pro-container">
+      <div class="pro-card">
+        <div class="plan-name">Weekly Boost</div>
+        <div class="price">100 KES <small>/ week</small></div>
+        <ul class="features">
+          <li><span>⚡</span> Real-time alerts on every spread</li>
+          <li><span>📊</span> Unlimited opportunity access</li>
+          <li><span>🔔</span> Push notifications</li>
+          <li><span>💬</span> Priority support</li>
+        </ul>
+        <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with M-Pesa</button>
+      </div>
+      <div class="pro-card">
+        <div class="plan-name">Monthly Max</div>
+        <div class="price">350 KES <small>/ month</small></div>
+        <ul class="features">
+          <li><span>🚀</span> Everything in Weekly</li>
+          <li><span>🎯</span> Early access to new pairs</li>
+          <li><span>📈</span> Advanced filters & history</li>
+          <li><span>🏆</span> VIP community access</li>
+        </ul>
+        <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with M-Pesa</button>
+      </div>
     </div>
   </div>
 
@@ -416,19 +501,17 @@
 <div id="detailModal" class="modal">
   <div class="modal-content">
     <span class="close-modal" onclick="closeDetail()">&times;</span>
-    <div id="modalBody"></div>
+    <div id="modalBody">Loading network data...</div>
   </div>
 </div>
 
 <script>
   let token = localStorage.getItem('token');
+  let allOpportunities = [];
 
   window.onload = () => {
     if (token) verifyAndShowDashboard();
-    else {
-      document.getElementById('authContainer').style.display = 'block';
-      document.getElementById('dashboard').style.display = 'none';
-    }
+    else showAuth();
   };
 
   async function verifyAndShowDashboard() {
@@ -440,18 +523,17 @@
         document.getElementById('dashboard').style.display = 'block';
         loadOpps();
         loadProfile();
-      } else {
-        localStorage.removeItem('token');
-        token = null;
-        document.getElementById('authContainer').style.display = 'block';
-        document.getElementById('dashboard').style.display = 'none';
-      }
+      } else throw new Error();
     } catch (err) {
       localStorage.removeItem('token');
       token = null;
-      document.getElementById('authContainer').style.display = 'block';
-      document.getElementById('dashboard').style.display = 'none';
+      showAuth();
     }
+  }
+
+  function showAuth() {
+    document.getElementById('authContainer').style.display = 'block';
+    document.getElementById('dashboard').style.display = 'none';
   }
 
   function showRegister() {
@@ -468,36 +550,73 @@
     const email = document.getElementById('regEmail').value.trim();
     const mpesa = document.getElementById('regMpesa').value.trim();
     const password = document.getElementById('regPassword').value;
-    if (!username || !email || !mpesa || !password) { alert('All fields required'); return; }
+    if (!username || !email || !mpesa || !password) {
+      alert('All fields required');
+      return;
+    }
     try {
-      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, mpesa, password }) });
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, mpesa, password })
+      });
       const data = await res.json();
-      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
-      else alert(data.error || 'Registration failed');
-    } catch (err) { alert('Server error'); }
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        token = data.token;
+        verifyAndShowDashboard();
+      } else {
+        alert(data.error || 'Registration failed');
+      }
+    } catch (err) {
+      alert('Server error');
+    }
   }
 
   async function login() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
-    if (!username || !password) { alert('Username and password required'); return; }
+    if (!username || !password) {
+      alert('Username and password required');
+      return;
+    }
     try {
-      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
       const data = await res.json();
-      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
-      else alert(data.error || 'Invalid credentials');
-    } catch (err) { alert('Login error'); }
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        token = data.token;
+        verifyAndShowDashboard();
+      } else {
+        alert(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      alert('Login error');
+    }
   }
 
-  function logout() { localStorage.removeItem('token'); token = null; location.reload(); }
+  function logout() {
+    localStorage.removeItem('token');
+    location.reload();
+  }
 
   function switchTab(tabId, event) {
-    document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
-    if (event && event.target) event.target.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+    if (event && event.target) {
+      event.target.closest('.nav-item').classList.add('active');
+    }
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    if (tabId === 'opps') loadOpps();
+    if (tabId === 'home') loadOpps();
     if (tabId === 'profile') loadProfile();
+  }
+
+  async function refreshOpportunities() {
+    await loadOpps();
   }
 
   async function loadOpps() {
@@ -510,100 +629,115 @@
         container.innerHTML = '<div class="card">✨ No spreads >0.2% right now. Try again in a few seconds.</div>';
         return;
       }
-      container.innerHTML = '';
-      data.opportunities.forEach(opp => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="symbol">${opp.symbol}</div>
-          <div class="row"><span>${opp.buyExchange}</span><span>💰 ${opp.buyPrice}</span></div>
-          <div class="row"><span>${opp.sellExchange}</span><span>💰 ${opp.sellPrice}</span></div>
-          <div class="row"><span>Spread</span><span class="badge green">${opp.spread}%</span></div>
-          <div class="row"><span>Tradable</span><span class="badge ${opp.tradable ? 'green' : 'red'}">${opp.tradable ? 'YES' : 'NO'}</span></div>
-        `;
-        card.onclick = () => showDetail(opp);
-        container.appendChild(card);
-      });
+      allOpportunities = data.opportunities;
+      applySortAndRender();
     } catch (err) {
       container.innerHTML = '<div class="card red">Failed to fetch opportunities. Is server running?</div>';
     }
   }
 
-  // Helper: generate realistic liquidity & min amounts based on price
-  function getLiquidityAndMin(price, exchange, isBuy) {
-    const liquidity = (Math.random() * 100000 + 10000).toFixed(2);
-    let minAmount = 0;
-    if (price > 0) {
-      const targetUsd = 10; // $10 minimum trade
-      minAmount = (targetUsd / price).toFixed(2);
+  function applySortAndRender() {
+    let sorted = [...allOpportunities];
+    const sortBy = document.getElementById('sortSelect').value;
+    if (sortBy === 'spreadDesc') {
+      sorted.sort((a, b) => parseFloat(b.spread) - parseFloat(a.spread));
+    } else if (sortBy === 'symbolAsc') {
+      sorted.sort((a, b) => a.symbol.localeCompare(b.symbol));
     }
-    return { liquidity, minAmount };
+    renderOppsList(sorted);
   }
 
-  function showDetail(opp) {
+  function renderOppsList(opps) {
+    const container = document.getElementById('oppList');
+    container.innerHTML = '';
+    for (const opp of opps) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="symbol">${opp.symbol}</div>
+        <div class="row"><span>${opp.buyExchange}</span><span>💰 ${opp.buyPrice}</span></div>
+        <div class="row"><span>${opp.sellExchange}</span><span>💰 ${opp.sellPrice}</span></div>
+        <div class="row"><span>Spread</span><span class="badge green">${opp.spread}%</span></div>
+      `;
+      card.onclick = () => showDetail(opp);
+      container.appendChild(card);
+    }
+  }
+
+  // Fetch real network data from backend (/api/network/:exchange/:symbol)
+  async function showDetail(opp) {
     const modal = document.getElementById('detailModal');
     const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = '<div class="loading">Fetching real network data from exchanges...</div>';
+    modal.style.display = 'block';
 
-    const buyLiq = getLiquidityAndMin(parseFloat(opp.buyPrice), opp.buyExchange, true);
-    const sellLiq = getLiquidityAndMin(parseFloat(opp.sellPrice), opp.sellExchange, false);
+    const coin = opp.symbol; // e.g., "BTC"
+    const buyEx = opp.buyExchange.toLowerCase();
+    const sellEx = opp.sellExchange.toLowerCase();
 
-    const tradableClass = opp.tradable ? 'tradable-badge' : 'tradable-badge not-tradable-badge';
-    const tradableText = opp.tradable ? 'TRADABLE ✅' : 'NOT TRADABLE ❌';
+    let buyNetInfo = null, sellNetInfo = null;
+    try {
+      const [buyRes, sellRes] = await Promise.all([
+        fetch(`/api/network/${buyEx}/${coin}`).catch(() => null),
+        fetch(`/api/network/${sellEx}/${coin}`).catch(() => null)
+      ]);
+      if (buyRes && buyRes.ok) buyNetInfo = await buyRes.json();
+      if (sellRes && sellRes.ok) sellNetInfo = await sellRes.json();
+    } catch (err) {
+      console.log(err);
+    }
 
-    // Build network rows for buy side (mock additional fields)
-    const buyNetworks = opp.buyNetworks || [];
-    const sellNetworks = opp.sellNetworks || [];
-
-    const networkRow = (net, side) => {
-      if (!net.length) return '<div class="network-row"><span>No network data</span></div>';
-      return net.map(n => `
+    function networkRows(netInfo) {
+      if (!netInfo || !netInfo.networks || Object.keys(netInfo.networks).length === 0) {
+        return '<div class="network-row"><span>No network data available</span></div>';
+      }
+      return Object.values(netInfo.networks).map(n => `
         <div class="network-row">
           <div class="network-name">${n.name}</div>
           <div class="network-details">
-            ✅ Arrival: ≈ ${Math.floor(Math.random() * 20 + 5)}-${Math.floor(Math.random() * 20 + 15)} min<br>
-            📊 Fee: ${n.name === 'ERC20' ? 'variable' : '~1 USDT'}<br>
             Deposit: ${n.deposit ? '✅ Open' : '❌ Closed'}<br>
             Withdraw: ${n.withdraw ? '✅ Open' : '❌ Closed'}<br>
-            <span class="small-text">Min Withdraw: ${(Math.random() * 50 + 5).toFixed(0)} TROLL</span>
+            Fee: ${typeof n.fee === 'number' ? n.fee : 'variable'}<br>
+            Min Withdraw: ${n.minWithdraw || 'N/A'}
           </div>
         </div>
       `).join('');
-    };
+    }
+
+    const buyWithdrawOk = buyNetInfo?.canWithdraw === true;
+    const sellDepositOk = sellNetInfo?.canDeposit === true;
+    const tradable = buyWithdrawOk && sellDepositOk;
+    const tradableText = tradable ? 'TRADABLE ✅' : 'NOT TRADABLE ❌';
+    const tradableClass = tradable ? 'green' : 'red';
 
     modalBody.innerHTML = `
       <div class="modal-symbol">${opp.symbol}</div>
       <div class="modal-spread">Spread: <span style="color:#00ff99">${opp.spread}%</span></div>
-      <div style="margin: 10px 0 20px 0"><span class="${tradableClass}">${tradableText}</span></div>
+      <div style="margin: 10px 0 20px 0"><span class="badge ${tradableClass}">${tradableText}</span></div>
 
       <div class="exchange-columns">
         <div class="exchange-card">
           <div class="exchange-title">Buy: ${opp.buyExchange}</div>
           <div class="price">$${opp.buyPrice}</div>
-          <div class="status"><span class="status-icon">✅</span> Withdrawal allowed: ${opp.buyWithdraw ? 'Yes' : 'No'}</div>
-          <div class="liquidity">📊 Liquidity: $${buyLiq.liquidity}</div>
-          <div class="min-amount">📉 Minimum Buy: ${buyLiq.minAmount} ${opp.symbol} (≈ $10)</div>
+          <div class="status"><span class="status-icon">✅</span> Withdrawal allowed: ${buyWithdrawOk ? 'Yes' : (buyNetInfo?.canWithdraw === false ? 'No' : 'Unknown')}</div>
         </div>
         <div class="exchange-card">
           <div class="exchange-title">Sell: ${opp.sellExchange}</div>
           <div class="price">$${opp.sellPrice}</div>
-          <div class="status"><span class="status-icon">✅</span> Deposit allowed: ${opp.sellDeposit ? 'Yes' : 'No'}</div>
-          <div class="liquidity">📊 Liquidity: $${sellLiq.liquidity}</div>
-          <div class="min-amount">📉 Minimum Sell: ${sellLiq.minAmount} ${opp.symbol} (≈ $6)</div>
+          <div class="status"><span class="status-icon">✅</span> Deposit allowed: ${sellDepositOk ? 'Yes' : (sellNetInfo?.canDeposit === false ? 'No' : 'Unknown')}</div>
         </div>
       </div>
 
       <h4 style="margin: 20px 0 12px 0">🌐 Networks (${opp.buyExchange})</h4>
       <div class="network-table">
-        ${networkRow(buyNetworks, 'buy')}
+        ${networkRows(buyNetInfo)}
       </div>
 
       <h4 style="margin: 20px 0 12px 0">🌐 Networks (${opp.sellExchange})</h4>
       <div class="network-table">
-        ${networkRow(sellNetworks, 'sell')}
+        ${networkRows(sellNetInfo)}
       </div>
     `;
-
-    modal.style.display = 'block';
   }
 
   function closeDetail() {
@@ -612,26 +746,44 @@
 
   async function loadProfile() {
     const container = document.getElementById('profileCard');
-    container.innerHTML = '<div class="loading">Loading...</div>';
+    container.innerHTML = '<div class="loading">Loading profile...</div>';
     try {
       const res = await fetch('/api/me', { headers: { Authorization: token } });
       const user = await res.json();
       if (user.error) throw new Error(user.error);
-      container.innerHTML = `<div class="card"><div class="row"><span>👤 Username:</span><span>${user.username}</span></div><div class="row"><span>📧 Email:</span><span>${user.email}</span></div><div class="row"><span>📱 M-Pesa:</span><span>${user.mpesa}</span></div></div>`;
+      container.innerHTML = `
+        <div class="card">
+          <div class="row"><span>👤 Username:</span><span>${user.username}</span></div>
+          <div class="row"><span>📧 Email:</span><span>${user.email}</span></div>
+          <div class="row"><span>📱 Mobile:</span><span>${user.mpesa}</span></div>
+        </div>
+      `;
     } catch (err) {
       container.innerHTML = '<div class="card red">Not logged in or session expired.</div>';
     }
   }
 
   async function payPro(plan, amount) {
-    if (!token) { alert('Please login first'); return; }
+    if (!token) {
+      alert('Please login first');
+      return;
+    }
     const phone = prompt('Enter M-Pesa phone number (e.g., 0712345678):');
-    if (!phone || phone.length < 9) { alert('Valid phone number required'); return; }
+    if (!phone || phone.length < 9) {
+      alert('Valid phone number required');
+      return;
+    }
     try {
-      const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ phone, amount, plan }) });
+      const res = await fetch('/api/pesapal/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token },
+        body: JSON.stringify({ phone, amount, plan })
+      });
       const data = await res.json();
       alert(data.message || 'STK Push sent! Complete payment on your phone.');
-    } catch (err) { alert('Payment request failed.'); }
+    } catch (err) {
+      alert('Payment request failed.');
+    }
   }
 </script>
 </body>
