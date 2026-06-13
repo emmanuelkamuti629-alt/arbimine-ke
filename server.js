@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const ccxt = require('ccxt');
 
-// Use the official Paystack Node.js SDK
+// Correct import for paystack-sdk
 const Paystack = require('paystack-sdk');
 
 const app = express();
@@ -295,7 +295,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   });
 });
 
-// ---------- PAYSTACK PAYMENT (using official paystack-sdk) ----------
+// ---------- PAYSTACK PAYMENT (FIXED: use new Paystack()) ----------
 app.post('/api/pesapal/pay', async (req, res) => {
   const { plan } = req.body;
   const token = req.headers.authorization;
@@ -313,11 +313,11 @@ app.post('/api/pesapal/pay', async (req, res) => {
 
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!paystackSecretKey) {
-      return res.status(500).json({ error: 'Payment gateway not configured' });
+      return res.status(500).json({ error: 'Payment gateway not configured: missing secret key' });
     }
 
-    // Initialize Paystack SDK
-    const paystack = Paystack(paystackSecretKey);
+    // CORRECT: instantiate with 'new'
+    const paystack = new Paystack(paystackSecretKey);
     const reference = `arbimine_${user.username}_${Date.now()}`;
     const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
 
@@ -336,7 +336,6 @@ app.post('/api/pesapal/pay', async (req, res) => {
     });
 
     if (response.status) {
-      // Return the authorization URL to frontend
       res.json({
         success: true,
         authorizationUrl: response.data.authorization_url,
@@ -348,7 +347,7 @@ app.post('/api/pesapal/pay', async (req, res) => {
     }
   } catch (err) {
     console.error('Paystack error:', err);
-    res.status(500).json({ error: 'Payment service error: ' + err.message });
+    res.status(500).json({ error: 'Payment service error: ' + (err.message || 'Unknown error') });
   }
 });
 
@@ -356,19 +355,17 @@ app.post('/api/pesapal/pay', async (req, res) => {
 app.get('/api/payment/callback', (req, res) => {
   const { reference, trxref } = req.query;
   console.log('Payment callback received:', { reference, trxref });
-  // Redirect to frontend with success message
   res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
 });
 
-// Webhook endpoint for Paystack to confirm payment (optional but recommended)
+// Webhook endpoint for Paystack to confirm payment (optional)
 app.post('/api/payment/webhook', async (req, res) => {
   const event = req.body;
   console.log('Webhook received:', event);
-  // Verify signature, then update user subscription based on event.data.reference
   res.json({ status: 'received' });
 });
 
-// ---------- TEMP: endpoint to get server IP for whitelisting (remove later) ----------
+// ---------- TEMP: endpoint to get server IP for whitelisting ----------
 app.get('/api/debug/ip', async (req, res) => {
   try {
     const response = await axios.get('https://api.ipify.org?format=json');
