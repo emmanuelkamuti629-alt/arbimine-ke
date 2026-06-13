@@ -3,116 +3,132 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Arbitrage Nexus · Deep Network View</title>
+  <title>Arbitrage Nexus · Dark Edition</title>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <!-- TailwindCSS -->
+  <!-- TailwindCSS (customized with dark mode) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    /* page transition */
-    .view {
-      transition: opacity 0.2s ease;
+    /* custom dark theme overrides */
+    body {
+      background: #0a0c12;
     }
-    .view-hidden {
-      display: none;
+    .glass-card {
+      background: rgba(18, 22, 30, 0.95);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
     .opportunity-card {
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
       cursor: pointer;
+      background: #11161f;
+      border-bottom: 1px solid #1e2a3a;
     }
     .opportunity-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      background: #1a2535;
+      transform: translateX(4px);
     }
     .risk-badge-low { background: #10b981; }
     .risk-badge-med { background: #f59e0b; }
     .risk-badge-high { background: #ef4444; }
-    button:active { transform: scale(0.97); }
-    .network-item {
-      border-bottom: 1px solid #e2e8f0;
+    .network-btn {
+      background: #1e2a3a;
+      transition: all 0.1s;
     }
-    .network-item:last-child {
-      border-bottom: none;
+    .network-btn:hover {
+      background: #2d3e54;
+    }
+    button:active { transform: scale(0.96); }
+    .scrollbar-custom::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scrollbar-custom::-webkit-scrollbar-track {
+      background: #1a1f2a;
+    }
+    .scrollbar-custom::-webkit-scrollbar-thumb {
+      background: #3b4b62;
+      border-radius: 8px;
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-gray-100 font-sans antialiased">
+<body class="bg-[#0a0c12] font-sans antialiased">
 
-<div class="max-w-4xl mx-auto px-4 py-6 md:py-8">
-  <!-- ==================== LIST VIEW (OPPORTUNITIES) ==================== -->
+<div class="max-w-6xl mx-auto px-4 py-6 md:py-8">
+  <!-- ==================== LIST VIEW (ALL OPPORTUNITIES, SCROLLABLE) ==================== -->
   <div id="listView" class="view">
-    <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
-      <div class="p-5 bg-gray-50/80 border-b border-gray-200 flex justify-between items-center">
+    <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
+      <div class="p-5 bg-black/40 border-b border-gray-800 flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-purple-800">⚡ Arbitrage Nexus</h1>
-          <p class="text-xs text-gray-500 mt-1">live cross‑exchange opportunities · AI risk + networks</p>
+          <h1 class="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">⚡ Arbitrage Nexus</h1>
+          <p class="text-gray-400 text-sm mt-1">live cross‑exchange · AI risk + network deep dive</p>
         </div>
-        <div class="text-xs text-gray-400 bg-white px-2 py-1 rounded-full"><i class="fas fa-chart-line"></i> real‑time</div>
+        <div class="text-xs text-cyan-400 bg-black/40 px-3 py-1.5 rounded-full border border-cyan-500/30"><i class="fas fa-chart-line"></i> real‑time</div>
       </div>
-      <div id="opportunitiesContainer" class="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+      <!-- scrollable opportunities list - shows all opportunities with vertical scrollbar -->
+      <div id="opportunitiesContainer" class="divide-y divide-gray-800 max-h-[540px] overflow-y-auto scrollbar-custom">
         <!-- dynamic cards injected -->
       </div>
-      <div class="p-3 text-center text-xs text-gray-400 bg-gray-50 border-t border-gray-100">
+      <div class="p-3 text-center text-xs text-gray-500 bg-black/30 border-t border-gray-800">
         <i class="fas fa-mouse-pointer"></i> click any card → full arbitrage details (networks, AI, chart)
       </div>
     </div>
   </div>
 
-  <!-- ==================== DETAIL VIEW (INSIDE PAGE) ==================== -->
-  <div id="detailView" class="view view-hidden">
-    <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+  <!-- ==================== DETAIL VIEW (BLACK THEME, LIKE 2ND IMAGE) ==================== -->
+  <div id="detailView" class="view hidden">
+    <div class="glass-card rounded-2xl shadow-2xl overflow-hidden">
       <!-- header with back button -->
-      <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4 border-b border-indigo-100 flex flex-wrap justify-between items-center gap-3">
+      <div class="bg-black/50 border-b border-gray-800 px-5 py-4 flex flex-wrap justify-between items-center gap-3">
         <div class="flex items-center gap-3">
-          <button id="backToListBtn" class="bg-white hover:bg-gray-100 text-gray-700 px-3 py-2 rounded-lg shadow-sm flex items-center gap-2 transition text-sm"><i class="fas fa-arrow-left"></i> Back</button>
+          <button id="backToListBtn" class="bg-gray-800 hover:bg-gray-700 text-cyan-400 px-3 py-2 rounded-lg flex items-center gap-2 transition text-sm border border-gray-700"><i class="fas fa-arrow-left"></i> Back</button>
           <div>
-            <span class="text-xs font-medium text-indigo-600 uppercase">Arbitrage Details</span>
-            <h2 id="detailOppTitle" class="text-2xl font-bold text-gray-800">—</h2>
+            <span class="text-xs text-gray-400 uppercase tracking-wider">Arbitrage Details</span>
+            <h2 id="detailOppTitle" class="text-2xl font-bold text-white">—</h2>
           </div>
         </div>
-        <div id="detailTradableBadge" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-white shadow-sm"></div>
+        <div id="detailTradableBadge" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-black/40 border border-gray-700"></div>
       </div>
 
       <div class="p-5 space-y-6">
         <!-- buy / sell summary row (cards) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <!-- BUY CARD -->
-          <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-            <div class="flex items-center gap-2 text-emerald-700 font-semibold"><i class="fas fa-shopping-cart"></i> BUY</div>
-            <div class="text-xl font-mono font-bold mt-1" id="buyExchangeName">—</div>
-            <div class="text-2xl font-bold text-gray-800">$<span id="buyPrice">—</span></div>
-            <div class="text-xs text-gray-500 mt-1">liquidity: <span id="buyLiquidity">—</span></div>
+          <div class="bg-gradient-to-br from-emerald-900/40 to-black/60 rounded-xl p-4 border border-emerald-500/30">
+            <div class="flex items-center gap-2 text-emerald-400 font-semibold"><i class="fas fa-shopping-cart"></i> BUY</div>
+            <div class="text-xl font-mono font-bold text-white mt-1" id="buyExchangeName">—</div>
+            <div class="text-3xl font-bold text-white">$<span id="buyPrice">—</span></div>
+            <div class="text-xs text-gray-400 mt-1">liquidity: <span id="buyLiquidity">—</span></div>
           </div>
           <!-- SELL CARD -->
-          <div class="bg-rose-50 rounded-xl p-4 border border-rose-200">
-            <div class="flex items-center gap-2 text-rose-700 font-semibold"><i class="fas fa-tags"></i> SELL</div>
-            <div class="text-xl font-mono font-bold mt-1" id="sellExchangeName">—</div>
-            <div class="text-2xl font-bold text-gray-800">$<span id="sellPrice">—</span></div>
-            <div class="text-xs text-gray-500 mt-1">liquidity: <span id="sellLiquidity">—</span></div>
+          <div class="bg-gradient-to-br from-rose-900/40 to-black/60 rounded-xl p-4 border border-rose-500/30">
+            <div class="flex items-center gap-2 text-rose-400 font-semibold"><i class="fas fa-tags"></i> SELL</div>
+            <div class="text-xl font-mono font-bold text-white mt-1" id="sellExchangeName">—</div>
+            <div class="text-3xl font-bold text-white">$<span id="sellPrice">—</span></div>
+            <div class="text-xs text-gray-400 mt-1">liquidity: <span id="sellLiquidity">—</span></div>
           </div>
         </div>
 
         <!-- spread + arrival time -->
-        <div class="flex flex-wrap justify-between items-center bg-gray-50 p-3 rounded-lg">
-          <div><span class="text-gray-500">Spread</span> <strong id="detailSpreadPercent" class="text-indigo-700 text-xl ml-2">—%</strong></div>
-          <div><span class="text-gray-500"><i class="fas fa-clock"></i> Arrival Time</span> <strong id="detailArrivalTime" class="ml-2">—</strong></div>
+        <div class="flex flex-wrap justify-between items-center bg-black/40 p-3 rounded-lg border border-gray-800">
+          <div><span class="text-gray-400">Spread</span> <strong id="detailSpreadPercent" class="text-cyan-400 text-2xl ml-2">—%</strong></div>
+          <div><span class="text-gray-400"><i class="fas fa-clock"></i> Arrival Time</span> <strong id="detailArrivalTime" class="ml-2 text-white">—</strong></div>
         </div>
 
-        <!-- NETWORKS SECTION: Withdraw Networks (buy side) & Deposit Networks (sell side) -->
-        <div class="border-t border-gray-200 pt-4">
+        <!-- NETWORKS SECTION -->
+        <div class="border-t border-gray-800 pt-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Withdraw Networks (buy exchange) -->
             <div>
-              <h3 class="font-semibold text-gray-800 flex items-center gap-2 border-b pb-1 border-gray-300"><i class="fas fa-arrow-up text-emerald-600"></i> Withdraw Networks (Buy side)</h3>
+              <h3 class="font-semibold text-gray-300 flex items-center gap-2 border-b border-gray-700 pb-2"><i class="fas fa-arrow-up text-emerald-400"></i> Withdraw Networks (Buy side)</h3>
               <div id="withdrawNetworksList" class="mt-3 space-y-3">
-                <!-- dynamic network items with fee, eta, open button -->
+                <!-- dynamic -->
               </div>
             </div>
             <!-- Deposit Networks (sell exchange) -->
             <div>
-              <h3 class="font-semibold text-gray-800 flex items-center gap-2 border-b pb-1 border-gray-300"><i class="fas fa-arrow-down text-rose-600"></i> Deposit Networks (Sell side)</h3>
+              <h3 class="font-semibold text-gray-300 flex items-center gap-2 border-b border-gray-700 pb-2"><i class="fas fa-arrow-down text-rose-400"></i> Deposit Networks (Sell side)</h3>
               <div id="depositNetworksList" class="mt-3 space-y-3">
                 <!-- dynamic -->
               </div>
@@ -120,28 +136,28 @@
           </div>
         </div>
 
-        <!-- AI RISK ANALYSIS -->
-        <div class="bg-gray-50/90 rounded-xl p-4 border border-gray-200">
-          <div class="flex items-center gap-2 mb-2"><i class="fas fa-brain text-purple-600 text-xl"></i><span class="font-bold text-gray-800">AI Risk Analysis</span></div>
+        <!-- AI RISK ANALYSIS (with black card style) -->
+        <div class="bg-black/40 rounded-xl p-4 border border-gray-800">
+          <div class="flex items-center gap-2 mb-2"><i class="fas fa-brain text-purple-400 text-xl"></i><span class="font-bold text-white">AI Risk Analysis</span></div>
           <div id="aiRiskBadge" class="inline-block px-3 py-1 rounded-full text-white text-sm font-bold mb-2">—</div>
-          <div id="aiRiskExplanation" class="text-sm text-gray-600 bg-white p-3 rounded-lg border-l-4 border-purple-300">—</div>
+          <div id="aiRiskExplanation" class="text-sm text-gray-300 bg-black/60 p-3 rounded-lg border-l-4 border-purple-500">—</div>
         </div>
 
-        <!-- SPREAD TREND CHART -->
+        <!-- SPREAD TREND CHART (dark background for chart) -->
         <div>
-          <div class="flex justify-between items-center mb-2"><span class="font-medium text-gray-700"><i class="fas fa-chart-line text-indigo-500"></i> Spread Trend (%)</span><span class="text-xs text-gray-400">x: time steps</span></div>
-          <div class="bg-white p-2 rounded-xl border border-gray-200">
+          <div class="flex justify-between items-center mb-2"><span class="font-medium text-gray-300"><i class="fas fa-chart-line text-cyan-400"></i> Spread Trend (%)</span><span class="text-xs text-gray-500">x: time steps</span></div>
+          <div class="bg-black/60 p-2 rounded-xl border border-gray-800">
             <canvas id="detailTrendChart" width="500" height="220" style="max-height: 220px; width: 100%"></canvas>
           </div>
         </div>
-        <div class="text-xs text-gray-400 text-center pt-2"><i class="fas fa-link"></i> Network fees & ETA based on real estimates</div>
+        <div class="text-xs text-gray-500 text-center pt-2"><i class="fas fa-link"></i> Network fees & ETA based on real estimates — OPEN button simulates bridge UI</div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // ========================= MOCK DATA (enriched with networks, arrival times, liquidity) =========================
+  // ======================== OPPORTUNITIES DATA (all 5, with networks & black theme matching) ========================
   const opportunitiesData = [
     {
       id: 0,
@@ -154,20 +170,17 @@
       arrivalTime: "3 mins",
       buyLiquidity: "$1.8M",
       sellLiquidity: "$2.1M",
-      // Withdraw networks (for buy exchange: MEXC)
       withdrawNetworks: [
         { name: "Arbitrum", fee: "0.001 ETH", feeUsd: 3.4, eta: "1 min", available: true, openLink: "#" },
         { name: "ERC20", fee: "0.004 ETH", feeUsd: 13.6, eta: "8 mins", available: true, openLink: "#" }
       ],
-      // Deposit networks (for sell exchange: HTX)
       depositNetworks: [
-        { name: "Arbitrum", fee: "FREE", feeUsd: 0, eta: "1 min", available: true, openLink: "#" },
+        { name: "Arbitrum", fee: "0.001 ETH", feeUsd: 3.4, eta: "1 min", available: true, openLink: "#" },
         { name: "ERC20", fee: "0.002 ETH", feeUsd: 6.8, eta: "5 mins", available: true, openLink: "#" }
       ],
       historicalSpreads: [2.8, 3.2, 3.5, 4.0, 4.3, 4.7, 4.8, 4.7, 4.6, 4.7],
       liquidityScore: 8.5,
       volumeScore: 9.0,
-      // flags for tradability
       buyWithdrawEnabled: true,
       sellDepositEnabled: true
     },
@@ -273,19 +286,18 @@
     }
   ];
 
-  // Helper: determine tradable (positive spread, both withdraw on buy side and deposit on sell side enabled, and liquidity > small)
+  // Helper: determine tradable
   function isTradable(opp) {
     return opp.spreadPercent > 0 && opp.buyWithdrawEnabled && opp.sellDepositEnabled && (opp.liquidityScore > 0.1);
   }
 
-  // AI Risk computation (based on spread, volatility, liquidity, network constraints)
+  // AI Risk computation (dark mode friendly)
   function computeAIRisk(opp) {
     const hist = opp.historicalSpreads;
     const mean = hist.reduce((a,b)=>a+b,0)/hist.length;
     let variance = hist.map(v=>Math.pow(v-mean,2)).reduce((a,b)=>a+b,0)/hist.length;
     let stdDev = Math.sqrt(variance);
     let cv = (Math.abs(mean) > 0.01) ? stdDev / Math.abs(mean) : 1.0;
-    
     let spreadRisk = opp.spreadPercent > 20 ? 3.0 : (opp.spreadPercent > 12 ? 1.8 : 0.8);
     let volatilityRisk = cv > 0.2 ? 2.2 : (cv > 0.1 ? 1.2 : 0.4);
     let liquidityRisk = (10 - opp.liquidityScore) * 0.4;
@@ -297,22 +309,22 @@
     return { level, score: raw.toFixed(1), explanation };
   }
 
-  // render network items (withdraw or deposit) with OPEN button
+  // render network items with dark theme and OPEN button
   function renderNetworkList(networks, type) {
-    if (!networks || networks.length === 0) return '<div class="text-gray-400 italic">No networks available</div>';
+    if (!networks || networks.length === 0) return '<div class="text-gray-500 italic">No networks available</div>';
     return networks.map(n => {
-      const statusClass = n.available ? 'text-gray-800' : 'text-gray-400 line-through';
+      const statusClass = n.available ? 'text-white' : 'text-gray-500 line-through';
       const feeDisplay = n.fee || 'N/A';
       const etaDisplay = n.eta || 'N/A';
       const disabledAttr = !n.available ? 'disabled' : '';
       return `
-        <div class="network-item pb-2 flex flex-wrap justify-between items-center gap-2 border-b border-gray-100 last:border-0">
+        <div class="bg-black/30 rounded-lg p-3 flex flex-wrap justify-between items-center gap-2 border border-gray-800">
           <div class="flex-1">
             <div class="font-medium ${statusClass}">${n.name}</div>
-            <div class="text-xs text-gray-500">Fee: ${feeDisplay} • ETA: ${etaDisplay}</div>
-            ${n.warning ? `<div class="text-[11px] text-amber-600">⚠️ ${n.warning}</div>` : ''}
+            <div class="text-xs text-gray-400">Fee: ${feeDisplay} • ETA: ${etaDisplay}</div>
+            ${n.warning ? `<div class="text-[11px] text-yellow-500">⚠️ ${n.warning}</div>` : ''}
           </div>
-          <button class="open-network-btn text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full transition ${!n.available ? 'opacity-50 cursor-not-allowed' : ''}" data-link="${n.openLink || '#'}" ${disabledAttr}>OPEN</button>
+          <button class="open-network-btn bg-gray-800 hover:bg-cyan-900 text-cyan-300 text-xs px-4 py-1.5 rounded-full transition border border-gray-700 ${!n.available ? 'opacity-50 cursor-not-allowed' : ''}" data-link="${n.openLink || '#'}" ${disabledAttr}>OPEN</button>
         </div>
       `;
     }).join('');
@@ -321,10 +333,9 @@
   let currentOpp = null;
   let chartInstance = null;
 
-  // update detail view with selected opportunity
   function showDetail(opp) {
     currentOpp = opp;
-    // set title & exchanges
+    // populate fields
     document.getElementById('detailOppTitle').innerText = opp.name;
     document.getElementById('buyExchangeName').innerHTML = `${opp.buyExchange}`;
     document.getElementById('sellExchangeName').innerHTML = `${opp.sellExchange}`;
@@ -335,23 +346,20 @@
     document.getElementById('detailSpreadPercent').innerText = `${opp.spreadPercent.toFixed(2)}%`;
     document.getElementById('detailArrivalTime').innerText = opp.arrivalTime || '~3 mins';
     
-    // tradable badge
     const tradable = isTradable(opp);
-    const badgeHtml = tradable ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">✓ TRADABLE</span>' : '<span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">✗ NOT TRADABLE</span>';
+    const badgeHtml = tradable ? '<span class="bg-green-900/60 text-green-300 px-2 py-1 rounded-full text-xs font-bold border border-green-500">✓ TRADABLE</span>' : '<span class="bg-red-900/60 text-red-300 px-2 py-1 rounded-full text-xs font-bold border border-red-500">✗ NOT TRADABLE</span>';
     document.getElementById('detailTradableBadge').innerHTML = badgeHtml;
     
-    // withdraw & deposit networks
     document.getElementById('withdrawNetworksList').innerHTML = renderNetworkList(opp.withdrawNetworks, 'withdraw');
     document.getElementById('depositNetworksList').innerHTML = renderNetworkList(opp.depositNetworks, 'deposit');
     
-    // AI risk
     const risk = computeAIRisk(opp);
     let riskColorClass = risk.level === 'LOW' ? 'risk-badge-low' : (risk.level === 'MEDIUM' ? 'risk-badge-med' : 'risk-badge-high');
     document.getElementById('aiRiskBadge').innerHTML = `${risk.level} RISK`;
     document.getElementById('aiRiskBadge').className = `inline-block px-3 py-1 rounded-full text-white text-sm font-bold mb-2 ${riskColorClass}`;
     document.getElementById('aiRiskExplanation').innerHTML = `<i class="fas fa-microchip mr-1"></i> ${risk.explanation}`;
     
-    // chart
+    // Chart (dark mode appropriate)
     const ctx = document.getElementById('detailTrendChart').getContext('2d');
     if (chartInstance) chartInstance.destroy();
     chartInstance = new Chart(ctx, {
@@ -361,11 +369,12 @@
         datasets: [{
           label: `${opp.name} Spread %`,
           data: opp.historicalSpreads,
-          borderColor: '#4f46e5',
-          backgroundColor: 'rgba(79,70,229,0.05)',
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.05)',
           borderWidth: 2.5,
           pointRadius: 3,
-          pointBackgroundColor: '#818cf8',
+          pointBackgroundColor: '#22d3ee',
+          pointBorderColor: '#0f172a',
           tension: 0.2,
           fill: true
         }]
@@ -373,53 +382,58 @@
       options: {
         responsive: true,
         maintainAspectRatio: true,
-        plugins: { legend: { position: 'top' }, tooltip: { mode: 'index' } },
-        scales: { y: { title: { display: true, text: 'Spread %' } }, x: { title: { display: true, text: 'Time step' } } }
+        plugins: {
+          legend: { labels: { color: '#cbd5e1' } },
+          tooltip: { mode: 'index', backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#cbd5e1' }
+        },
+        scales: {
+          y: { title: { display: true, text: 'Spread %', color: '#94a3b8' }, grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1' } },
+          x: { title: { display: true, text: 'Time step', color: '#94a3b8' }, grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1' } }
+        }
       }
     });
     
-    // switch views: hide list, show detail
-    document.getElementById('listView').classList.add('view-hidden');
-    document.getElementById('detailView').classList.remove('view-hidden');
+    document.getElementById('listView').classList.add('hidden');
+    document.getElementById('detailView').classList.remove('hidden');
   }
 
   function backToList() {
-    document.getElementById('detailView').classList.add('view-hidden');
-    document.getElementById('listView').classList.remove('view-hidden');
+    document.getElementById('detailView').classList.add('hidden');
+    document.getElementById('listView').classList.remove('hidden');
     if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
   }
 
-  // render opportunities list (with tradable & risk badge)
+  // render opportunities list (scrollable, all 5)
   function renderOpportunities() {
     const container = document.getElementById('opportunitiesContainer');
     container.innerHTML = '';
     opportunitiesData.forEach(opp => {
       const tradable = isTradable(opp);
       const risk = computeAIRisk(opp);
-      const tradableBadge = tradable ? '<span class="bg-emerald-100 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">✅ Tradable</span>' : '<span class="bg-rose-100 text-rose-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">❌ Not tradable</span>';
+      const tradableBadge = tradable ? '<span class="bg-emerald-900/50 text-emerald-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-700">✅ Tradable</span>' : '<span class="bg-red-900/50 text-red-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-red-700">❌ Not tradable</span>';
       let riskBadge = '';
-      if (risk.level === 'LOW') riskBadge = '<span class="bg-green-100 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">🟢 Low Risk</span>';
-      else if (risk.level === 'MEDIUM') riskBadge = '<span class="bg-yellow-100 text-yellow-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">🟡 Medium Risk</span>';
-      else riskBadge = '<span class="bg-red-100 text-red-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">🔴 High Risk</span>';
+      if (risk.level === 'LOW') riskBadge = '<span class="bg-green-900/40 text-green-300 text-[10px] font-semibold px-2 py-0.5 rounded-full">🟢 Low Risk</span>';
+      else if (risk.level === 'MEDIUM') riskBadge = '<span class="bg-yellow-900/40 text-yellow-300 text-[10px] font-semibold px-2 py-0.5 rounded-full">🟡 Medium Risk</span>';
+      else riskBadge = '<span class="bg-red-900/40 text-red-300 text-[10px] font-semibold px-2 py-0.5 rounded-full">🔴 High Risk</span>';
       
       const card = document.createElement('div');
-      card.className = 'opportunity-card p-4 flex justify-between items-center hover:bg-indigo-50/40 border-b border-gray-100';
+      card.className = 'opportunity-card p-4 flex justify-between items-center';
       card.innerHTML = `
         <div>
-          <div class="font-bold text-gray-800 text-lg">${opp.name}</div>
-          <div class="flex flex-wrap gap-2 text-xs text-gray-500 mt-0.5">${opp.buyExchange} ⇄ ${opp.sellExchange}  <span class="text-indigo-600 font-mono">${opp.spreadPercent.toFixed(2)}%</span></div>
+          <div class="font-bold text-white text-lg">${opp.name}</div>
+          <div class="flex flex-wrap gap-2 text-xs text-gray-400 mt-0.5">${opp.buyExchange} ⇄ ${opp.sellExchange}  <span class="text-cyan-400 font-mono">${opp.spreadPercent.toFixed(2)}%</span></div>
           <div class="flex gap-1 mt-1">${tradableBadge} ${riskBadge}</div>
         </div>
-        <i class="fas fa-chevron-right text-gray-300"></i>
+        <i class="fas fa-chevron-right text-gray-500"></i>
       `;
       card.addEventListener('click', () => showDetail(opp));
       container.appendChild(card);
     });
   }
 
-  // attach event listeners for back button and network open buttons (delegation)
+  // Event listeners
   document.getElementById('backToListBtn').addEventListener('click', backToList);
-  // Also global event listener for OPEN buttons inside detail view (since dynamic)
+  // Delegate OPEN button clicks in detail view
   document.getElementById('detailView').addEventListener('click', (e) => {
     const btn = e.target.closest('.open-network-btn');
     if (btn && btn.hasAttribute('data-link') && !btn.disabled) {
@@ -428,12 +442,11 @@
       if (link && link !== '#') {
         window.open(link, '_blank');
       } else {
-        alert('Network details simulation: This would open the bridge/withdrawal interface.');
+        alert('🧠 Network simulation: This would open the bridge / withdrawal interface.');
       }
     }
   });
 
-  // initial load
   renderOpportunities();
 </script>
 </body>
