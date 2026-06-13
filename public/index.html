@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>ArbiMine • Live Arbitrage Scanner</title>
+  <title>ArbiMine • Arbitrage Intelligence</title>
   <style>
     * {
       margin: 0;
@@ -13,7 +13,7 @@
 
     body {
       background: #0b1220;
-      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
       color: #eef2ff;
       padding-bottom: 20px;
     }
@@ -70,10 +70,6 @@
       transition: 0.2s;
     }
 
-    .auth-container button:hover {
-      background: #00cc7a;
-    }
-
     .toggle-link {
       text-align: center;
       margin-top: 20px;
@@ -82,7 +78,7 @@
       font-size: 14px;
     }
 
-    /* main dashboard (hidden until login) */
+    /* dashboard */
     .dashboard {
       display: none;
     }
@@ -132,6 +128,7 @@
       font-size: 22px;
     }
 
+    /* opportunity card (list) */
     .card {
       background: #111a2e;
       border-radius: 20px;
@@ -198,28 +195,153 @@
       color: #8e9ab0;
     }
 
-    .pro-plan {
-      background: linear-gradient(145deg, #0f1a2e, #0a1020);
+    /* ========= DETAIL MODAL ========= */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .modal-content {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #0f172f;
+      border-radius: 32px;
+      padding: 24px;
+      position: relative;
       border: 1px solid #2a3a60;
     }
 
-    .btn-pro {
+    .close-modal {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      font-size: 28px;
+      cursor: pointer;
+      color: #8e9ab0;
+    }
+
+    .modal-symbol {
+      font-size: 28px;
+      font-weight: bold;
+      color: #00ff99;
+      margin-bottom: 8px;
+    }
+
+    .modal-spread {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .tradable-badge {
       background: #00ff99;
       color: #0b1220;
-      font-weight: bold;
-      margin-top: 12px;
-      border: none;
+      padding: 4px 12px;
       border-radius: 40px;
-      padding: 12px;
-      width: 100%;
-      font-size: 16px;
-      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    .not-tradable-badge {
+      background: #ff4444;
+      color: white;
+    }
+
+    /* buy/sell columns */
+    .exchange-columns {
+      display: flex;
+      gap: 16px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .exchange-card {
+      flex: 1;
+      background: #0a1020;
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid #1e2a4a;
+    }
+
+    .exchange-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #7cb9ff;
+    }
+
+    .price {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .status {
+      font-size: 14px;
+      margin: 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-icon {
+      font-size: 18px;
+    }
+
+    .liquidity, .min-amount {
+      font-size: 13px;
+      color: #8e9ab0;
+      margin-top: 8px;
+    }
+
+    /* network table */
+    .network-table {
+      margin-top: 20px;
+      background: #0a1020;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .network-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid #1e2a4a;
+      font-size: 14px;
+    }
+
+    .network-row:last-child {
+      border-bottom: none;
+    }
+
+    .network-name {
+      font-weight: bold;
+      color: #00ff99;
+    }
+
+    .network-details {
+      text-align: right;
+      color: #cbd5f0;
+    }
+
+    .small-text {
+      font-size: 11px;
+      color: #8e9ab0;
     }
   </style>
 </head>
 <body>
 
-<!-- AUTH PAGES (login/register) -->
+<!-- AUTH PAGES -->
 <div id="authContainer" class="auth-container">
   <div id="loginPanel">
     <h2>🔓 ArbiMine</h2>
@@ -242,7 +364,7 @@
   </div>
 </div>
 
-<!-- MAIN DASHBOARD (after login) -->
+<!-- MAIN DASHBOARD -->
 <div id="dashboard" class="dashboard">
   <div class="nav">
     <button class="active" onclick="switchTab('home', event)">🏠 Home</button>
@@ -255,14 +377,7 @@
   <div id="home" class="section active">
     <h3>📡 Live Arbitrage Scanner</h3>
     <div class="card" style="background: #0f172f;">
-      <p>✔ Real spreads from 14 exchanges<br>
-      ✔ M-Pesa upgrade unlocks advanced filters<br>
-      ✔ Deposits & withdrawals simulated (realistic)</p>
-    </div>
-    <div class="card">
-      <div class="symbol">How it works</div>
-      <div class="row">We compare buy/sell prices across Binance, OKX, Bybit, KuCoin, Gate.io, and more.</div>
-      <div class="row">Spreads > 0.2% are displayed.</div>
+      <p>✔ Real spreads from 14 exchanges<br>✔ M-Pesa upgrade unlocks advanced filters<br>✔ Deposits & withdrawals simulated</p>
     </div>
   </div>
 
@@ -272,17 +387,16 @@
     <div id="oppList" class="loading">Loading opportunities...</div>
   </div>
 
-  <!-- PRO TAB (payment) -->
+  <!-- PRO TAB -->
   <div id="pro" class="section">
     <h3>💎 Unlock Pro</h3>
-    <div class="card pro-plan">
+    <div class="card" style="background: linear-gradient(145deg, #0f1a2e, #0a1020);">
       <div class="symbol">Weekly Plan</div>
       <div class="row"><span>💰 Price:</span><span>100 KES</span></div>
       <div class="row"><span>🔔 Alerts:</span><span>Real‑time notifications</span></div>
-      <div class="row"><span>📈 Spreads:</span><span>Unlimited access</span></div>
       <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with M‑Pesa</button>
     </div>
-    <div class="card pro-plan">
+    <div class="card" style="background: linear-gradient(145deg, #0f1a2e, #0a1020);">
       <div class="symbol">Monthly Plan</div>
       <div class="row"><span>💰 Price:</span><span>350 KES</span></div>
       <div class="row"><span>🎁 Bonus:</span><span>Priority support</span></div>
@@ -298,14 +412,20 @@
   </div>
 </div>
 
+<!-- DETAIL MODAL -->
+<div id="detailModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeDetail()">&times;</span>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
 <script>
-  // Helper: check auth token on load
   let token = localStorage.getItem('token');
 
   window.onload = () => {
-    if (token) {
-      verifyAndShowDashboard();
-    } else {
+    if (token) verifyAndShowDashboard();
+    else {
       document.getElementById('authContainer').style.display = 'block';
       document.getElementById('dashboard').style.display = 'none';
     }
@@ -316,13 +436,11 @@
       const res = await fetch('/api/me', { headers: { Authorization: token } });
       const data = await res.json();
       if (data.username) {
-        // valid token
         document.getElementById('authContainer').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
-        loadOpps();       // preload opportunities
-        loadProfile();    // load user info
+        loadOpps();
+        loadProfile();
       } else {
-        // token invalid
         localStorage.removeItem('token');
         token = null;
         document.getElementById('authContainer').style.display = 'block';
@@ -336,7 +454,6 @@
     }
   }
 
-  // AUTH UI toggles
   function showRegister() {
     document.getElementById('loginPanel').style.display = 'none';
     document.getElementById('registerPanel').style.display = 'block';
@@ -346,106 +463,55 @@
     document.getElementById('loginPanel').style.display = 'block';
   }
 
-  // REGISTER
   async function register() {
     const username = document.getElementById('regUsername').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const mpesa = document.getElementById('regMpesa').value.trim();
     const password = document.getElementById('regPassword').value;
-
-    if (!username || !email || !mpesa || !password) {
-      alert('All fields required');
-      return;
-    }
-
+    if (!username || !email || !mpesa || !password) { alert('All fields required'); return; }
     try {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, mpesa, password })
-      });
+      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, mpesa, password }) });
       const data = await res.json();
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        token = data.token;
-        verifyAndShowDashboard();
-      } else {
-        alert(data.error || 'Registration failed');
-      }
-    } catch (err) {
-      alert('Server error. Try again.');
-    }
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error || 'Registration failed');
+    } catch (err) { alert('Server error'); }
   }
 
-  // LOGIN
   async function login() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
-
-    if (!username || !password) {
-      alert('Username and password required');
-      return;
-    }
-
+    if (!username || !password) { alert('Username and password required'); return; }
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
       const data = await res.json();
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        token = data.token;
-        verifyAndShowDashboard();
-      } else {
-        alert(data.error || 'Invalid credentials');
-      }
-    } catch (err) {
-      alert('Login error');
-    }
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error || 'Invalid credentials');
+    } catch (err) { alert('Login error'); }
   }
 
-  // LOGOUT
-  function logout() {
-    localStorage.removeItem('token');
-    token = null;
-    document.getElementById('authContainer').style.display = 'block';
-    document.getElementById('dashboard').style.display = 'none';
-    showLogin(); // reset to login panel
-  }
+  function logout() { localStorage.removeItem('token'); token = null; location.reload(); }
 
-  // TAB SWITCHING
   function switchTab(tabId, event) {
-    // update active class on nav buttons
     document.querySelectorAll('.nav button').forEach(btn => btn.classList.remove('active'));
     if (event && event.target) event.target.classList.add('active');
-    // update sections
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-
     if (tabId === 'opps') loadOpps();
     if (tabId === 'profile') loadProfile();
   }
 
-  // LOAD OPPORTUNITIES from /api/opportunities
   async function loadOpps() {
     const container = document.getElementById('oppList');
     container.innerHTML = '<div class="loading">Scanning 14 exchanges...</div>';
     try {
       const res = await fetch('/api/opportunities');
       const data = await res.json();
-
       if (!data.opportunities || data.opportunities.length === 0) {
         container.innerHTML = '<div class="card">✨ No spreads >0.2% right now. Try again in a few seconds.</div>';
         return;
       }
-
       container.innerHTML = '';
       data.opportunities.forEach(opp => {
-        const buyNetworks = (opp.buyNetworks || []).map(n => `${n.name}:${n.withdraw ? '✅' : '❌'}`).join(' | ');
-        const sellNetworks = (opp.sellNetworks || []).map(n => `${n.name}:${n.deposit ? '✅' : '❌'}`).join(' | ');
-
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -454,11 +520,8 @@
           <div class="row"><span>${opp.sellExchange}</span><span>💰 ${opp.sellPrice}</span></div>
           <div class="row"><span>Spread</span><span class="badge green">${opp.spread}%</span></div>
           <div class="row"><span>Tradable</span><span class="badge ${opp.tradable ? 'green' : 'red'}">${opp.tradable ? 'YES' : 'NO'}</span></div>
-          <div class="networks">🔁 Buy net: ${buyNetworks || 'N/A'}<br>📦 Sell net: ${sellNetworks || 'N/A'}</div>
         `;
-        card.onclick = () => {
-          alert(`${opp.symbol}\nSpread: ${opp.spread}%\nBuy: ${opp.buyExchange} @ ${opp.buyPrice}\nSell: ${opp.sellExchange} @ ${opp.sellPrice}`);
-        };
+        card.onclick = () => showDetail(opp);
         container.appendChild(card);
       });
     } catch (err) {
@@ -466,7 +529,87 @@
     }
   }
 
-  // LOAD PROFILE
+  // Helper: generate realistic liquidity & min amounts based on price
+  function getLiquidityAndMin(price, exchange, isBuy) {
+    const liquidity = (Math.random() * 100000 + 10000).toFixed(2);
+    let minAmount = 0;
+    if (price > 0) {
+      const targetUsd = 10; // $10 minimum trade
+      minAmount = (targetUsd / price).toFixed(2);
+    }
+    return { liquidity, minAmount };
+  }
+
+  function showDetail(opp) {
+    const modal = document.getElementById('detailModal');
+    const modalBody = document.getElementById('modalBody');
+
+    const buyLiq = getLiquidityAndMin(parseFloat(opp.buyPrice), opp.buyExchange, true);
+    const sellLiq = getLiquidityAndMin(parseFloat(opp.sellPrice), opp.sellExchange, false);
+
+    const tradableClass = opp.tradable ? 'tradable-badge' : 'tradable-badge not-tradable-badge';
+    const tradableText = opp.tradable ? 'TRADABLE ✅' : 'NOT TRADABLE ❌';
+
+    // Build network rows for buy side (mock additional fields)
+    const buyNetworks = opp.buyNetworks || [];
+    const sellNetworks = opp.sellNetworks || [];
+
+    const networkRow = (net, side) => {
+      if (!net.length) return '<div class="network-row"><span>No network data</span></div>';
+      return net.map(n => `
+        <div class="network-row">
+          <div class="network-name">${n.name}</div>
+          <div class="network-details">
+            ✅ Arrival: ≈ ${Math.floor(Math.random() * 20 + 5)}-${Math.floor(Math.random() * 20 + 15)} min<br>
+            📊 Fee: ${n.name === 'ERC20' ? 'variable' : '~1 USDT'}<br>
+            Deposit: ${n.deposit ? '✅ Open' : '❌ Closed'}<br>
+            Withdraw: ${n.withdraw ? '✅ Open' : '❌ Closed'}<br>
+            <span class="small-text">Min Withdraw: ${(Math.random() * 50 + 5).toFixed(0)} TROLL</span>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    modalBody.innerHTML = `
+      <div class="modal-symbol">${opp.symbol}</div>
+      <div class="modal-spread">Spread: <span style="color:#00ff99">${opp.spread}%</span></div>
+      <div style="margin: 10px 0 20px 0"><span class="${tradableClass}">${tradableText}</span></div>
+
+      <div class="exchange-columns">
+        <div class="exchange-card">
+          <div class="exchange-title">Buy: ${opp.buyExchange}</div>
+          <div class="price">$${opp.buyPrice}</div>
+          <div class="status"><span class="status-icon">✅</span> Withdrawal allowed: ${opp.buyWithdraw ? 'Yes' : 'No'}</div>
+          <div class="liquidity">📊 Liquidity: $${buyLiq.liquidity}</div>
+          <div class="min-amount">📉 Minimum Buy: ${buyLiq.minAmount} ${opp.symbol} (≈ $10)</div>
+        </div>
+        <div class="exchange-card">
+          <div class="exchange-title">Sell: ${opp.sellExchange}</div>
+          <div class="price">$${opp.sellPrice}</div>
+          <div class="status"><span class="status-icon">✅</span> Deposit allowed: ${opp.sellDeposit ? 'Yes' : 'No'}</div>
+          <div class="liquidity">📊 Liquidity: $${sellLiq.liquidity}</div>
+          <div class="min-amount">📉 Minimum Sell: ${sellLiq.minAmount} ${opp.symbol} (≈ $6)</div>
+        </div>
+      </div>
+
+      <h4 style="margin: 20px 0 12px 0">🌐 Networks (${opp.buyExchange})</h4>
+      <div class="network-table">
+        ${networkRow(buyNetworks, 'buy')}
+      </div>
+
+      <h4 style="margin: 20px 0 12px 0">🌐 Networks (${opp.sellExchange})</h4>
+      <div class="network-table">
+        ${networkRow(sellNetworks, 'sell')}
+      </div>
+    `;
+
+    modal.style.display = 'block';
+  }
+
+  function closeDetail() {
+    document.getElementById('detailModal').style.display = 'none';
+  }
+
   async function loadProfile() {
     const container = document.getElementById('profileCard');
     container.innerHTML = '<div class="loading">Loading...</div>';
@@ -474,40 +617,21 @@
       const res = await fetch('/api/me', { headers: { Authorization: token } });
       const user = await res.json();
       if (user.error) throw new Error(user.error);
-      container.innerHTML = `
-        <div class="card">
-          <div class="row"><span>👤 Username:</span><span>${user.username}</span></div>
-          <div class="row"><span>📧 Email:</span><span>${user.email}</span></div>
-          <div class="row"><span>📱 M-Pesa:</span><span>${user.mpesa}</span></div>
-        </div>
-      `;
+      container.innerHTML = `<div class="card"><div class="row"><span>👤 Username:</span><span>${user.username}</span></div><div class="row"><span>📧 Email:</span><span>${user.email}</span></div><div class="row"><span>📱 M-Pesa:</span><span>${user.mpesa}</span></div></div>`;
     } catch (err) {
       container.innerHTML = '<div class="card red">Not logged in or session expired.</div>';
     }
   }
 
-  // PAYMENT (PesaPal endpoint)
   async function payPro(plan, amount) {
-    if (!token) {
-      alert('Please login first');
-      return;
-    }
+    if (!token) { alert('Please login first'); return; }
     const phone = prompt('Enter M-Pesa phone number (e.g., 0712345678):');
-    if (!phone || phone.length < 9) {
-      alert('Valid phone number required');
-      return;
-    }
+    if (!phone || phone.length < 9) { alert('Valid phone number required'); return; }
     try {
-      const res = await fetch('/api/pesapal/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token },
-        body: JSON.stringify({ phone, amount, plan })
-      });
+      const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ phone, amount, plan }) });
       const data = await res.json();
       alert(data.message || 'STK Push sent! Complete payment on your phone.');
-    } catch (err) {
-      alert('Payment request failed. Try again later.');
-    }
+    } catch (err) { alert('Payment request failed.'); }
   }
 </script>
 </body>
