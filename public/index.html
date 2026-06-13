@@ -56,8 +56,8 @@
 <div id="authContainer" class="auth-container">
   <div id="loginPanel">
     <h2>🔓 ArbiMine</h2>
-    <input type="text" id="loginUsername" placeholder="Username">
-    <input type="password" id="loginPassword" placeholder="Password">
+    <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
     <button onclick="login()">Login →</button>
     <div class="toggle-link" onclick="showRegister()">Create account</div>
   </div>
@@ -179,14 +179,14 @@
   }
 
   async function login() {
-    const username = document.getElementById('loginUsername').value.trim();
+    const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
-    if (!username || !password) { alert('Username and password required'); return; }
+    if (!email || !password) { alert('Email and password required'); return; }
     try {
-      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
       const data = await res.json();
       if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
-      else alert(data.error);
+      else alert(data.error || 'Invalid credentials');
     } catch { alert('Login error'); }
   }
 
