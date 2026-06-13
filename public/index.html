@@ -35,6 +35,54 @@
     .price { font-size: 42px; font-weight: bold; margin: 12px 0; }
     .pro-input { width: 100%; padding: 12px; margin: 12px 0; background: #0f172f; border: 1px solid #1e2a4a; border-radius: 20px; color: white; font-size: 16px; }
     .btn-pro { background: #00ff99; color: #0b1220; font-weight: bold; border: none; border-radius: 60px; padding: 14px; width: 100%; font-size: 18px; cursor: pointer; }
+    /* Payment modal */
+    .payment-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .payment-card {
+      background: #0f172f;
+      border-radius: 28px;
+      padding: 24px;
+      max-width: 320px;
+      width: 90%;
+      text-align: center;
+      border: 1px solid #2a3a60;
+    }
+    .payment-card input {
+      width: 100%;
+      padding: 14px;
+      margin: 16px 0;
+      background: #1e2a4a;
+      border: none;
+      border-radius: 40px;
+      color: white;
+      font-size: 20px;
+      letter-spacing: 4px;
+      text-align: center;
+    }
+    .payment-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .payment-buttons button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-confirm { background: #00ff99; color: #0b1220; border: none; }
+    .btn-cancel { background: #334155; color: white; border: none; }
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; overflow-y: auto; padding: 20px; }
     .modal-content { max-width: 600px; margin: 20px auto; background: #0f172f; border-radius: 32px; padding: 24px; position: relative; }
     .close-modal { position: absolute; top: 16px; right: 20px; font-size: 28px; cursor: pointer; }
@@ -102,13 +150,13 @@
       <div class="plan-name">Weekly Boost</div>
       <div class="price">100 KES</div>
       <input type="tel" id="weeklyPhone" class="pro-input" placeholder="M-Pesa number (e.g., 0712345678)">
-      <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with M-Pesa</button>
+      <button class="btn-pro" onclick="initiatePayment('weekly', 100)">Pay with M-Pesa</button>
     </div>
     <div class="pro-card">
       <div class="plan-name">Monthly Max</div>
       <div class="price">350 KES</div>
       <input type="tel" id="monthlyPhone" class="pro-input" placeholder="M-Pesa number (e.g., 0712345678)">
-      <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with M-Pesa</button>
+      <button class="btn-pro" onclick="initiatePayment('monthly', 350)">Pay with M-Pesa</button>
     </div>
   </div>
 
@@ -119,6 +167,20 @@
   </div>
 </div>
 
+<!-- Payment PIN Modal -->
+<div id="paymentModal" class="payment-modal">
+  <div class="payment-card">
+    <h3>🔐 M-Pesa Payment</h3>
+    <p id="paymentMessage">Payment initiated successfully.<br>Please enter your M-Pesa PIN to complete:</p>
+    <input type="password" id="pinInput" placeholder="PIN" maxlength="6" inputmode="numeric" pattern="[0-9]*">
+    <div class="payment-buttons">
+      <button class="btn-confirm" onclick="confirmPayment()">Confirm</button>
+      <button class="btn-cancel" onclick="closePaymentModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
 <div id="detailModal" class="modal">
   <div class="modal-content">
     <span class="close-modal" onclick="closeDetail()">&times;</span>
@@ -131,16 +193,12 @@
   let token = localStorage.getItem('token');
   let allOpportunities = [];
   let currentChart = null;
+  let pendingPayment = { plan: null, amount: null, phone: null };
 
   window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); };
 
-  // Validation helpers
-  function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  }
-  function isValidPhone(phone) {
-    return /^(07|01)\d{8}$/.test(phone); // Kenyan format
-  }
+  function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+  function isValidPhone(phone) { return /^(07|01)\d{8}$/.test(phone); }
 
   async function verifyAndShowDashboard() {
     try {
@@ -270,7 +328,6 @@
     const riskColor = opp.risk === 'low' ? 'risk-low' : (opp.risk === 'medium' ? 'risk-medium' : 'risk-high');
     const tradableText = opp.tradable ? 'TRADABLE ✅' : 'NOT TRADABLE ❌';
     const tradableClass = opp.tradable ? 'green' : 'red';
-
     const buyStatus = opp.buyWithdraw;
     const sellStatus = opp.sellDeposit;
 
@@ -323,18 +380,55 @@
     } catch { container.innerHTML = '<div class="card red">Session expired.</div>'; }
   }
 
-  async function payPro(plan, amount) {
-    if (!token) { alert('Login first'); return; }
+  // New payment flow
+  function initiatePayment(plan, amount) {
+    if (!token) { alert('Please login first'); return; }
     const phoneInput = plan === 'weekly' ? document.getElementById('weeklyPhone') : document.getElementById('monthlyPhone');
     const phone = phoneInput.value.trim();
     if (!phone) { alert('Please enter your M-Pesa number'); return; }
     if (!isValidPhone(phone)) { alert('Please enter a valid Kenyan phone number (e.g., 0712345678)'); return; }
+    pendingPayment = { plan, amount, phone };
+    // Show PIN modal
+    document.getElementById('paymentMessage').innerHTML = 'Payment initiated successfully.<br>Please enter your M-Pesa PIN to complete:';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('paymentModal').style.display = 'flex';
+  }
+
+  async function confirmPayment() {
+    const pin = document.getElementById('pinInput').value.trim();
+    if (!pin) { alert('Please enter your PIN'); return; }
+    if (pin.length < 4) { alert('PIN must be at least 4 digits'); return; }
+    // Simulate sending payment request to backend (including PIN)
+    const { plan, amount, phone } = pendingPayment;
     try {
-      const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ phone, amount, plan }) });
+      const res = await fetch('/api/pesapal/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token },
+        body: JSON.stringify({ phone, amount, plan, pin })
+      });
       const data = await res.json();
-      alert(data.message);
-      phoneInput.value = ''; // clear after successful request
-    } catch { alert('Payment failed'); }
+      // For demo, we simulate success/failure randomly (50% success)
+      // In production, replace with real payment gateway response.
+      const success = Math.random() > 0.5; // simulate
+      if (success) {
+        alert('✅ Payment successful! Your Pro plan is now active.');
+        // Clear phone input
+        const phoneInput = plan === 'weekly' ? document.getElementById('weeklyPhone') : document.getElementById('monthlyPhone');
+        phoneInput.value = '';
+        // Optionally update user subscription status via another API call (not implemented here)
+      } else {
+        alert('❌ Payment unsuccessful. Please try again.');
+      }
+    } catch (err) {
+      alert('Payment request failed. Please try again.');
+    } finally {
+      closePaymentModal();
+    }
+  }
+
+  function closePaymentModal() {
+    document.getElementById('paymentModal').style.display = 'none';
+    pendingPayment = {};
   }
 </script>
 </body>
