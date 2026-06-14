@@ -17,7 +17,7 @@ mongoose.connect(MONGO_URI)
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Schemas
+// ==================== Schemas ====================
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
@@ -429,8 +429,9 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
 
 // ==================== Paystack payment (with sanitized reference) ====================
 function sanitizeReference(str) {
-  // Replace any character that is not alphanumeric, dash, underscore, dot, or space with underscore
-  return str.replace(/[^a-zA-Z0-9_\-\.\s]/g, '_');
+  // Replace any character that is not alphanumeric, dash, underscore, or dot with underscore
+  // Also replace spaces with underscore
+  return str.replace(/[^a-zA-Z0-9_\-\.]/g, '_').replace(/\s/g, '_');
 }
 
 app.post('/api/pesapal/pay', async (req, res) => {
