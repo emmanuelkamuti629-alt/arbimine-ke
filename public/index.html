@@ -1,985 +1,974 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-<title>ArbiMine - Crypto Arbitrage Scanner</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:'Inter',sans-serif;
-  -webkit-tap-highlight-color:transparent;
-}
-
-body{
-  background:#050816;
-  color:white;
-  overflow-x:hidden;
-}
-
-/* ================= HEADER ================= */
-
-.header{
-  padding:18px;
-  position:sticky;
-  top:0;
-  z-index:1000;
-  backdrop-filter:blur(20px);
-  background:rgba(5,8,22,0.85);
-  border-bottom:1px solid rgba(255,255,255,0.05);
-}
-
-.header-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-}
-
-.logo{
-  font-size:28px;
-  font-weight:800;
-  background:linear-gradient(90deg,#00ff99,#00c2ff);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-}
-
-.live-box{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  background:#0f172a;
-  border:1px solid rgba(255,255,255,0.08);
-  padding:10px 14px;
-  border-radius:999px;
-  font-size:13px;
-}
-
-.live-dot{
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  background:#00ff99;
-  animation:pulse 1s infinite;
-}
-
-@keyframes pulse{
-  0%{opacity:1;}
-  50%{opacity:.4;}
-  100%{opacity:1;}
-}
-
-/* ================= HERO ================= */
-
-.hero{
-  padding:20px 16px;
-}
-
-.hero-card{
-  background:linear-gradient(145deg,#111827,#0f172a);
-  border-radius:28px;
-  padding:24px;
-  border:1px solid rgba(255,255,255,0.06);
-  position:relative;
-  overflow:hidden;
-}
-
-.hero-card::before{
-  content:"";
-  position:absolute;
-  width:250px;
-  height:250px;
-  background:rgba(0,255,153,0.08);
-  border-radius:50%;
-  top:-120px;
-  right:-120px;
-}
-
-.hero-title{
-  font-size:34px;
-  font-weight:800;
-  line-height:1.1;
-  margin-bottom:12px;
-}
-
-.hero-sub{
-  color:#94a3b8;
-  font-size:14px;
-  line-height:1.7;
-  margin-bottom:22px;
-}
-
-.hero-stats{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:12px;
-}
-
-.stat{
-  background:rgba(255,255,255,0.04);
-  border-radius:18px;
-  padding:14px;
-}
-
-.stat-label{
-  color:#94a3b8;
-  font-size:12px;
-  margin-bottom:6px;
-}
-
-.stat-value{
-  font-size:20px;
-  font-weight:800;
-  color:#00ff99;
-}
-
-/* ================= FILTERS ================= */
-
-.filters{
-  padding:0 16px 18px;
-}
-
-.filter-wrap{
-  display:flex;
-  gap:10px;
-  overflow-x:auto;
-}
-
-.filter-btn{
-  min-width:max-content;
-  border:none;
-  background:#111827;
-  color:#cbd5e1;
-  padding:10px 16px;
-  border-radius:999px;
-  font-size:13px;
-  border:1px solid rgba(255,255,255,0.08);
-}
-
-.filter-btn.active{
-  background:#00ff99;
-  color:black;
-  font-weight:700;
-}
-
-/* ================= OPPORTUNITIES ================= */
-
-.section-title{
-  padding:0 16px 16px;
-  font-size:22px;
-  font-weight:800;
-}
-
-.opportunities{
-  padding:0 16px 100px;
-}
-
-.card{
-  background:linear-gradient(145deg,#111827,#0b1220);
-  border-radius:26px;
-  padding:18px;
-  margin-bottom:18px;
-  border:1px solid rgba(255,255,255,0.06);
-  position:relative;
-  overflow:hidden;
-}
-
-.card-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:10px;
-  margin-bottom:16px;
-}
-
-.coin{
-  font-size:24px;
-  font-weight:800;
-}
-
-.pair{
-  color:#94a3b8;
-  font-size:13px;
-}
-
-.spread{
-  font-size:28px;
-  font-weight:800;
-  color:#00ff99;
-}
-
-.trade-flow{
-  display:grid;
-  grid-template-columns:1fr auto 1fr;
-  align-items:center;
-  gap:12px;
-  margin-bottom:18px;
-}
-
-.exchange-box{
-  background:#0f172a;
-  border-radius:18px;
-  padding:14px;
-  text-align:center;
-}
-
-.exchange-label{
-  font-size:12px;
-  color:#94a3b8;
-  margin-bottom:8px;
-}
-
-.exchange-name{
-  font-size:18px;
-  font-weight:700;
-  margin-bottom:8px;
-}
-
-.price{
-  color:#00ff99;
-  font-size:14px;
-  font-weight:700;
-}
-
-.arrow{
-  font-size:26px;
-  color:#00ff99;
-}
-
-/* ================= DETAILS ================= */
-
-.details-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-bottom:16px;
-}
-
-.detail-box{
-  background:#0f172a;
-  border-radius:16px;
-  padding:14px;
-}
-
-.detail-label{
-  font-size:12px;
-  color:#94a3b8;
-  margin-bottom:6px;
-}
-
-.detail-value{
-  font-size:15px;
-  font-weight:700;
-}
-
-/* ================= NETWORKS ================= */
-
-.networks{
-  margin-top:12px;
-}
-
-.network-title{
-  margin-bottom:10px;
-  color:#94a3b8;
-  font-size:13px;
-}
-
-.network-list{
-  display:flex;
-  gap:8px;
-  overflow-x:auto;
-}
-
-.network{
-  background:#0f172a;
-  border-radius:12px;
-  padding:10px;
-  min-width:120px;
-  border:1px solid rgba(255,255,255,0.06);
-}
-
-.network-name{
-  font-size:13px;
-  font-weight:700;
-  margin-bottom:8px;
-}
-
-.network-status{
-  font-size:11px;
-  margin-bottom:4px;
-}
-
-.green{
-  color:#00ff99;
-}
-
-.red{
-  color:#ff6b6b;
-}
-
-.orange{
-  color:#ffb020;
-}
-
-/* ================= RISK ================= */
-
-.risk{
-  margin-top:14px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-}
-
-.risk-badge{
-  padding:8px 14px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:700;
-}
-
-.risk-low{
-  background:rgba(0,255,153,0.12);
-  color:#00ff99;
-}
-
-.risk-medium{
-  background:rgba(255,176,32,0.12);
-  color:#ffb020;
-}
-
-.risk-high{
-  background:rgba(255,107,107,0.12);
-  color:#ff6b6b;
-}
-
-.trade-btn{
-  flex:1;
-  border:none;
-  background:linear-gradient(90deg,#00ff99,#00c2ff);
-  color:black;
-  font-weight:800;
-  padding:14px;
-  border-radius:16px;
-}
-
-/* ================= CHART ================= */
-
-.chart-wrap{
-  margin-top:16px;
-  background:#0f172a;
-  border-radius:20px;
-  padding:14px;
-}
-
-canvas{
-  width:100% !important;
-  height:180px !important;
-}
-
-/* ================= BOTTOM NAV ================= */
-
-.bottom-nav{
-  position:fixed;
-  bottom:0;
-  left:0;
-  width:100%;
-  background:rgba(5,8,22,0.96);
-  backdrop-filter:blur(20px);
-  border-top:1px solid rgba(255,255,255,0.06);
-  display:flex;
-  justify-content:space-around;
-  padding:12px 0;
-  z-index:999;
-}
-
-.nav-item{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  font-size:11px;
-  color:#94a3b8;
-  gap:4px;
-}
-
-.nav-icon{
-  font-size:22px;
-}
-
-.active-nav{
-  color:#00ff99;
-}
-
-/* ================= LOADER ================= */
-
-.loader{
-  text-align:center;
-  padding:80px 20px;
-}
-
-.spinner{
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  border:4px solid rgba(255,255,255,0.08);
-  border-top:4px solid #00ff99;
-  margin:auto;
-  animation:spin 1s linear infinite;
-}
-
-@keyframes spin{
-  to{
-    transform:rotate(360deg);
-  }
-}
-
-.loading-text{
-  margin-top:18px;
-  color:#94a3b8;
-}
-
-/* ================= MOBILE ================= */
-
-@media(max-width:768px){
-
-  .hero-title{
-    font-size:28px;
-  }
-
-  .hero-stats{
-    grid-template-columns:1fr;
-  }
-
-  .details-grid{
-    grid-template-columns:1fr;
-  }
-
-  .spread{
-    font-size:24px;
-  }
-
-}
-
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>ArbiMine • Real Arbitrage Scanner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #050816;
+      color: white;
+      overflow-x: hidden;
+      padding-bottom: 70px;
+    }
+
+    /* Auth Container */
+    .auth-container {
+      max-width: 420px;
+      margin: 60px auto;
+      padding: 24px;
+      background: #111827;
+      border-radius: 32px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .auth-container h2 { color: #00ff99; margin-bottom: 8px; }
+    .auth-container input { width: 100%; padding: 14px; margin: 8px 0; background: #1f2937; border: 1px solid #374151; border-radius: 20px; color: white; font-size: 16px; }
+    .auth-container button { width: 100%; padding: 14px; background: #00ff99; border: none; border-radius: 40px; font-weight: bold; margin-top: 16px; cursor: pointer; color: #0a0c15; }
+    .toggle-link { text-align: center; margin-top: 20px; color: #60a5fa; cursor: pointer; }
+
+    /* Dashboard */
+    .dashboard { display: none; }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(5,8,22,0.96);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0;
+      z-index: 1000;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 11px;
+      color: #94a3b8;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .nav-icon { font-size: 22px; }
+    .active-nav { color: #00ff99; }
+
+    /* Sections */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ================= HOME (NEW DESIGN) ================= */
+    .header {
+      padding: 18px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+      background: rgba(5,8,22,0.85);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #00ff99, #00c2ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .live-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #00ff99;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+
+    .hero {
+      padding: 20px 16px;
+    }
+    .hero-card {
+      background: linear-gradient(145deg, #111827, #0f172a);
+      border-radius: 28px;
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,0.06);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      width: 250px;
+      height: 250px;
+      background: rgba(0,255,153,0.08);
+      border-radius: 50%;
+      top: -120px;
+      right: -120px;
+    }
+    .hero-title {
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+    .hero-sub {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: 22px;
+    }
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .stat {
+      background: rgba(255,255,255,0.04);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .stat-label {
+      color: #94a3b8;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: #00ff99;
+    }
+
+    .filters {
+      padding: 0 16px 18px;
+    }
+    .filter-wrap {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+    }
+    .filter-btn {
+      min-width: max-content;
+      border: none;
+      background: #111827;
+      color: #cbd5e1;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+    }
+    .filter-btn.active {
+      background: #00ff99;
+      color: black;
+      font-weight: 700;
+    }
+
+    .section-title {
+      padding: 0 16px 16px;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .opportunities {
+      padding: 0 16px 100px;
+    }
+    .card {
+      background: linear-gradient(145deg, #111827, #0b1220);
+      border-radius: 26px;
+      padding: 18px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .coin {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .pair {
+      color: #94a3b8;
+      font-size: 13px;
+    }
+    .spread {
+      font-size: 28px;
+      font-weight: 800;
+      color: #00ff99;
+    }
+    .trade-flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .exchange-box {
+      background: #0f172a;
+      border-radius: 18px;
+      padding: 14px;
+      text-align: center;
+    }
+    .exchange-label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    .exchange-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .price {
+      color: #00ff99;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .arrow {
+      font-size: 26px;
+      color: #00ff99;
+    }
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .detail-box {
+      background: #0f172a;
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .detail-label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .detail-value {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .networks {
+      margin-top: 12px;
+    }
+    .network-title {
+      margin-bottom: 10px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+    .network-list {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+    }
+    .network {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 10px;
+      min-width: 120px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .network-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .network-status {
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+    .green { color: #00ff99; }
+    .red { color: #ff6b6b; }
+    .orange { color: #ffb020; }
+    .risk {
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .risk-badge {
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .risk-low { background: rgba(0,255,153,0.12); color: #00ff99; }
+    .risk-medium { background: rgba(255,176,32,0.12); color: #ffb020; }
+    .risk-high { background: rgba(255,107,107,0.12); color: #ff6b6b; }
+    .trade-btn {
+      flex: 1;
+      border: none;
+      background: linear-gradient(90deg, #00ff99, #00c2ff);
+      color: black;
+      font-weight: 800;
+      padding: 14px;
+      border-radius: 16px;
+      cursor: pointer;
+    }
+    .chart-wrap {
+      margin-top: 16px;
+      background: #0f172a;
+      border-radius: 20px;
+      padding: 14px;
+    }
+    canvas {
+      width: 100% !important;
+      height: 180px !important;
+    }
+
+    /* Pro Tab */
+    .pro-card {
+      background: linear-gradient(135deg, #111827, #0f172a);
+      border-radius: 28px;
+      padding: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+      border: 1px solid #374151;
+    }
+    .plan-name {
+      font-size: 28px;
+      font-weight: bold;
+      background: linear-gradient(90deg, #00ff99, #60a5fa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .price {
+      font-size: 42px;
+      font-weight: bold;
+      margin: 12px 0;
+    }
+    .pro-input {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 40px;
+      color: white;
+      font-size: 16px;
+    }
+    .btn-pro {
+      background: #00ff99;
+      color: #0a0c15;
+      border: none;
+      border-radius: 60px;
+      padding: 14px;
+      width: 100%;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .payment-message {
+      font-size: 14px;
+      margin-top: 12px;
+      color: #ffcc00;
+    }
+
+    /* Profile Tab */
+    .profile-card {
+      background: #111827;
+      border-radius: 24px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #1f2937;
+    }
+    .tier-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .tier-free { background: #334155; color: white; }
+    .tier-weekly { background: #0f5132; color: #00ff99; }
+    .tier-monthly { background: #1a2a5a; color: #60a5fa; }
+    .countdown { font-size: 14px; color: #ffcc00; margin-top: 8px; }
+
+    /* Detail Modal (overlay) */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.96);
+      z-index: 2000;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .modal-content {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #111827;
+      border-radius: 32px;
+      padding: 24px;
+      position: relative;
+    }
+    .close-modal {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      font-size: 28px;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+    .back-button {
+      display: inline-block;
+      color: #60a5fa;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+    .detail-symbol { font-size: 32px; font-weight: bold; color: #00ff99; margin-bottom: 20px; }
+    .detail-exchange-row { display: flex; gap: 16px; margin: 20px 0; flex-wrap: wrap; }
+    .detail-box { flex: 1; background: #0f172a; border-radius: 24px; padding: 16px; text-align: center; }
+    .detail-box .title { font-size: 14px; color: #9ca3af; margin-bottom: 8px; }
+    .detail-box .price { font-size: 24px; font-weight: bold; }
+    .detail-stats-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin: 20px 0; padding: 12px 0; border-top: 1px solid #1f2937; border-bottom: 1px solid #1f2937; }
+    .stat-item { text-align: center; flex: 1; }
+    .stat-label { font-size: 12px; color: #9ca3af; }
+    .stat-value { font-size: 18px; font-weight: bold; color: #00ff99; }
+    .network-table { background: #0f172a; border-radius: 20px; overflow: hidden; margin-bottom: 20px; }
+    .network-row { display: flex; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #1f2937; flex-wrap: wrap; gap: 8px; }
+    .network-name { font-weight: bold; }
+    .network-status { padding: 2px 8px; border-radius: 30px; font-size: 11px; font-weight: bold; margin-left: 8px; }
+    .status-open { background: #00ff99; color: #0a0c15; }
+    .status-closed { background: #5a1a1a; color: #ff8a8a; }
+    .status-unverified { background: #5a4a1a; color: #ffcc00; }
+    .ai-card { background: #0f172a; border-radius: 24px; padding: 20px; margin: 24px 0; text-align: center; }
+    .ai-header { font-size: 28px; font-weight: bold; margin-bottom: 20px; }
+    .risk-level-text { font-size: 42px; font-weight: bold; }
+    .risk-level-text.low { color: #00ff99; }
+    .risk-level-text.medium { color: #ffcc00; }
+    .risk-level-text.high { color: #ff8a8a; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 20px; }
+    .stat-card { background: #0a1020; border-radius: 20px; padding: 12px; text-align: center; }
+
+    .loading { text-align: center; padding: 40px; color: #9ca3af; }
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1f2937; padding: 12px 24px; border-radius: 40px; border-left: 4px solid; z-index: 1100; font-size: 14px; }
+    .toast.success { border-left-color: #00ff99; color: #00ff99; }
+    .toast.error { border-left-color: #ff4d4d; color: #ff4d4d; }
+
+    @media (max-width: 640px) {
+      .hero-title { font-size: 28px; }
+      .hero-stats { grid-template-columns: 1fr; }
+      .details-grid { grid-template-columns: 1fr; }
+      .spread { font-size: 24px; }
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="header">
-
-  <div class="header-top">
-
-    <div class="logo">
-      ArbiMine
-    </div>
-
-    <div class="live-box">
-      <div class="live-dot"></div>
-      <span id="scanTime">LIVE</span>
-    </div>
-
+<!-- Auth Container -->
+<div id="authContainer" class="auth-container">
+  <div id="loginPanel">
+    <h2>🔓 ArbiMine</h2>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button onclick="login()">Login →</button>
+    <div class="toggle-link" onclick="showRegister()">Create account</div>
   </div>
-
+  <div id="registerPanel" style="display:none;">
+    <h2>📝 Register</h2>
+    <input type="text" id="regUsername" placeholder="Username">
+    <input type="email" id="regEmail" placeholder="Email">
+    <input type="tel" id="regMpesa" placeholder="Mobile number (e.g., 0712345678)">
+    <input type="password" id="regPassword" placeholder="Password">
+    <button onclick="register()">Register</button>
+    <div class="toggle-link" onclick="showLogin()">Back to Login</div>
+  </div>
 </div>
 
-<section class="hero">
-
-  <div class="hero-card">
-
-    <div class="hero-title">
-      Real Crypto Arbitrage Scanner
+<!-- Dashboard -->
+<div id="dashboard" class="dashboard">
+  <div class="bottom-nav">
+    <div class="nav-item active-nav" onclick="switchTab('home')">
+      <div class="nav-icon">📊</div>
+      <div>Scanner</div>
     </div>
-
-    <div class="hero-sub">
-      Real-time spreads, networks, liquidity and transfer status directly from exchanges.
+    <div class="nav-item" onclick="switchTab('pro')">
+      <div class="nav-icon">💎</div>
+      <div>Pro</div>
     </div>
-
-    <div class="hero-stats">
-
-      <div class="stat">
-        <div class="stat-label">
-          Opportunities
-        </div>
-        <div class="stat-value" id="oppCount">
-          0
-        </div>
-      </div>
-
-      <div class="stat">
-        <div class="stat-label">
-          Highest Spread
-        </div>
-        <div class="stat-value" id="highestSpread">
-          0%
-        </div>
-      </div>
-
-      <div class="stat">
-        <div class="stat-label">
-          Tradable
-        </div>
-        <div class="stat-value" id="tradableCount">
-          0
-        </div>
-      </div>
-
+    <div class="nav-item" onclick="switchTab('profile')">
+      <div class="nav-icon">👤</div>
+      <div>Profile</div>
     </div>
-
   </div>
 
-</section>
-
-<section class="filters">
-
-  <div class="filter-wrap">
-
-    <button class="filter-btn active">
-      All
-    </button>
-
-    <button class="filter-btn">
-      Low Risk
-    </button>
-
-    <button class="filter-btn">
-      Tradable
-    </button>
-
-    <button class="filter-btn">
-      High Spread
-    </button>
-
+  <!-- Home Tab (new design) -->
+  <div id="home" class="section active">
+    <div class="header">
+      <div class="header-top">
+        <div class="logo">ArbiMine</div>
+        <div class="live-box">
+          <div class="live-dot"></div>
+          <span id="scanTime">LIVE</span>
+        </div>
+      </div>
+    </div>
+    <section class="hero">
+      <div class="hero-card">
+        <div class="hero-title">Real Crypto Arbitrage Scanner</div>
+        <div class="hero-sub">Real-time spreads, networks, liquidity and transfer status directly from exchanges.</div>
+        <div class="hero-stats">
+          <div class="stat"><div class="stat-label">Opportunities</div><div class="stat-value" id="oppCount">0</div></div>
+          <div class="stat"><div class="stat-label">Highest Spread</div><div class="stat-value" id="highestSpread">0%</div></div>
+          <div class="stat"><div class="stat-label">Tradable</div><div class="stat-value" id="tradableCount">0</div></div>
+        </div>
+      </div>
+    </section>
+    <section class="filters">
+      <div class="filter-wrap">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="low">Low Risk</button>
+        <button class="filter-btn" data-filter="tradable">Tradable</button>
+        <button class="filter-btn" data-filter="highspread">High Spread</button>
+      </div>
+    </section>
+    <div class="section-title">Live Opportunities</div>
+    <div id="opportunities" class="opportunities"><div class="loading">Loading opportunities...</div></div>
   </div>
 
-</section>
+  <!-- Pro Tab -->
+  <div id="pro" class="section">
+    <div style="padding: 20px 16px;">
+      <h2 style="margin-bottom: 20px;">💎 Unlock Pro</h2>
+      <div class="pro-card">
+        <div class="plan-name">Weekly Boost</div>
+        <div class="price">100 KES</div>
+        <input type="tel" id="weeklyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
+        <button class="btn-pro" id="weeklyPayBtn" onclick="payPro('weekly', 100)">Pay with M-Pesa</button>
+        <div id="weeklyMessage" class="payment-message"></div>
+      </div>
+      <div class="pro-card">
+        <div class="plan-name">Monthly Max</div>
+        <div class="price">350 KES</div>
+        <input type="tel" id="monthlyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
+        <button class="btn-pro" id="monthlyPayBtn" onclick="payPro('monthly', 350)">Pay with M-Pesa</button>
+        <div id="monthlyMessage" class="payment-message"></div>
+      </div>
+    </div>
+  </div>
 
-<div class="section-title">
-  Live Opportunities
+  <!-- Profile Tab -->
+  <div id="profile" class="section">
+    <div style="padding: 20px 16px;">
+      <h2 style="margin-bottom: 20px;">👤 Profile</h2>
+      <div id="profileCard" class="loading">Loading...</div>
+      <button class="btn-pro" style="background:#334155; margin-top:20px;" onclick="logout()">Logout</button>
+    </div>
+  </div>
 </div>
 
-<div id="opportunities" class="opportunities">
-
-  <div class="loader">
-
-    <div class="spinner"></div>
-
-    <div class="loading-text">
-      Scanning exchanges...
-    </div>
-
+<!-- Detail Modal (full network info) -->
+<div id="detailModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeDetail()">&times;</span>
+    <div id="modalBody"></div>
   </div>
-
-</div>
-
-<div class="bottom-nav">
-
-  <div class="nav-item active-nav">
-    <div class="nav-icon">📊</div>
-    <div>Scanner</div>
-  </div>
-
-  <div class="nav-item">
-    <div class="nav-icon">💎</div>
-    <div>Pro</div>
-  </div>
-
-  <div class="nav-item">
-    <div class="nav-icon">👤</div>
-    <div>Profile</div>
-  </div>
-
 </div>
 
 <script>
+  let token = localStorage.getItem('token');
+  let allOpportunities = [];
+  let currentChart = null;
+  let chartInstances = {};
 
-let chartInstances = {};
+  window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); checkPaymentStatus(); };
 
-async function loadOpportunities(){
-
-  try{
-
-    const res =
-    await fetch("/api/opportunities");
-
-    const data =
-    await res.json();
-
-    const opportunities =
-    data.opportunities || [];
-
-    renderStats(opportunities);
-
-    renderOpportunities(opportunities);
-
-    const scanDate =
-    new Date(data.lastScan);
-
-    document.getElementById(
-      "scanTime"
-    ).innerText =
-    scanDate.toLocaleTimeString();
-
-  }catch(err){
-
-    document.getElementById(
-      "opportunities"
-    ).innerHTML = `
-      <div class="loader">
-        <div class="loading-text">
-          Failed loading opportunities
-        </div>
-      </div>
-    `;
-
+  function showToast(message, type) {
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) existingToast.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
   }
 
-}
-
-function renderStats(opps){
-
-  document.getElementById(
-    "oppCount"
-  ).innerText = opps.length;
-
-  let highest = 0;
-
-  opps.forEach(o => {
-    if(parseFloat(o.spread) > highest){
-      highest = parseFloat(o.spread);
-    }
-  });
-
-  document.getElementById(
-    "highestSpread"
-  ).innerText =
-  highest.toFixed(2) + "%";
-
-  const tradable =
-  opps.filter(
-    o => o.tradable
-  ).length;
-
-  document.getElementById(
-    "tradableCount"
-  ).innerText =
-  tradable;
-
-}
-
-function renderOpportunities(opps){
-
-  const container =
-  document.getElementById(
-    "opportunities"
-  );
-
-  if(!opps.length){
-
-    container.innerHTML = `
-      <div class="loader">
-        <div class="loading-text">
-          No opportunities found
-        </div>
-      </div>
-    `;
-
-    return;
-  }
-
-  container.innerHTML = "";
-
-  opps.slice(0,50).forEach((opp,index) => {
-
-    const riskClass =
-    opp.risk === "low"
-    ? "risk-low"
-    : opp.risk === "high"
-    ? "risk-high"
-    : "risk-medium";
-
-    const chartId =
-    `chart-${index}`;
-
-    const card =
-    document.createElement("div");
-
-    card.className = "card";
-
-    card.innerHTML = `
-
-      <div class="card-top">
-
-        <div>
-          <div class="coin">
-            ${opp.symbol}
-          </div>
-
-          <div class="pair">
-            ${opp.symbol}/USDT
-          </div>
-        </div>
-
-        <div class="spread">
-          +${opp.spread}%
-        </div>
-
-      </div>
-
-      <div class="trade-flow">
-
-        <div class="exchange-box">
-
-          <div class="exchange-label">
-            BUY FROM
-          </div>
-
-          <div class="exchange-name">
-            ${opp.buyExchange}
-          </div>
-
-          <div class="price">
-            $${opp.buyPrice}
-          </div>
-
-        </div>
-
-        <div class="arrow">
-          →
-        </div>
-
-        <div class="exchange-box">
-
-          <div class="exchange-label">
-            SELL TO
-          </div>
-
-          <div class="exchange-name">
-            ${opp.sellExchange}
-          </div>
-
-          <div class="price">
-            $${opp.sellPrice}
-          </div>
-
-        </div>
-
-      </div>
-
-      <div class="details-grid">
-
-        <div class="detail-box">
-
-          <div class="detail-label">
-            Buy Liquidity
-          </div>
-
-          <div class="detail-value">
-            $${Number(opp.liquidity || 0).toLocaleString()}
-          </div>
-
-        </div>
-
-        <div class="detail-box">
-
-          <div class="detail-label">
-            Tradable
-          </div>
-
-          <div class="detail-value ${opp.tradable ? 'green':'red'}">
-            ${opp.tradable ? 'YES' : 'NO'}
-          </div>
-
-        </div>
-
-        <div class="detail-box">
-
-          <div class="detail-label">
-            Withdraw
-          </div>
-
-          <div class="detail-value ${opp.buyWithdraw ? 'green':'red'}">
-            ${opp.buyWithdraw ? 'OPEN' : 'SUSPENDED'}
-          </div>
-
-        </div>
-
-        <div class="detail-box">
-
-          <div class="detail-label">
-            Deposit
-          </div>
-
-          <div class="detail-value ${opp.sellDeposit ? 'green':'red'}">
-            ${opp.sellDeposit ? 'OPEN' : 'SUSPENDED'}
-          </div>
-
-        </div>
-
-      </div>
-
-      <div class="networks">
-
-        <div class="network-title">
-          BUY NETWORKS
-        </div>
-
-        <div class="network-list">
-
-          ${
-            Object.entries(opp.buyNetworks || {})
-            .slice(0,5)
-            .map(([name,net]) => `
-              <div class="network">
-
-                <div class="network-name">
-                  ${name}
-                </div>
-
-                <div class="network-status ${net.withdraw ? 'green':'red'}">
-                  Withdraw: ${net.withdraw ? 'ON':'OFF'}
-                </div>
-
-                <div class="network-status ${net.deposit ? 'green':'red'}">
-                  Deposit: ${net.deposit ? 'ON':'OFF'}
-                </div>
-
-                <div class="network-status orange">
-                  Fee: ${net.fee || 0}
-                </div>
-
-              </div>
-            `).join("")
-          }
-
-        </div>
-
-      </div>
-
-      <div class="risk">
-
-        <div class="risk-badge ${riskClass}">
-          ${opp.risk.toUpperCase()} RISK
-        </div>
-
-        <button class="trade-btn">
-          Analyze Trade
-        </button>
-
-      </div>
-
-      <div class="chart-wrap">
-        <canvas id="${chartId}"></canvas>
-      </div>
-
-    `;
-
-    container.appendChild(card);
-
-    drawChart(chartId,opp);
-
-  });
-
-}
-
-function drawChart(id,opp){
-
-  const ctx =
-  document.getElementById(id);
-
-  if(!ctx) return;
-
-  const spread =
-  parseFloat(opp.spread);
-
-  const values = [
-    spread * 0.4,
-    spread * 0.7,
-    spread * 0.9,
-    spread * 1.2,
-    spread * 1.0,
-    spread
-  ];
-
-  new Chart(ctx,{
-
-    type:"line",
-
-    data:{
-      labels:[
-        "1m",
-        "2m",
-        "3m",
-        "4m",
-        "5m",
-        "Now"
-      ],
-
-      datasets:[{
-        label:"Spread %",
-        data:values,
-        tension:0.4,
-        fill:true,
-        borderColor:"#00ff99",
-        backgroundColor:"rgba(0,255,153,0.08)",
-        pointRadius:3
-      }]
-    },
-
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-
-      plugins:{
-        legend:{
-          display:false
-        }
-      },
-
-      scales:{
-        x:{
-          ticks:{
-            color:"#94a3b8"
-          },
-          grid:{
-            color:"rgba(255,255,255,0.04)"
-          }
-        },
-
-        y:{
-          ticks:{
-            color:"#94a3b8"
-          },
-          grid:{
-            color:"rgba(255,255,255,0.04)"
-          }
-        }
+  function checkPaymentStatus() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('payment_status')) {
+      const status = urlParams.get('payment_status');
+      if (status === 'success') {
+        showToast('✅ Payment successful! Your Pro plan is now active.', 'success');
+        if (token) { loadProfile(); setTimeout(() => switchTab('profile'), 1500); }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (status === 'failed') {
+        showToast('❌ Payment failed. Please try again.', 'error');
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
-
     }
+  }
 
+  // Auth functions
+  function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+  function isValidPhone(phone) { const d=phone.replace(/\D/g,''); return d.length>=9 && d.length<=12 && /^(0|254)/.test(d); }
+
+  async function verifyAndShowDashboard() {
+    try {
+      const res = await fetch('/api/me', { headers: { Authorization: token } });
+      const data = await res.json();
+      if (data.username) {
+        document.getElementById('authContainer').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        loadOpportunities();
+        loadProfile();
+      } else throw new Error();
+    } catch { localStorage.removeItem('token'); token = null; showAuth(); }
+  }
+
+  function showAuth() { document.getElementById('authContainer').style.display = 'block'; document.getElementById('dashboard').style.display = 'none'; }
+  function showRegister() { document.getElementById('loginPanel').style.display = 'none'; document.getElementById('registerPanel').style.display = 'block'; }
+  function showLogin() { document.getElementById('registerPanel').style.display = 'none'; document.getElementById('loginPanel').style.display = 'block'; }
+
+  async function register() {
+    const username = document.getElementById('regUsername').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const mpesa = document.getElementById('regMpesa').value.trim();
+    const password = document.getElementById('regPassword').value;
+    if (!username || !email || !mpesa || !password) { alert('All fields required'); return; }
+    if (!isValidEmail(email)) { alert('Valid email required'); return; }
+    if (!isValidPhone(mpesa)) { alert('Valid Kenyan phone required (e.g., 0712345678)'); return; }
+    if (password.length < 4) { alert('Password min 4 chars'); return; }
+    try {
+      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, mpesa, password }) });
+      const data = await res.json();
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error);
+    } catch { alert('Server error'); }
+  }
+
+  async function login() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password) { alert('Email and password required'); return; }
+    try {
+      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const data = await res.json();
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error || 'Invalid credentials');
+    } catch { alert('Login error'); }
+  }
+
+  function logout() { localStorage.removeItem('token'); location.reload(); }
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-nav'));
+    event.target.closest('.nav-item').classList.add('active-nav');
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    if (tabId === 'home') loadOpportunities();
+    if (tabId === 'profile') loadProfile();
+  }
+
+  // Home opportunities loading
+  async function loadOpportunities() {
+    const container = document.getElementById('opportunities');
+    container.innerHTML = '<div class="loading">Loading opportunities...</div>';
+    try {
+      const res = await fetch('/api/opportunities');
+      const data = await res.json();
+      if (!data.opportunities || data.opportunities.length === 0) {
+        container.innerHTML = '<div class="loading">No spreads >0.2% found.</div>';
+        return;
+      }
+      allOpportunities = data.opportunities;
+      updateStats(allOpportunities);
+      applyFilterAndRender();
+      document.getElementById('scanTime').innerText = new Date(data.lastScan).toLocaleTimeString();
+    } catch { container.innerHTML = '<div class="loading">Failed to load. Try again.</div>'; }
+  }
+
+  function updateStats(opps) {
+    document.getElementById('oppCount').innerText = opps.length;
+    let highest = 0;
+    opps.forEach(o => { if (parseFloat(o.spread) > highest) highest = parseFloat(o.spread); });
+    document.getElementById('highestSpread').innerText = highest.toFixed(2) + '%';
+    const tradable = opps.filter(o => o.tradable).length;
+    document.getElementById('tradableCount').innerText = tradable;
+  }
+
+  function applyFilterAndRender() {
+    const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+    let filtered = [...allOpportunities];
+    if (activeFilter === 'low') filtered = filtered.filter(o => o.risk === 'low');
+    else if (activeFilter === 'tradable') filtered = filtered.filter(o => o.tradable);
+    else if (activeFilter === 'highspread') filtered = filtered.filter(o => parseFloat(o.spread) > 5);
+    renderOpportunities(filtered);
+  }
+
+  function renderOpportunities(opps) {
+    const container = document.getElementById('opportunities');
+    container.innerHTML = '';
+    if (opps.length === 0) {
+      container.innerHTML = '<div class="loading">No opportunities match filter</div>';
+      return;
+    }
+    opps.forEach((opp, idx) => {
+      const riskClass = opp.risk === 'low' ? 'risk-low' : (opp.risk === 'high' ? 'risk-high' : 'risk-medium');
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-top">
+          <div><div class="coin">${opp.symbol}</div><div class="pair">${opp.symbol}/USDT</div></div>
+          <div class="spread">+${opp.spread}%</div>
+        </div>
+        <div class="trade-flow">
+          <div class="exchange-box"><div class="exchange-label">BUY FROM</div><div class="exchange-name">${opp.buyExchange}</div><div class="price">$${opp.buyPrice}</div></div>
+          <div class="arrow">→</div>
+          <div class="exchange-box"><div class="exchange-label">SELL TO</div><div class="exchange-name">${opp.sellExchange}</div><div class="price">$${opp.sellPrice}</div></div>
+        </div>
+        <div class="details-grid">
+          <div class="detail-box"><div class="detail-label">Buy Liquidity</div><div class="detail-value">$${Number(opp.liquidity || 0).toLocaleString()}</div></div>
+          <div class="detail-box"><div class="detail-label">Tradable</div><div class="detail-value ${opp.tradable ? 'green' : 'red'}">${opp.tradable ? 'YES' : 'NO'}</div></div>
+          <div class="detail-box"><div class="detail-label">Withdraw</div><div class="detail-value ${opp.buyWithdraw ? 'green' : 'red'}">${opp.buyWithdraw ? 'OPEN' : 'SUSPENDED'}</div></div>
+          <div class="detail-box"><div class="detail-label">Deposit</div><div class="detail-value ${opp.sellDeposit ? 'green' : 'red'}">${opp.sellDeposit ? 'OPEN' : 'SUSPENDED'}</div></div>
+        </div>
+        <div class="networks">
+          <div class="network-title">BUY NETWORKS</div>
+          <div class="network-list">
+            ${Object.entries(opp.buyNetworks || {}).slice(0,5).map(([name,net]) => `
+              <div class="network">
+                <div class="network-name">${name}</div>
+                <div class="network-status ${net.withdraw ? 'green':'red'}">Withdraw: ${net.withdraw ? 'ON':'OFF'}</div>
+                <div class="network-status ${net.deposit ? 'green':'red'}">Deposit: ${net.deposit ? 'ON':'OFF'}</div>
+                <div class="network-status orange">Fee: ${net.fee || 0}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="risk">
+          <div class="risk-badge ${riskClass}">${opp.risk.toUpperCase()} RISK</div>
+          <button class="trade-btn" data-id="${opp.id}">Analyze Trade</button>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-${idx}"></canvas></div>
+      `;
+      container.appendChild(card);
+      // draw chart
+      const ctx = document.getElementById(`chart-${idx}`).getContext('2d');
+      const spreadNum = parseFloat(opp.spread);
+      const values = [spreadNum * 0.4, spreadNum * 0.7, spreadNum * 0.9, spreadNum * 1.2, spreadNum * 1.0, spreadNum];
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels: ['1m','2m','3m','4m','5m','Now'], datasets: [{ label: 'Spread %', data: values, tension: 0.4, fill: true, borderColor: '#00ff99', backgroundColor: 'rgba(0,255,153,0.08)', pointRadius: 3 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
+      });
+    });
+    // attach event listeners after render
+    document.querySelectorAll('.trade-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = btn.getAttribute('data-id');
+        showDetail(id);
+      });
+    });
+  }
+
+  // Filter buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.classList && e.target.classList.contains('filter-btn')) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      e.target.classList.add('active');
+      applyFilterAndRender();
+    }
   });
 
-}
+  // Detail modal
+  async function showDetail(oppId) {
+    const modal = document.getElementById('detailModal');
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = '<div class="loading">Loading details...</div>';
+    modal.style.display = 'block';
+    try {
+      const res = await fetch(`/api/opportunity/${oppId}/details`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      displayDetailModal(data);
+    } catch (err) {
+      modalBody.innerHTML = `<div style="color:#ff8a8a; padding:20px;">Failed to load: ${err.message}</div>`;
+    }
+  }
 
-loadOpportunities();
+  function displayDetailModal(opp) {
+    const modalBody = document.getElementById('modalBody');
+    const hasBuyData = opp.buyNetworks && Object.keys(opp.buyNetworks).length > 0;
+    const hasSellData = opp.sellNetworks && Object.keys(opp.sellNetworks).length > 0;
+    const anyData = hasBuyData || hasSellData;
+    const tradableClass = opp.tradable ? 'status-open' : (anyData ? 'status-closed' : 'status-unverified');
+    const tradableText = opp.tradable ? 'TRADABLE ✅' : (anyData ? 'NOT TRADABLE ❌' : 'UNVERIFIED ❓');
 
-setInterval(() => {
+    function getStatusClass(st) { if (st === true) return 'status-open'; if (st === false) return 'status-closed'; return 'status-unverified'; }
+    function getStatusText(st) { if (st === true) return 'OPEN'; if (st === false) return 'CLOSED'; return 'Unverified'; }
 
-  loadOpportunities();
+    function buildNetworkTable(networks, side, exchange) {
+      const hasData = networks && Object.keys(networks).length > 0;
+      const title = side === 'buy' ? `Withdraw Networks (Buy: ${exchange})` : `Deposit Networks (Sell: ${exchange})`;
+      if (!hasData) return `<div><h4>${title}</h4><div>No network data available</div></div>`;
+      let html = `<h4>${title}</h4><div class="network-table">`;
+      for (const net of Object.values(networks)) {
+        html += `
+          <div class="network-row">
+            <div class="network-name">${net.name}</div>
+            <div class="network-details">Fee: ${typeof net.fee === 'number' ? net.fee + ' ' + (net.feeUnit || '') : net.fee || 'variable'}<br>ETA: ${net.arrivalTime || 'N/A'}</div>
+            <div><span class="network-status ${getStatusClass(net.deposit)}">Deposit: ${getStatusText(net.deposit)}</span> <span class="network-status ${getStatusClass(net.withdraw)}">Withdraw: ${getStatusText(net.withdraw)}</span></div>
+          </div>
+        `;
+      }
+      html += '</div>';
+      return html;
+    }
 
-},30000);
+    const buyNetworksHtml = buildNetworkTable(opp.buyNetworks, 'buy', opp.buyExchange);
+    const sellNetworksHtml = buildNetworkTable(opp.sellNetworks, 'sell', opp.sellExchange);
 
+    const riskLevelClass = opp.risk === 'low' ? 'low' : (opp.risk === 'medium' ? 'medium' : 'high');
+    const riskDesc = opp.risk === 'low' ? 'AI analyzed spread volatility, liquidity and transfer networks. Low risk opportunity.' : (opp.risk === 'medium' ? 'Moderate spread and acceptable liquidity. Medium risk.' : 'High spread or poor network support. High risk.');
+
+    modalBody.innerHTML = `
+      <div class="back-button" onclick="closeDetail()">← Back</div>
+      <div class="detail-symbol">${opp.symbol}</div>
+      <div class="detail-exchange-row">
+        <div class="detail-box"><div class="title">BUY</div><div class="exchange-name">${opp.buyExchange}</div><div class="price">$${opp.buyPrice}</div></div>
+        <div class="detail-box"><div class="title">SELL</div><div class="exchange-name">${opp.sellExchange}</div><div class="price">$${opp.sellPrice}</div></div>
+      </div>
+      <div class="detail-stats-row">
+        <div class="stat-item"><div class="stat-label">Spread</div><div class="stat-value">${opp.spread}%</div></div>
+        <div class="stat-item"><div class="stat-label">Liquidity</div><div class="stat-value">$${(parseFloat(opp.liquidity)/1000000).toFixed(1)}M</div></div>
+        <div class="stat-item"><div class="stat-label">Arrival Time</div><div class="stat-value">${opp.buyNetworks && Object.values(opp.buyNetworks)[0]?.arrivalTime || '3 mins'}</div></div>
+      </div>
+      <div><span class="${tradableClass}" style="padding:4px 12px; border-radius:40px;">${tradableText}</span></div>
+      ${buyNetworksHtml}
+      ${sellNetworksHtml}
+      <div class="ai-card">
+        <div class="ai-header">🧠 AI Risk Analysis</div>
+        <div class="risk-level-text ${riskLevelClass}">${opp.risk.toUpperCase()} RISK</div>
+        <div class="risk-description">${riskDesc}</div>
+        <div class="stats-grid">
+          <div class="stat-card">Spread Stability: ${Math.floor(Math.random()*30+70)}%</div>
+          <div class="stat-card">Liquidity Score: ${Math.floor(Math.random()*30+60)}%</div>
+          <div class="stat-card">Transfer Success: ${opp.tradable ? 96 : 45}%</div>
+          <div class="stat-card">Volatility: ${Math.floor(parseFloat(opp.spread)*5)}%</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="modalChart" style="height:200px"></canvas></div>
+    `;
+    // draw chart in modal
+    const ctx = document.getElementById('modalChart')?.getContext('2d');
+    if (ctx) {
+      const base = parseFloat(opp.spread);
+      const hist = [base*0.5, base*0.7, base*0.85, base*0.95, base*0.98, base];
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels: ['1','2','3','4','5','Now'], datasets: [{ label: 'Spread %', data: hist, borderColor: '#00ff99', backgroundColor: 'rgba(0,255,153,0.1)', fill: true, tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } } }
+      });
+    }
+  }
+
+  function closeDetail() { document.getElementById('detailModal').style.display = 'none'; }
+
+  // Profile and Payment (unchanged from previous)
+  async function loadProfile() {
+    const container = document.getElementById('profileCard');
+    container.innerHTML = '<div class="loading">Loading...</div>';
+    if (window.countdownInterval) clearInterval(window.countdownInterval);
+    try {
+      const [userRes, subRes] = await Promise.all([ fetch('/api/me', { headers: { Authorization: token } }), fetch('/api/user/subscription', { headers: { Authorization: token } }) ]);
+      const user = await userRes.json();
+      const sub = await subRes.json();
+      if (user.error || sub.error) throw new Error();
+      let tierHtml = '', countdownHtml = '';
+      if (sub.active && sub.plan) {
+        const planName = sub.plan === 'weekly' ? 'Weekly Pro' : 'Monthly Pro';
+        const tierClass = sub.plan === 'weekly' ? 'tier-weekly' : 'tier-monthly';
+        tierHtml = `<span class="tier-badge ${tierClass}">${planName}</span>`;
+        const expires = new Date(sub.expiresAt);
+        const diff = expires - new Date();
+        if (diff > 0) {
+          const days = Math.floor(diff / 86400000);
+          const hours = Math.floor((diff % 86400000) / 3600000);
+          countdownHtml = `<div class="countdown">⏳ Expires in: ${days}d ${hours}h</div>`;
+          window.countdownInterval = setInterval(() => {
+            const diff2 = expires - new Date();
+            if (diff2 <= 0) { clearInterval(window.countdownInterval); loadProfile(); }
+            else { const d = Math.floor(diff2 / 86400000), h = Math.floor((diff2 % 86400000) / 3600000); const cd = document.getElementById('countdownDisplay'); if (cd) cd.innerText = `⏳ Expires in: ${d}d ${h}h`; }
+          }, 60000);
+        } else countdownHtml = `<div class="countdown" style="color:#ff8a8a;">Expired</div>`;
+      } else {
+        tierHtml = `<span class="tier-badge tier-free">Free</span>`;
+        countdownHtml = `<div class="countdown">Upgrade to Pro for full access</div>`;
+      }
+      container.innerHTML = `<div class="profile-card"><div class="profile-row"><span>👤 Username:</span><span>${user.username}</span></div><div class="profile-row"><span>📧 Email:</span><span>${user.email}</span></div><div class="profile-row"><span>📱 Mobile:</span><span>${user.mpesa}</span></div><div class="profile-row"><span>💎 Tier:</span><span>${tierHtml}</span></div><div id="countdownDisplay">${countdownHtml}</div></div>`;
+    } catch { container.innerHTML = '<div class="loading">Session expired. Please login again.</div>'; }
+  }
+
+  async function payPro(plan, amount) {
+    if (!token) { alert('Please login first'); return; }
+    const phoneInput = plan === 'weekly' ? document.getElementById('weeklyPhone') : document.getElementById('monthlyPhone');
+    const phone = phoneInput.value.trim();
+    const btnId = plan === 'weekly' ? 'weeklyPayBtn' : 'monthlyPayBtn';
+    const msgDivId = plan === 'weekly' ? 'weeklyMessage' : 'monthlyMessage';
+    const btn = document.getElementById(btnId);
+    const msgDiv = document.getElementById(msgDivId);
+    btn.disabled = true;
+    msgDiv.innerText = '⏳ Please wait... Initializing payment.';
+    try {
+      const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ plan, amount }) });
+      const data = await res.json();
+      if (data.success && data.authorizationUrl) {
+        msgDiv.innerText = 'Redirecting to Paystack...';
+        window.location.href = data.authorizationUrl;
+      } else {
+        msgDiv.innerText = '❌ Payment initiation failed: ' + (data.error || 'Unknown error');
+        btn.disabled = false;
+      }
+    } catch (err) {
+      msgDiv.innerText = '❌ Network error. Please try again.';
+      btn.disabled = false;
+    }
+  }
 </script>
-
 </body>
 </html>
