@@ -106,6 +106,9 @@
     .tier-monthly { background: #1a2a5a; color: #60a5fa; }
     .countdown { font-size: 14px; color: #ffcc00; margin-top: 8px; }
     .loading { text-align: center; padding: 40px; color: #9ca3af; }
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1f2937; border-left: 4px solid; padding: 12px 24px; border-radius: 12px; z-index: 1000; font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: opacity 0.3s; }
+    .toast.success { border-left-color: #00ff99; color: #00ff99; }
+    .toast.error { border-left-color: #ff4d4d; color: #ff4d4d; }
     @media (max-width: 480px) {
       .detail-box .price { font-size: 20px; }
       .stat-value { font-size: 16px; }
@@ -197,7 +200,41 @@
   let currentChart = null;
   let countdownInterval = null;
 
-  window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); };
+  window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); checkPaymentStatus(); };
+
+  function showToast(message, type) {
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) existingToast.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+  }
+
+  function checkPaymentStatus() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('payment_status')) {
+      const status = urlParams.get('payment_status');
+      if (status === 'success') {
+        showToast('✅ Payment successful! Your Pro plan is now active.', 'success');
+        // Refresh profile and switch to profile tab
+        if (token) {
+          loadProfile();
+          // Switch to profile tab after 1 second
+          setTimeout(() => {
+            const profileTab = document.querySelector('.nav-item[onclick*="profile"]');
+            if (profileTab) profileTab.click();
+            else switchTab('profile');
+          }, 1500);
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (status === 'failed') {
+        showToast('❌ Payment failed. Please try again.', 'error');
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }
 
   function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
   function isValidPhone(phone) { const d=phone.replace(/\D/g,''); return d.length>=9 && d.length<=12 && /^(0|254)/.test(d); }
@@ -388,7 +425,6 @@
         let feeText = '';
         if (typeof net.fee === 'number' && net.fee > 0) {
           feeText = `${net.fee} ${net.feeUnit}`;
-          // approximate USDT value for ETH/BNB (optional, but we skip to avoid API calls per network)
         } else {
           feeText = net.fee || 'variable';
         }
@@ -544,20 +580,6 @@
     } catch (err) {
       msgDiv.innerText = '❌ Network error. Please try again.';
       btn.disabled = false;
-    }
-  }
-
-  // Check payment status from URL after redirect
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has('payment_status')) {
-    const status = urlParams.get('payment_status');
-    if (status === 'success') {
-      alert('✅ Payment successful! Your Pro plan is now active.');
-      window.history.replaceState({}, document.title, window.location.pathname);
-      loadProfile();
-    } else if (status === 'failed') {
-      alert('❌ Payment failed. Please try again.');
-      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }
 </script>
