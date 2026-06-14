@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>ArbiMine • Arbitrage Intelligence</title>
+  <title>ArbiMine • Live Arbitrage</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* ===== Full CSS from previous final version ===== */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0a0c15; font-family: 'Inter', system-ui, sans-serif; color: #eef2ff; padding-bottom: 70px; }
     .auth-container { max-width: 420px; margin: 60px auto; padding: 24px; background: #111827; border-radius: 32px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
@@ -92,11 +91,13 @@
     .current-spread .small { font-size: 12px; color: #9ca3af; }
     .current-spread .big { font-size: 24px; font-weight: bold; color: #00ff99; }
     canvas#trendChart { max-height: 320px; width: 100%; }
-    .pro-card { background: linear-gradient(135deg, #111827, #0f172a); border-radius: 28px; padding: 24px; margin-bottom: 20px; border: 1px solid #374151; }
+    .pro-card { background: linear-gradient(135deg, #111827, #0f172a); border-radius: 28px; padding: 24px; margin-bottom: 20px; border: 1px solid #374151; text-align: center; }
     .plan-name { font-size: 28px; font-weight: bold; background: linear-gradient(90deg, #00ff99, #60a5fa); -webkit-background-clip: text; background-clip: text; color: transparent; }
     .price { font-size: 42px; font-weight: bold; margin: 12px 0; }
     .pro-input { width: 100%; padding: 12px; margin: 12px 0; background: #1f2937; border: 1px solid #374151; border-radius: 40px; color: white; font-size: 16px; }
-    .btn-pro { background: #00ff99; color: #0a0c15; border: none; border-radius: 60px; padding: 14px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
+    .btn-pro { background: #00ff99; color: #0a0c15; border: none; border-radius: 60px; padding: 14px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+    .btn-pro:disabled { opacity: 0.6; cursor: not-allowed; }
+    .payment-message { font-size: 14px; margin-top: 12px; color: #ffcc00; }
     .profile-card { background: #111827; border-radius: 24px; padding: 20px; margin-bottom: 20px; }
     .profile-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1f2937; }
     .tier-badge { display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 14px; font-weight: bold; }
@@ -142,6 +143,7 @@
     <button class="nav-item" onclick="switchTab('pro', event)"><span class="icon">💎</span><span>Pro</span></button>
     <button class="nav-item" onclick="switchTab('profile', event)"><span class="icon">👤</span><span>Profile</span></button>
   </div>
+
   <div id="home" class="section active">
     <div class="home-header">
       <h2>📡 Live Arbitrage</h2>
@@ -150,26 +152,31 @@
         <select id="sortSelect" class="sort-select" onchange="loadAndRender()">
           <option value="spreadDesc">Spread high-low</option>
           <option value="symbolAsc">Symbol A-Z</option>
+          <option value="tradableFirst">Tradable first</option>
         </select>
       </div>
     </div>
     <div id="oppList" class="loading">Loading opportunities...</div>
   </div>
+
   <div id="pro" class="section">
     <h2 style="margin-bottom: 20px;">💎 Unlock Pro</h2>
     <div class="pro-card">
       <div class="plan-name">Weekly Boost</div>
       <div class="price">100 KES</div>
       <input type="tel" id="weeklyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
-      <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with Paystack</button>
+      <button class="btn-pro" id="weeklyPayBtn" onclick="payPro('weekly', 100)">Pay with M-Pesa</button>
+      <div id="weeklyMessage" class="payment-message"></div>
     </div>
     <div class="pro-card">
       <div class="plan-name">Monthly Max</div>
       <div class="price">350 KES</div>
       <input type="tel" id="monthlyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
-      <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with Paystack</button>
+      <button class="btn-pro" id="monthlyPayBtn" onclick="payPro('monthly', 350)">Pay with M-Pesa</button>
+      <div id="monthlyMessage" class="payment-message"></div>
     </div>
   </div>
+
   <div id="profile" class="section">
     <h2 style="margin-bottom: 20px;">👤 Profile</h2>
     <div id="profileCard" class="loading">Loading...</div>
@@ -191,6 +198,7 @@
   let countdownInterval = null;
 
   window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); };
+
   function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
   function isValidPhone(phone) { const d=phone.replace(/\D/g,''); return d.length>=9 && d.length<=12 && /^(0|254)/.test(d); }
 
@@ -252,6 +260,7 @@
   }
 
   async function refreshOpportunities() { await loadOpps(); }
+
   async function loadOpps() {
     const container = document.getElementById('oppList');
     container.innerHTML = '<div class="loading">Loading opportunities...</div>';
@@ -268,7 +277,8 @@
     let filtered = [...allOpportunities];
     const sortBy = document.getElementById('sortSelect').value;
     if (sortBy === 'spreadDesc') filtered.sort((a,b) => parseFloat(b.spread) - parseFloat(a.spread));
-    if (sortBy === 'symbolAsc') filtered.sort((a,b) => a.symbol.localeCompare(b.symbol));
+    else if (sortBy === 'symbolAsc') filtered.sort((a,b) => a.symbol.localeCompare(b.symbol));
+    else if (sortBy === 'tradableFirst') filtered.sort((a,b) => (b.tradable === true) - (a.tradable === true) || parseFloat(b.spread) - parseFloat(a.spread));
     renderOppsList(filtered);
   }
 
@@ -277,11 +287,13 @@
     if (risk === 'medium') return 'risk-medium';
     return 'risk-high';
   }
+
   function getTradableClass(tradable, hasNetworkData) {
     if (tradable) return 'badge-tradable';
     if (!hasNetworkData) return 'badge-unverified';
     return 'badge-untradable';
   }
+
   function getTradableText(tradable, hasNetworkData) {
     if (tradable) return 'TRADABLE ✅';
     if (!hasNetworkData) return 'UNVERIFIED ❓';
@@ -373,22 +385,17 @@
       }
       let html = `<div class="network-section"><h4>${title}</h4><div class="network-table">`;
       for (const net of Object.values(networks)) {
-        let depositStatus = net.deposit;
-        let withdrawStatus = net.withdraw;
-        let depClass = getNetworkStatusClass(depositStatus);
-        let depText = getNetworkStatusText(depositStatus);
-        let wdClass = getNetworkStatusClass(withdrawStatus);
-        let wdText = getNetworkStatusText(withdrawStatus);
+        let feeDisplay = typeof net.fee === 'number' ? net.fee + (net.feeUnit ? ' ' + net.feeUnit : '') : (net.fee || 'variable');
         html += `
           <div class="network-row">
             <div class="network-name">${net.name}</div>
             <div class="network-details">
-              Fee: ${typeof net.fee === 'number' ? net.fee + (net.name.includes('ETH') ? ' ETH' : '') : net.fee || 'variable'}<br>
+              Fee: ${feeDisplay}<br>
               ETA: ${net.arrivalTime || 'N/A'}
             </div>
             <div>
-              <span class="network-status ${depClass}">Deposit: ${depText}</span>
-              <span class="network-status ${wdClass}">Withdraw: ${wdText}</span>
+              <span class="network-status ${getNetworkStatusClass(net.deposit)}">Deposit: ${getNetworkStatusText(net.deposit)}</span>
+              <span class="network-status ${getNetworkStatusClass(net.withdraw)}">Withdraw: ${getNetworkStatusText(net.withdraw)}</span>
             </div>
           </div>
         `;
@@ -512,12 +519,40 @@
     if (!token) { alert('Please login first'); return; }
     const phoneInput = plan === 'weekly' ? document.getElementById('weeklyPhone') : document.getElementById('monthlyPhone');
     const phone = phoneInput.value.trim();
+    const btnId = plan === 'weekly' ? 'weeklyPayBtn' : 'monthlyPayBtn';
+    const msgDivId = plan === 'weekly' ? 'weeklyMessage' : 'monthlyMessage';
+    const btn = document.getElementById(btnId);
+    const msgDiv = document.getElementById(msgDivId);
+    btn.disabled = true;
+    msgDiv.innerText = '⏳ Please wait... Initializing payment.';
     try {
       const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ plan, amount }) });
       const data = await res.json();
-      if (data.success && data.authorizationUrl) { window.location.href = data.authorizationUrl; }
-      else { alert(data.error || 'Payment initiation failed'); }
-    } catch (err) { alert('Payment request failed. Try again.'); }
+      if (data.success && data.authorizationUrl) {
+        msgDiv.innerText = 'Redirecting to Paystack...';
+        window.location.href = data.authorizationUrl;
+      } else {
+        msgDiv.innerText = '❌ Payment initiation failed: ' + (data.error || 'Unknown error');
+        btn.disabled = false;
+      }
+    } catch (err) {
+      msgDiv.innerText = '❌ Network error. Please try again.';
+      btn.disabled = false;
+    }
+  }
+
+  // Check payment status from URL after redirect
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('payment_status')) {
+    const status = urlParams.get('payment_status');
+    if (status === 'success') {
+      alert('✅ Payment successful! Your Pro plan is now active.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      loadProfile();
+    } else if (status === 'failed') {
+      alert('❌ Payment failed. Please try again.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }
 </script>
 </body>

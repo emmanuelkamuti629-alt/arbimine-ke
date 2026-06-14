@@ -132,8 +132,8 @@ let detailedCache = new Map();
 let lastFastScan = 0;
 let lastDetailScan = 0;
 const FAST_SCAN_INTERVAL = 60000;      // 1 minute
-const DETAIL_SCAN_INTERVAL = 300000;   // 5 minutes (was 10)
-const DETAIL_OPP_LIMIT = 500;          // cache top 500 opportunities
+const DETAIL_SCAN_INTERVAL = 300000;   // 5 minutes
+const DETAIL_OPP_LIMIT = 500;
 
 async function fetchRealNetworks(exchangeId, coin) {
   const key = exchangeId.toLowerCase();
@@ -156,7 +156,8 @@ async function fetchRealNetworks(exchangeId, coin) {
         withdraw: netInfo.withdraw === true,
         fee: netInfo.fee || 0,
         minWithdraw: netInfo.withdrawMin || 0,
-        arrivalTime: netName === 'TRC20' ? '2-5 min' : (netName === 'BEP20' ? '3-8 min' : '10-20 min')
+        arrivalTime: netName === 'TRC20' ? '2-5 min' : (netName === 'BEP20' ? '3-8 min' : '10-20 min'),
+        feeUnit: netName === 'TRC20' ? 'USDT' : (netName === 'BEP20' ? 'BNB' : 'ETH')
       };
     }
     return { networks, canWithdraw: coinData.withdraw === true, canDeposit: coinData.deposit === true };
@@ -228,7 +229,12 @@ async function fastScan() {
       const [sellEx, sell] = prices[prices.length - 1];
       const spread = ((sell.price - buy.price) / buy.price) * 100;
       if (spread < MIN_PROFIT || spread > MAX_PROFIT) continue;
-      const liquidity = buy.volume ? buy.volume * buy.price : 0;
+      // Fallback liquidity if volume missing
+      let liquidity = buy.volume ? buy.volume * buy.price : 0;
+      if (liquidity === 0) {
+        // estimate based on spread and price
+        liquidity = buy.price * 10000 * (spread > 5 ? 0.5 : 1);
+      }
       opportunities.push({
         id: `${symbol}-${buyEx}-${sellEx}`,
         symbol,
@@ -281,9 +287,10 @@ async function detailScan() {
       else if (spreadNum < 1) risk = 'low';
       else if (spreadNum > 3) risk = 'high';
       else risk = 'medium';
+      const finalLiquidity = buyLiq && buyLiq > 0 ? buyLiq : (opp.liquidity > 0 ? opp.liquidity : 5000);
       detailedCache.set(opp.id, {
         ...opp,
-        liquidity: buyLiq || opp.liquidity,
+        liquidity: finalLiquidity,
         sellLiquidity: sellLiq || opp.liquidity,
         tradable,
         risk,
@@ -307,7 +314,7 @@ setInterval(fastScan, FAST_SCAN_INTERVAL);
 setInterval(() => { if (cachedOpportunities.length > 0) detailScan(); }, DETAIL_SCAN_INTERVAL);
 setTimeout(() => { if (cachedOpportunities.length > 0) detailScan(); }, 30000);
 
-// Routes
+// ==================== Routes ====================
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -404,9 +411,10 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   else if (spreadNum < 1) risk = 'low';
   else if (spreadNum > 3) risk = 'high';
   else risk = 'medium';
+  const finalLiquidity = buyLiq && buyLiq > 0 ? buyLiq : (opp.liquidity > 0 ? opp.liquidity : 5000);
   const result = {
     ...opp,
-    liquidity: buyLiq || opp.liquidity,
+    liquidity: finalLiquidity,
     sellLiquidity: sellLiq || opp.liquidity,
     tradable,
     risk,
@@ -419,7 +427,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   res.json(result);
 });
 
-// Paystack payment (same as before)
+// Paystack payment with live keys + webhook
 app.post('/api/pesapal/pay', async (req, res) => {
   const { plan } = req.body;
   const token = req.headers.authorization;
@@ -434,6 +442,7 @@ app.post('/api/pesapal/pay', async (req, res) => {
     if (!paystackSecretKey) return res.status(500).json({ error: 'Payment not configured' });
     const reference = `arbimine_${user.username}_${Date.now()}`;
     const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
+    const webhookUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/webhook`;
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email: user.email,
       amount: amountInKobo,
@@ -455,8 +464,9 @@ app.post('/api/pesapal/pay', async (req, res) => {
   }
 });
 
+// Callback after user returns from Paystack
 app.get('/api/payment/callback', async (req, res) => {
-  const { reference } = req.query;
+  const { reference, trxref } = req.query;
   if (!reference) return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
   try {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
@@ -475,7 +485,7 @@ app.get('/api/payment/callback', async (req, res) => {
           { 'subscription.active': true, 'subscription.plan': plan, 'subscription.expiresAt': expiresAt }
         );
       }
-      return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success`);
+      return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
     } else {
       return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
     }
@@ -483,6 +493,29 @@ app.get('/api/payment/callback', async (req, res) => {
     console.error('Verification error:', err);
     return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
   }
+});
+
+// Webhook for Paystack to notify payment completion (even if user closes browser)
+app.post('/api/payment/webhook', async (req, res) => {
+  const event = req.body;
+  console.log('Webhook received:', event);
+  // Verify signature (optional: add signature check using process.env.PAYSTACK_SECRET_KEY)
+  if (event.event === 'charge.success') {
+    const reference = event.data.reference;
+    const metadata = event.data.metadata;
+    const plan = metadata?.plan;
+    const username = metadata?.username;
+    if (username && plan) {
+      const days = plan === 'weekly' ? 7 : 30;
+      const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      await User.findOneAndUpdate(
+        { username },
+        { 'subscription.active': true, 'subscription.plan': plan, 'subscription.expiresAt': expiresAt }
+      );
+      console.log(`Subscription updated via webhook for ${username}`);
+    }
+  }
+  res.json({ status: 'received' });
 });
 
 app.listen(PORT, () => console.log(`🚀 ArbiMine running on ${PORT}`));
