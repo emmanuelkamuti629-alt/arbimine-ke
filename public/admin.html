@@ -2,55 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
   <title>ArbiMine Admin</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0c15; font-family: 'Inter', system-ui, sans-serif; color: #eef2ff; padding: 20px; }
-    .container { max-width: 1400px; margin: 0 auto; }
-    h1, h2 { margin-bottom: 20px; }
-    .card { background: #111827; border-radius: 20px; padding: 20px; margin-bottom: 30px; border: 1px solid #1f2937; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #1f2937; }
-    th { color: #00ff99; }
-    button { background: #334155; border: none; color: white; padding: 6px 12px; border-radius: 8px; cursor: pointer; margin-right: 8px; }
+    body { background: #0a0c15; font-family: 'Inter', system-ui, sans-serif; color: #eef2ff; padding: 16px; }
+    .container { max-width: 100%; margin: 0 auto; }
+    h1, h2 { margin-bottom: 16px; font-size: 1.5rem; }
+    .card { background: #111827; border-radius: 20px; padding: 16px; margin-bottom: 24px; border: 1px solid #1f2937; overflow-x: auto; }
+    table { width: 100%; min-width: 600px; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #1f2937; font-size: 14px; }
+    th { color: #00ff99; font-weight: 600; }
+    button { background: #334155; border: none; color: white; padding: 6px 12px; border-radius: 8px; cursor: pointer; margin: 4px; font-size: 12px; transition: 0.2s; }
     button.danger { background: #5a1a1a; color: #ff8a8a; }
     button.success { background: #0f5132; color: #00ff99; }
-    input, select { background: #1f2937; border: 1px solid #374151; padding: 8px; border-radius: 8px; color: white; margin: 4px; }
-    .login-container { max-width: 400px; margin: 100px auto; background: #111827; padding: 30px; border-radius: 24px; }
+    input, select { background: #1f2937; border: 1px solid #374151; padding: 10px; border-radius: 12px; color: white; margin: 6px 0; width: 100%; font-size: 16px; }
+    .login-container { max-width: 90%; margin: 20% auto; background: #111827; padding: 24px; border-radius: 28px; }
     .hidden { display: none; }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: #1f2937; padding: 12px 20px; border-radius: 12px; border-left: 4px solid; }
-    .toast.success { border-left-color: #00ff99; }
-    .toast.error { border-left-color: #ff4d4d; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1f2937; padding: 12px 20px; border-radius: 40px; border-left: 4px solid; z-index: 1000; font-size: 14px; white-space: nowrap; }
+    .toast.success { border-left-color: #00ff99; color: #00ff99; }
+    .toast.error { border-left-color: #ff4d4d; color: #ff4d4d; }
+    .stats-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .stat-card { background: #0f172a; border-radius: 16px; padding: 16px; flex: 1; min-width: 120px; text-align: center; }
+    .stat-value { font-size: 28px; font-weight: bold; color: #00ff99; }
+    .stat-label { font-size: 12px; color: #9ca3af; margin-top: 6px; }
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      .card { padding: 12px; }
+      th, td { font-size: 12px; padding: 8px 6px; }
+      button { padding: 8px 10px; font-size: 11px; }
+      .stat-value { font-size: 22px; }
+    }
   </style>
 </head>
 <body>
 <div id="loginDiv" class="login-container">
-  <h2>Admin Login</h2>
-  <input type="text" id="adminUser" placeholder="Username" value="admin"><br>
-  <input type="password" id="adminPass" placeholder="Password"><br>
-  <button onclick="adminLogin()">Login</button>
+  <h2>🔐 Admin Login</h2>
+  <input type="text" id="adminUser" placeholder="Username" autocomplete="off">
+  <input type="password" id="adminPass" placeholder="Password">
+  <button onclick="adminLogin()" style="width:100%; margin-top:12px;">Login</button>
 </div>
 
 <div id="dashboardDiv" class="container hidden">
-  <h1>ArbiMine Admin Dashboard</h1>
-  <div class="card">
-    <h2>Users</h2>
-    <table id="usersTable">
-      <thead><tr><th>Username</th><th>Email</th><th>Mobile</th><th>Tier</th><th>Expires At</th><th>Actions</th></tr></thead>
-      <tbody></tbody>
-    </table>
+  <h1>📊 ArbiMine Admin</h1>
+  <div class="card" style="overflow-x: auto;">
+    <h2>👥 Users</h2>
+    <div style="overflow-x: auto;">
+      <table id="usersTable">
+        <thead><tr><th>Username</th><th>Email</th><th>Mobile</th><th>Tier</th><th>Expires</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+       </table>
+    </div>
+  </div>
+  <div class="card" style="overflow-x: auto;">
+    <h2>💳 Transactions</h2>
+    <div style="overflow-x: auto;">
+      <table id="transactionsTable">
+        <thead><tr><th>Ref</th><th>User</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody></tbody>
+       </table>
+    </div>
   </div>
   <div class="card">
-    <h2>Payment Transactions</h2>
-    <table id="transactionsTable">
-      <thead><tr><th>Reference</th><th>User</th><th>Plan</th><th>Amount (KES)</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-  <div class="card">
-    <h2>Stats</h2>
-    <div id="stats"></div>
+    <h2>📈 Stats</h2>
+    <div id="stats" class="stats-grid"></div>
   </div>
 </div>
 
@@ -61,26 +76,28 @@
   async function adminLogin() {
     const username = document.getElementById('adminUser').value;
     const password = document.getElementById('adminPass').value;
-    const res = await fetch('/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
-    const data = await res.json();
-    if (data.token) {
-      localStorage.setItem('adminToken', data.token);
-      showDashboard();
-    } else {
-      alert('Login failed');
+    try {
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('adminToken', data.token);
+        showDashboard();
+      } else {
+        alert('Invalid credentials');
+      }
+    } catch (err) {
+      alert('Login error');
     }
   }
 
   async function showDashboard() {
     document.getElementById('loginDiv').style.display = 'none';
     document.getElementById('dashboardDiv').classList.remove('hidden');
-    await loadUsers();
-    await loadTransactions();
-    await loadStats();
+    await Promise.all([loadUsers(), loadTransactions(), loadStats()]);
   }
 
   async function loadUsers() {
@@ -92,13 +109,13 @@
     users.forEach(user => {
       const row = tbody.insertRow();
       row.insertCell(0).innerText = user.username;
-      row.insertCell(1).innerText = user.email;
+      row.insertCell(1).innerText = user.email.length > 20 ? user.email.substring(0, 18) + '…' : user.email;
       row.insertCell(2).innerText = user.mpesa;
       row.insertCell(3).innerText = user.subscription?.active ? (user.subscription.plan || 'Active') : 'Free';
-      row.insertCell(4).innerText = user.subscription?.expiresAt ? new Date(user.subscription.expiresAt).toLocaleString() : 'N/A';
+      row.insertCell(4).innerText = user.subscription?.expiresAt ? new Date(user.subscription.expiresAt).toLocaleDateString() : 'N/A';
       const actions = row.insertCell(5);
       const activateBtn = document.createElement('button');
-      activateBtn.innerText = user.subscription?.active ? 'Deactivate' : 'Activate Weekly';
+      activateBtn.innerText = user.subscription?.active ? 'Deactivate' : 'Activate';
       activateBtn.onclick = () => updateSubscription(user._id, !user.subscription?.active, 'weekly', null);
       const deleteBtn = document.createElement('button');
       deleteBtn.innerText = 'Delete';
@@ -119,8 +136,9 @@
     if (res.ok) {
       showToast('Subscription updated', 'success');
       loadUsers();
+      loadStats();
     } else {
-      showToast('Failed', 'error');
+      showToast('Update failed', 'error');
     }
   }
 
@@ -146,14 +164,14 @@
     const transactions = await res.json();
     const tbody = document.querySelector('#transactionsTable tbody');
     tbody.innerHTML = '';
-    transactions.forEach(tx => {
+    transactions.slice(0, 50).forEach(tx => {
       const row = tbody.insertRow();
-      row.insertCell(0).innerText = tx.reference;
+      row.insertCell(0).innerText = tx.reference.slice(-12);
       row.insertCell(1).innerText = tx.user;
       row.insertCell(2).innerText = tx.plan;
-      row.insertCell(3).innerText = tx.amount;
+      row.insertCell(3).innerText = `${tx.amount} KES`;
       row.insertCell(4).innerHTML = `<span style="color:${tx.status === 'success' ? '#00ff99' : (tx.status === 'failed' ? '#ff8a8a' : '#ffcc00')}">${tx.status}</span>`;
-      row.insertCell(5).innerText = new Date(tx.createdAt).toLocaleString();
+      row.insertCell(5).innerText = new Date(tx.createdAt).toLocaleDateString();
     });
   }
 
@@ -167,13 +185,13 @@
     const transactions = await txRes.json();
     const totalUsers = users.length;
     const activeSubs = users.filter(u => u.subscription?.active).length;
-    const totalSuccess = transactions.filter(t => t.status === 'success').reduce((sum, t) => sum + t.amount, 0);
+    const totalSuccess = transactions.filter(t => t.status === 'success').reduce((sum, t) => sum + (t.amount || 0), 0);
     const totalFailed = transactions.filter(t => t.status === 'failed').length;
     document.getElementById('stats').innerHTML = `
-      <p>Total Users: ${totalUsers}</p>
-      <p>Active Subscriptions: ${activeSubs}</p>
-      <p>Total Successful Payments: KES ${totalSuccess}</p>
-      <p>Failed Payments: ${totalFailed}</p>
+      <div class="stat-card"><div class="stat-value">${totalUsers}</div><div class="stat-label">Total Users</div></div>
+      <div class="stat-card"><div class="stat-value">${activeSubs}</div><div class="stat-label">Active Subscriptions</div></div>
+      <div class="stat-card"><div class="stat-value">KES ${totalSuccess}</div><div class="stat-label">Successful Payments</div></div>
+      <div class="stat-card"><div class="stat-value">${totalFailed}</div><div class="stat-label">Failed Payments</div></div>
     `;
   }
 
