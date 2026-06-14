@@ -1,550 +1,524 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ArbiMine • Real Crypto Arbitrage Intelligence</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
-<style>
-body{
-    background:#0a0e1a;
-    color:white;
-    font-family:Arial,sans-serif;
-}
-::-webkit-scrollbar{
-    width:5px;
-}
-::-webkit-scrollbar-thumb{
-    background:#334155;
-    border-radius:10px;
-}
-.card{
-    background:#111827;
-    border:1px solid #1f2937;
-    border-radius:18px;
-}
-.glow{
-    box-shadow:0 0 20px rgba(59,130,246,.15);
-}
-.opportunity-card{
-    transition:.2s;
-    cursor:pointer;
-}
-.opportunity-card:hover{
-    transform:translateY(-2px);
-    border-color:#3b82f6;
-}
-.green{
-    color:#22c55e;
-}
-.red{
-    color:#ef4444;
-}
-.yellow{
-    color:#f59e0b;
-}
-.tab-btn.active{
-    color:#3b82f6;
-}
-.hidden-page{
-    display:none;
-}
-.network-box{
-    background:#1a2332;
-    border:1px solid #2d3748;
-    border-radius:12px;
-    padding:12px;
-}
-.plan-card{
-    background:#111827;
-    border:1px solid #1f2937;
-    border-radius:16px;
-    padding:20px;
-}
-.input-field{
-    background:#1a2332;
-    border:1px solid #2d3748;
-    border-radius:12px;
-    padding:12px;
-    width:100%;
-    color:white;
-    outline:none;
-}
-.btn-green{
-    background:#10b981;
-    color:white;
-    border-radius:12px;
-    padding:14px;
-    font-weight:bold;
-    width:100%;
-}
-.btn-green:hover{
-    background:#059669;
-}
-.bottom-nav{
-    position:fixed;
-    bottom:0;
-    left:0;
-    right:0;
-    background:#0a0e1a;
-    border-top:1px solid #1f2937;
-    padding:12px 0;
-    z-index:50;
-}
-.buy-card{
-    background:#1a3a2a;
-    border-radius:12px;
-    padding:16px;
-}
-.sell-card{
-    background:#3a1a1a;
-    border-radius:12px;
-    padding:16px;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>ArbiMine • Arbitrage Intelligence</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ===== Full CSS from previous final version ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0c15; font-family: 'Inter', system-ui, sans-serif; color: #eef2ff; padding-bottom: 70px; }
+    .auth-container { max-width: 420px; margin: 60px auto; padding: 24px; background: #111827; border-radius: 32px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .auth-container h2 { color: #00ff99; margin-bottom: 8px; }
+    .auth-container input { width: 100%; padding: 14px; margin: 8px 0; background: #1f2937; border: 1px solid #374151; border-radius: 20px; color: white; font-size: 16px; }
+    .auth-container button { width: 100%; padding: 14px; background: #00ff99; border: none; border-radius: 40px; font-weight: bold; margin-top: 16px; cursor: pointer; color: #0a0c15; }
+    .toggle-link { text-align: center; margin-top: 20px; color: #60a5fa; cursor: pointer; }
+    .dashboard { display: none; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #111827; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #1f2937; z-index: 100; }
+    .nav-item { background: none; border: none; color: #9ca3af; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-weight: 500; }
+    .nav-item .icon { font-size: 24px; }
+    .nav-item.active { color: #00ff99; }
+    .section { display: none; padding: 20px 16px; animation: fadeIn 0.2s; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .home-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .home-header h2 { font-size: 24px; font-weight: 600; }
+    .refresh-btn, .sort-select { background: #1f2937; border: none; color: white; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-size: 14px; }
+    .opp-card { background: #111827; border-radius: 24px; padding: 20px; margin-bottom: 16px; cursor: pointer; transition: transform 0.1s, background 0.1s; border: 1px solid #1f2937; }
+    .opp-card:active { transform: scale(0.98); background: #1a2332; }
+    .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+    .symbol { font-size: 22px; font-weight: bold; color: #00ff99; }
+    .badge-live { background: #ff4d4d; color: white; padding: 4px 10px; border-radius: 30px; font-size: 11px; font-weight: bold; }
+    .exchange-pair { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0; }
+    .buy-sell { flex: 1; background: #0f172a; border-radius: 18px; padding: 12px; text-align: center; }
+    .buy-sell .label { font-size: 12px; color: #9ca3af; margin-bottom: 4px; }
+    .buy-sell .exchange { font-size: 16px; font-weight: bold; margin-bottom: 6px; }
+    .buy-sell .price { font-size: 18px; font-weight: bold; color: white; word-break: break-all; }
+    .stats { display: flex; justify-content: space-between; margin-top: 12px; font-size: 14px; color: #cbd5e1; }
+    .risk-low { background: #0f5132; color: #00ff99; }
+    .risk-medium { background: #5a4a1a; color: #ffcc00; }
+    .risk-high { background: #5a1a1a; color: #ff8a8a; }
+    .risk-badge { display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: bold; }
+    .badge-tradable { background: #0f5132; color: #00ff99; }
+    .badge-untradable { background: #5a1a1a; color: #ff8a8a; }
+    .badge-unverified { background: #5a4a1a; color: #ffcc00; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; overflow-y: auto; padding: 20px; }
+    .modal-content { max-width: 700px; margin: 20px auto; background: #111827; border-radius: 32px; padding: 24px; position: relative; }
+    .close-modal { position: absolute; top: 16px; right: 20px; font-size: 28px; cursor: pointer; color: #9ca3af; }
+    .back-button { display: inline-block; color: #60a5fa; font-size: 16px; cursor: pointer; margin-bottom: 16px; font-weight: 500; }
+    .detail-symbol { font-size: 32px; font-weight: bold; color: #00ff99; margin-bottom: 20px; }
+    .detail-exchange-row { display: flex; gap: 16px; margin: 20px 0; flex-wrap: wrap; }
+    .detail-box { flex: 1; background: #0f172a; border-radius: 24px; padding: 16px; text-align: center; min-width: 140px; }
+    .detail-box .title { font-size: 14px; color: #9ca3af; margin-bottom: 8px; }
+    .detail-box .exchange-name { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .detail-box .price { font-size: 24px; font-weight: bold; word-break: break-all; }
+    .detail-stats-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; margin: 20px 0; padding: 12px 0; border-top: 1px solid #1f2937; border-bottom: 1px solid #1f2937; }
+    .stat-item { text-align: center; flex: 1; }
+    .stat-label { font-size: 12px; color: #9ca3af; }
+    .stat-value { font-size: 18px; font-weight: bold; color: #00ff99; }
+    .network-section { margin: 24px 0; }
+    .network-section h4 { font-size: 18px; margin-bottom: 12px; color: #00ff99; }
+    .network-table { background: #0f172a; border-radius: 20px; overflow: hidden; }
+    .network-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #1f2937; flex-wrap: wrap; gap: 8px; }
+    .network-row:last-child { border-bottom: none; }
+    .network-name { font-weight: bold; font-size: 16px; }
+    .network-details { text-align: right; font-size: 13px; color: #cbd5e1; line-height: 1.4; }
+    .status-open { background: #00ff99; color: #0a0c15; }
+    .status-closed { background: #5a1a1a; color: #ff8a8a; }
+    .status-unverified { background: #5a4a1a; color: #ffcc00; }
+    .network-status { padding: 2px 8px; border-radius: 30px; font-size: 11px; font-weight: bold; margin-left: 8px; white-space: nowrap; }
+    .ai-card { background: #0f172a; border-radius: 24px; padding: 20px; margin: 24px 0; }
+    .ai-header { font-size: 28px; font-weight: bold; margin-bottom: 20px; color: #eef2ff; }
+    .risk-level-container { background: #0a1020; border-radius: 24px; padding: 24px; border: 1px solid #1f2937; margin-bottom: 24px; }
+    .risk-level-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .risk-level-text { font-size: 42px; font-weight: bold; }
+    .risk-level-text.low { color: #00ff99; }
+    .risk-level-text.medium { color: #ffcc00; }
+    .risk-level-text.high { color: #ff8a8a; }
+    .risk-description { font-size: 18px; color: #9ca3af; margin-top: 12px; line-height: 1.5; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-top: 24px; }
+    .stat-card { background: #0a1020; border-radius: 20px; padding: 16px; text-align: center; border: 1px solid #1f2937; }
+    .stat-card .label { font-size: 14px; color: #9ca3af; margin-bottom: 8px; }
+    .stat-card .score { font-size: 32px; font-weight: bold; }
+    .stat-card .score.green { color: #00ff99; }
+    .stat-card .score.blue { color: #60a5fa; }
+    .stat-card .score.red { color: #ff8a8a; }
+    .trend-container { margin-top: 24px; background: #0f172a; border-radius: 24px; padding: 20px; }
+    .trend-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .trend-title h3 { font-size: 28px; font-weight: bold; }
+    .trend-title p { color: #9ca3af; margin-top: 4px; }
+    .current-spread { background: #0a1020; padding: 8px 20px; border-radius: 40px; border: 1px solid #1f2937; text-align: center; }
+    .current-spread .small { font-size: 12px; color: #9ca3af; }
+    .current-spread .big { font-size: 24px; font-weight: bold; color: #00ff99; }
+    canvas#trendChart { max-height: 320px; width: 100%; }
+    .pro-card { background: linear-gradient(135deg, #111827, #0f172a); border-radius: 28px; padding: 24px; margin-bottom: 20px; border: 1px solid #374151; }
+    .plan-name { font-size: 28px; font-weight: bold; background: linear-gradient(90deg, #00ff99, #60a5fa); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .price { font-size: 42px; font-weight: bold; margin: 12px 0; }
+    .pro-input { width: 100%; padding: 12px; margin: 12px 0; background: #1f2937; border: 1px solid #374151; border-radius: 40px; color: white; font-size: 16px; }
+    .btn-pro { background: #00ff99; color: #0a0c15; border: none; border-radius: 60px; padding: 14px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
+    .profile-card { background: #111827; border-radius: 24px; padding: 20px; margin-bottom: 20px; }
+    .profile-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1f2937; }
+    .tier-badge { display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 14px; font-weight: bold; }
+    .tier-free { background: #334155; color: white; }
+    .tier-weekly { background: #0f5132; color: #00ff99; }
+    .tier-monthly { background: #1a2a5a; color: #60a5fa; }
+    .countdown { font-size: 14px; color: #ffcc00; margin-top: 8px; }
+    .loading { text-align: center; padding: 40px; color: #9ca3af; }
+    @media (max-width: 480px) {
+      .detail-box .price { font-size: 20px; }
+      .stat-value { font-size: 16px; }
+      .network-name { font-size: 14px; }
+      .network-details { font-size: 11px; }
+      .buy-sell .price { font-size: 15px; }
+      .risk-level-text { font-size: 28px; }
+      .stat-card .score { font-size: 24px; }
+    }
+  </style>
 </head>
-<body class="pb-20">
-<!-- LOGIN PAGE -->
-<div id="authPage" class="min-h-screen flex items-center justify-center px-4">
-<div class="card glow w-full max-w-md p-6">
-<div class="text-center mb-6">
-<h1 class="text-3xl font-bold text-blue-400">ArbiMine</h1>
-<p class="text-slate-400 mt-2 text-sm">
-Real arbitrage spreads • Real networks • Real liquidity
-</p>
-</div>
-<input id="username" type="text" placeholder="Username"
-class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-3 outline-none"/>
-<input id="email" type="email" placeholder="Email"
-class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-3 outline-none"/>
-<input id="mobile" type="tel" placeholder="M-Pesa Mobile Number"
-class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-3 outline-none"/>
-<input id="password" type="password" placeholder="Password"
-class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-4 outline-none"/>
-<button onclick="createAccount()"
-class="w-full bg-blue-600 hover:bg-blue-700 rounded-xl py-3 font-bold">
-Create Account
-</button>
-<button onclick="loginAccount()"
-class="w-full bg-slate-800 hover:bg-slate-700 rounded-xl py-3 font-bold mt-3">
-Login
-</button>
-<p id="authStatus" class="text-center text-sm text-slate-400 mt-4"></p>
+<body>
+<div id="authContainer" class="auth-container">
+  <div id="loginPanel">
+    <h2>🔓 ArbiMine</h2>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button onclick="login()">Login →</button>
+    <div class="toggle-link" onclick="showRegister()">Create account</div>
+  </div>
+  <div id="registerPanel" style="display:none;">
+    <h2>📝 Register</h2>
+    <input type="text" id="regUsername" placeholder="Username">
+    <input type="email" id="regEmail" placeholder="Email">
+    <input type="tel" id="regMpesa" placeholder="Mobile number (e.g., 0712345678)">
+    <input type="password" id="regPassword" placeholder="Password">
+    <button onclick="register()">Register</button>
+    <div class="toggle-link" onclick="showLogin()">Back to Login</div>
+  </div>
 </div>
 
-<!-- MAIN APP -->
-<div id="appPage" class="hidden-page">
-<!-- HOME PAGE -->
-<div id="homePage" class="max-w-7xl mx-auto px-4 py-6">
-<div class="flex justify-between items-center mb-5">
-<div>
-<h2 class="text-xl font-bold">Live Opportunities</h2>
-<p class="text-slate-400 text-sm" id="oppCount">Tradable opportunities only</p>
-</div>
-<div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm">Sorted by %</div>
-</div>
-<div id="opportunitiesContainer" class="space-y-4"></div>
-<div id="paginationContainer" class="flex justify-center gap-2 mt-6"></div>
-</div>
-
-<!-- DETAIL PAGE - MATCHES IMAGE 2 + 3 -->
-<div id="detailPage" class="hidden-page max-w-6xl mx-auto px-4 py-6">
-<button onclick="backHome()" class="mb-5 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl">
-<i class="fa-solid fa-arrow-left"></i> Back
-</button>
-<div class="card p-5">
-<h2 id="detailCoin" class="text-3xl font-bold mb-4">ETH</h2>
-<div class="grid grid-cols-2 gap-4 mb-4">
-<div class="buy-card">
-<div class="text-slate-400 text-sm">BUY</div>
-<div id="buyExchange" class="text-2xl font-bold">MEXC</div>
-<div id="buyPrice" class="text-green-400 text-xl font-bold mt-1">$3400</div>
-</div>
-<div class="sell-card">
-<div class="text-slate-400 text-sm">SELL</div>
-<div id="sellExchange" class="text-2xl font-bold">HTX</div>
-<div id="sellPrice" class="text-red-400 text-xl font-bold mt-1">$3560</div>
-</div>
-</div>
-<div class="space-y-3 text-sm mb-6">
-<div class="flex justify-between">
-<span class="text-slate-400">Spread</span>
-<span id="detailSpread" class="text-green-400 font-bold">4.7%</span>
-</div>
-<div class="flex justify-between">
-<span class="text-slate-400">Liquidity</span>
-<span id="totalLiquidity">$1.8M</span>
-</div>
-<div class="flex justify-between">
-<span class="text-slate-400">Arrival Time</span>
-<span id="arrivalTime">3 mins</span>
-</div>
-</div>
-<!-- NETWORKS -->
-<div class="mt-6">
-<h3 class="text-xl font-bold mb-4">Networks</h3>
-<div class="mb-4">
-<div class="text-green-400 font-bold mb-2">Withdraw Networks</div>
-<div id="withdrawNetworks" class="space-y-2"></div>
-</div>
-<div class="mb-4">
-<div class="text-red-400 font-bold mb-2">Deposit Networks</div>
-<div id="depositNetworks" class="space-y-2"></div>
-</div>
-<!-- AI RISK -->
-<div class="mt-6 network-box">
-<h3 class="text-xl font-bold mb-3">AI Risk Analysis</h3>
-<div id="riskBadge" class="text-xl font-bold mb-2">MEDIUM RISK</div>
-<p id="riskText" class="text-slate-400 text-sm">
-AI analyzed spread volatility, liquidity and transfer networks.
-</p>
-</div>
-<!-- CHART -->
-<div class="mt-6 network-box">
-<h3 class="font-bold text-lg mb-4">Spread Trend</h3>
-<canvas id="trendChart"></canvas>
-</div>
-</div>
+<div id="dashboard" class="dashboard">
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('home', event)"><span class="icon">🏠</span><span>Home</span></button>
+    <button class="nav-item" onclick="switchTab('pro', event)"><span class="icon">💎</span><span>Pro</span></button>
+    <button class="nav-item" onclick="switchTab('profile', event)"><span class="icon">👤</span><span>Profile</span></button>
+  </div>
+  <div id="home" class="section active">
+    <div class="home-header">
+      <h2>📡 Live Arbitrage</h2>
+      <div>
+        <button class="refresh-btn" onclick="refreshOpportunities()">🔄</button>
+        <select id="sortSelect" class="sort-select" onchange="loadAndRender()">
+          <option value="spreadDesc">Spread high-low</option>
+          <option value="symbolAsc">Symbol A-Z</option>
+        </select>
+      </div>
+    </div>
+    <div id="oppList" class="loading">Loading opportunities...</div>
+  </div>
+  <div id="pro" class="section">
+    <h2 style="margin-bottom: 20px;">💎 Unlock Pro</h2>
+    <div class="pro-card">
+      <div class="plan-name">Weekly Boost</div>
+      <div class="price">100 KES</div>
+      <input type="tel" id="weeklyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
+      <button class="btn-pro" onclick="payPro('weekly', 100)">Pay with Paystack</button>
+    </div>
+    <div class="pro-card">
+      <div class="plan-name">Monthly Max</div>
+      <div class="price">350 KES</div>
+      <input type="tel" id="monthlyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
+      <button class="btn-pro" onclick="payPro('monthly', 350)">Pay with Paystack</button>
+    </div>
+  </div>
+  <div id="profile" class="section">
+    <h2 style="margin-bottom: 20px;">👤 Profile</h2>
+    <div id="profileCard" class="loading">Loading...</div>
+    <button class="btn-pro" style="background:#334155; margin-top:20px;" onclick="logout()">Logout</button>
+  </div>
 </div>
 
-<!-- PRO PAGE - MATCHES IMAGE 1 -->
-<div id="proPage" class="hidden-page max-w-5xl mx-auto px-4 py-6">
-<div class="flex items-center gap-2 mb-6">
-<i class="fa-solid fa-gem text-blue-400 text-2xl"></i>
-<h2 class="text-2xl font-bold">Unlock Pro</h2>
-</div>
-<div class="space-y-4">
-<div class="plan-card">
-<div class="text-green-400 text-xl font-bold mb-2">Weekly Boost</div>
-<div class="text-4xl font-bold mb-4">100 KES</div>
-<input id="mpesaWeekly" type="tel" placeholder="M-Pesa number (optional for Paystack)" class="input-field mb-3"/>
-<button onclick="selectPlan('weekly')" class="btn-green">
-Pay with M-Pesa
-</button>
-</div>
-<div class="plan-card">
-<div class="text-green-400 text-xl font-bold mb-2">Monthly Max</div>
-<div class="text-4xl font-bold mb-4">350 KES</div>
-<input id="mpesaMonthly" type="tel" placeholder="M-Pesa number (optional for Paystack)" class="input-field mb-3"/>
-<button onclick="selectPlan('monthly')" class="btn-green">
-Pay with M-Pesa
-</button>
-</div>
-</div>
-<p id="paymentStatus" class="text-slate-400 text-sm text-center mt-4 h-5"></p>
-</div>
-
-<!-- PROFILE PAGE - MATCHES IMAGE 4 -->
-<div id="profilePage" class="hidden-page max-w-5xl mx-auto px-4 py-6">
-<div class="flex items-center gap-2 mb-6">
-<i class="fa-solid fa-user text-slate-400"></i>
-<h2 class="text-2xl font-bold">Profile</h2>
-</div>
-<div class="plan-card mb-6">
-<div class="space-y-4">
-<div class="flex items-center gap-3">
-<i class="fa-solid fa-user text-slate-400"></i>
-<div class="flex justify-between w-full">
-<span class="text-slate-400">Username:</span>
-<span id="profileName" class="font-bold">Emm</span>
-</div>
-</div>
-<div class="flex items-center gap-3">
-<i class="fa-solid fa-envelope text-slate-400"></i>
-<div class="flex justify-between w-full">
-<span class="text-slate-400">Email:</span>
-<span id="profileEmail" class="font-bold">emmanuelkamuti629@gmail.com</span>
-</div>
-</div>
-<div class="flex items-center gap-3">
-<i class="fa-solid fa-mobile text-slate-400"></i>
-<div class="flex justify-between w-full">
-<span class="text-slate-400">Mobile:</span>
-<span id="profileMobile" class="font-bold">0712345678</span>
-</div>
-</div>
-</div>
-</div>
-<button onclick="logout()" class="btn-green bg-slate-700 hover:bg-slate-600">
-Logout
-</button>
-</div>
-
-<!-- BOTTOM NAV -->
-<div class="bottom-nav">
-<div class="max-w-5xl mx-auto flex justify-around">
-<button onclick="showPage('homePage')" class="tab-btn flex flex-col items-center text-slate-400" id="homeBtn">
-<i class="fa-solid fa-house text-xl"></i>
-<span class="text-xs mt-1">Home</span>
-</button>
-<button onclick="showPage('proPage')" class="tab-btn flex flex-col items-center text-slate-400" id="proBtn">
-<i class="fa-solid fa-gem text-xl"></i>
-<span class="text-xs mt-1">Pro</span>
-</button>
-<button onclick="showPage('profilePage')" class="tab-btn flex flex-col items-center text-slate-400" id="profileBtn">
-<i class="fa-solid fa-user text-xl"></i>
-<span class="text-xs mt-1">Profile</span>
-</button>
-</div>
-</div>
+<div id="detailModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeDetail()">&times;</span>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script>
-let currentUser = null;
-let chartInstance = null;
-let currentPage = 1;
-const perPage = 20;
-let tradableOpps = [];
+  let token = localStorage.getItem('token');
+  let allOpportunities = [];
+  let currentChart = null;
+  let countdownInterval = null;
 
-const opportunities = [
-{coin:"SWEAT",buyExchange:"HTX",sellExchange:"GATEIO",buyPrice:0.000701,sellPrice:0.0008649,spread:23.38,buyLiquidity:"$124K",sellLiquidity:"$98K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Strong spread with active transfer networks and good liquidity.",networks:[{name:"TON",fee:"1 SWEAT",arrival:"2-5 mins",status:"ACTIVE",type:"withdraw"},{name:"ERC20",fee:"12 SWEAT",arrival:"5-20 mins",status:"ACTIVE",type:"withdraw"},{name:"TON",fee:"FREE",arrival:"2-5 mins",status:"ACTIVE",type:"deposit"}],trend:[18,19,19.5,20,21,21.5,22,22.5,23,23.38]},
-{coin:"FCT2",buyExchange:"HTX",sellExchange:"MEXC",buyPrice:0.0068,sellPrice:0.0083,spread:21.84,buyLiquidity:"$87K",sellLiquidity:"$112K",withdrawOpen:true,depositOpen:true,risk:"MEDIUM",riskText:"Good spread but medium liquidity volatility.",networks:[{name:"ERC20",fee:"8 FCT2",arrival:"8-15 mins",status:"ACTIVE",type:"withdraw"},{name:"TRC20",fee:"2 FCT2",arrival:"2-4 mins",status:"ACTIVE",type:"withdraw"},{name:"ERC20",fee:"FREE",arrival:"8-15 mins",status:"ACTIVE",type:"deposit"}],trend:[14,15,16,17,18,19,20,20.5,21,21.84]},
-{coin:"GMX",buyExchange:"HTX",sellExchange:"BITMART",buyPrice:4.64,sellPrice:5.62,spread:21.10,buyLiquidity:"$210K",sellLiquidity:"$45K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Stable trend and strong exchange liquidity.",networks:[{name:"ARBITRUM",fee:"0.04 GMX",arrival:"1-3 mins",status:"ACTIVE",type:"withdraw"},{name:"AVALANCHE",fee:"0.08 GMX",arrival:"2-6 mins",status:"ACTIVE",type:"withdraw"},{name:"ARBITRUM",fee:"FREE",arrival:"1-3 mins",status:"ACTIVE",type:"deposit"}],trend:[13,14,15,16,17,18,18.5,19.5,20,21.1]},
-{coin:"XRP",buyExchange:"KRAKEN",sellExchange:"BINANCE",buyPrice:0.512,sellPrice:0.618,spread:20.70,buyLiquidity:"$890K",sellLiquidity:"$1.2M",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"High liquidity pair with consistent spreads.",networks:[{name:"XRP",fee:"0.1 XRP",arrival:"1-2 mins",status:"ACTIVE",type:"withdraw"},{name:"XRP",fee:"FREE",arrival:"1-2 mins",status:"ACTIVE",type:"deposit"}],trend:[15,16,16.8,17.5,18.2,18.9,19.3,19.8,20.2,20.7]},
-{coin:"ETH",buyExchange:"MEXC",sellExchange:"HTX",buyPrice:3400,sellPrice:3560,spread:4.7,buyLiquidity:"$1.8M",sellLiquidity:"$1.5M",withdrawOpen:true,depositOpen:true,risk:"MEDIUM",riskText:"AI analyzed spread volatility, liquidity and transfer networks.",networks:[{name:"ARBITRUM",fee:"0.001 ETH",arrival:"1 min",status:"OPEN",type:"withdraw"},{name:"ERC20",fee:"0.004 ETH",arrival:"8 mins",status:"OPEN",type:"withdraw"},{name:"ARBITRUM",fee:"FREE",arrival:"1 min",status:"OPEN",type:"deposit"}],trend:[2.0,2.3,2.6,2.9,3.5,4.1,4.7]},
-{coin:"DOGE",buyExchange:"KUCOIN",sellExchange:"OKX",buyPrice:0.0812,sellPrice:0.0978,spread:20.44,buyLiquidity:"$340K",sellLiquidity:"$420K",withdrawOpen:true,depositOpen:true,risk:"MEDIUM",riskText:"Meme coin volatility but networks stable.",networks:[{name:"DOGE",fee:"5 DOGE",arrival:"2-5 mins",status:"ACTIVE",type:"withdraw"},{name:"BSC",fee:"3 DOGE",arrival:"1-3 mins",status:"ACTIVE",type:"withdraw"},{name:"DOGE",fee:"FREE",arrival:"2-5 mins",status:"ACTIVE",type:"deposit"}],trend:[12,13.5,14.8,16,17.2,18,18.9,19.5,20,20.44]},
-{coin:"SOL",buyExchange:"BYBIT",sellExchange:"GATEIO",buyPrice:142.5,sellPrice:171.2,spread:20.14,buyLiquidity:"$2.1M",sellLiquidity:"$1.8M",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Excellent liquidity and fast SPL transfers.",networks:[{name:"SOL",fee:"0.01 SOL",arrival:"<1 min",status:"ACTIVE",type:"withdraw"},{name:"ERC20",fee:"0.5 SOL",arrival:"3-8 mins",status:"ACTIVE",type:"withdraw"},{name:"SOL",fee:"FREE",arrival:"<1 min",status:"ACTIVE",type:"deposit"}],trend:[14,15.2,16.1,17,17.8,18.5,19.1,19.6,19.9,20.14]},
-{coin:"MATIC",buyExchange:"COINBASE",sellExchange:"HTX",buyPrice:0.684,sellPrice:0.821,spread:20.03,buyLiquidity:"$560K",sellLiquidity:"$490K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Polygon network fast and cheap.",networks:[{name:"POLYGON",fee:"1 MATIC",arrival:"<1 min",status:"ACTIVE",type:"withdraw"},{name:"ERC20",fee:"15 MATIC",arrival:"5-12 mins",status:"ACTIVE",type:"withdraw"},{name:"POLYGON",fee:"FREE",arrival:"<1 min",status:"ACTIVE",type:"deposit"}],trend:[13,14.2,15.5,16.8,17.5,18.3,19,19.5,19.8,20.03]},
-{coin:"LINK",buyExchange:"BINANCE",sellExchange:"BITGET",buyPrice:13.42,sellPrice:16.08,spread:19.82,buyLiquidity:"$780K",sellLiquidity:"$650K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"Stable oracle token with good depth.",networks:[{name:"ERC20",fee:"0.3 LINK",arrival:"3-8 mins",status:"ACTIVE",type:"withdraw"},{name:"ARBITRUM",fee:"0.1 LINK",arrival:"1-2 mins",status:"ACTIVE",type:"withdraw"},{name:"ERC20",fee:"FREE",arrival:"3-8 mins",status:"ACTIVE",type:"deposit"}],trend:[12,13.5,14.8,16,17,17.8,18.5,19.1,19.5,19.82]},
-{coin:"AVAX",buyExchange:"OKX",sellExchange:"MEXC",buyPrice:28.6,sellPrice:34.2,spread:19.58,buyLiquidity:"$1.3M",sellLiquidity:"$980K",withdrawOpen:true,depositOpen:true,risk:"LOW",riskText:"C-Chain transfers reliable.",networks:[{name:"AVAX C-CHAIN",fee:"0.01 AVAX",arrival:"<1 min",status:"ACTIVE",type:"withdraw"},{name:"ERC20",fee:"0.2 AVAX",arrival:"4-10 mins",status:"ACTIVE",type:"withdraw"},{name:"AVAX C-CHAIN",fee:"FREE",arrival:"<1 min",status:"ACTIVE",type:"deposit"}],trend:[11,12.5,14,15.5,16.8,17.5,18.2,18.9,19.2,19.58]}
-];
+  window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); };
+  function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+  function isValidPhone(phone) { const d=phone.replace(/\D/g,''); return d.length>=9 && d.length<=12 && /^(0|254)/.test(d); }
 
-async function createAccount(){
-  const username=document.getElementById("username").value;
-  const email=document.getElementById("email").value;
-  const mobile=document.getElementById("mobile").value;
-  const password=document.getElementById("password").value;
-  
-  if(!username ||!email ||!mobile ||!password){
-    document.getElementById("authStatus").innerText="Fill all fields";
-    return;
+  async function verifyAndShowDashboard() {
+    try {
+      const res = await fetch('/api/me', { headers: { Authorization: token } });
+      const data = await res.json();
+      if (data.username) {
+        document.getElementById('authContainer').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        loadOpps();
+        loadProfile();
+      } else throw new Error();
+    } catch { localStorage.removeItem('token'); token = null; showAuth(); }
   }
 
-  try {
-    const res = await fetch('/api/register', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ username, email, mobile, password })
-    });
-    const data = await res.json();
-    
-    if(res.ok){
-      currentUser = data.user;
-      localStorage.setItem("arbimineUserId", currentUser.id);
-      openApp();
-    } else {
-      document.getElementById("authStatus").innerText = data.error;
+  function showAuth() { document.getElementById('authContainer').style.display = 'block'; document.getElementById('dashboard').style.display = 'none'; }
+  function showRegister() { document.getElementById('loginPanel').style.display = 'none'; document.getElementById('registerPanel').style.display = 'block'; }
+  function showLogin() { document.getElementById('registerPanel').style.display = 'none'; document.getElementById('loginPanel').style.display = 'block'; }
+
+  async function register() {
+    const username = document.getElementById('regUsername').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const mpesa = document.getElementById('regMpesa').value.trim();
+    const password = document.getElementById('regPassword').value;
+    if (!username || !email || !mpesa || !password) { alert('All fields required'); return; }
+    if (!isValidEmail(email)) { alert('Valid email required'); return; }
+    if (!isValidPhone(mpesa)) { alert('Valid Kenyan phone required (e.g., 0712345678)'); return; }
+    if (password.length < 4) { alert('Password min 4 chars'); return; }
+    try {
+      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, mpesa, password }) });
+      const data = await res.json();
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error);
+    } catch { alert('Server error'); }
+  }
+
+  async function login() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password) { alert('Email and password required'); return; }
+    try {
+      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const data = await res.json();
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error || 'Invalid credentials');
+    } catch { alert('Login error'); }
+  }
+
+  function logout() { localStorage.removeItem('token'); location.reload(); }
+
+  function switchTab(tabId, event) {
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+    if (event?.target) event.target.closest('.nav-item').classList.add('active');
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    if (tabId === 'home') loadOpps();
+    if (tabId === 'profile') loadProfile();
+  }
+
+  async function refreshOpportunities() { await loadOpps(); }
+  async function loadOpps() {
+    const container = document.getElementById('oppList');
+    container.innerHTML = '<div class="loading">Loading opportunities...</div>';
+    try {
+      const res = await fetch('/api/opportunities');
+      const data = await res.json();
+      if (!data.opportunities || data.opportunities.length === 0) { container.innerHTML = '<div class="loading">No spreads >0.2% found.</div>'; return; }
+      allOpportunities = data.opportunities;
+      loadAndRender();
+    } catch { container.innerHTML = '<div class="loading">Failed to load. Try again.</div>'; }
+  }
+
+  function loadAndRender() {
+    let filtered = [...allOpportunities];
+    const sortBy = document.getElementById('sortSelect').value;
+    if (sortBy === 'spreadDesc') filtered.sort((a,b) => parseFloat(b.spread) - parseFloat(a.spread));
+    if (sortBy === 'symbolAsc') filtered.sort((a,b) => a.symbol.localeCompare(b.symbol));
+    renderOppsList(filtered);
+  }
+
+  function getRiskClass(risk) {
+    if (risk === 'low') return 'risk-low';
+    if (risk === 'medium') return 'risk-medium';
+    return 'risk-high';
+  }
+  function getTradableClass(tradable, hasNetworkData) {
+    if (tradable) return 'badge-tradable';
+    if (!hasNetworkData) return 'badge-unverified';
+    return 'badge-untradable';
+  }
+  function getTradableText(tradable, hasNetworkData) {
+    if (tradable) return 'TRADABLE ✅';
+    if (!hasNetworkData) return 'UNVERIFIED ❓';
+    return 'NOT TRADABLE ❌';
+  }
+
+  function renderOppsList(opps) {
+    const container = document.getElementById('oppList');
+    container.innerHTML = '';
+    for (const opp of opps) {
+      const riskClass = getRiskClass(opp.risk || 'medium');
+      const riskText = (opp.risk || 'MEDIUM').toUpperCase();
+      const liquidity = opp.liquidity ? `$${(parseFloat(opp.liquidity)/1000).toFixed(0)}K` : 'N/A';
+      const hasNetworkData = (opp.buyNetworks && Object.keys(opp.buyNetworks).length > 0) || (opp.sellNetworks && Object.keys(opp.sellNetworks).length > 0);
+      const tradableClass = getTradableClass(opp.tradable, hasNetworkData);
+      const tradableText = getTradableText(opp.tradable, hasNetworkData);
+      const card = document.createElement('div');
+      card.className = 'opp-card';
+      card.innerHTML = `
+        <div class="card-header">
+          <span class="symbol">${opp.symbol}</span>
+          <span class="badge-live">LIVE</span>
+        </div>
+        <div class="exchange-pair">
+          <div class="buy-sell">
+            <div class="label">BUY</div>
+            <div class="exchange">${opp.buyExchange}</div>
+            <div class="price">$${opp.buyPrice}</div>
+          </div>
+          <div class="buy-sell">
+            <div class="label">SELL</div>
+            <div class="exchange">${opp.sellExchange}</div>
+            <div class="price">$${opp.sellPrice}</div>
+          </div>
+        </div>
+        <div class="stats">
+          <span>💧 Liquidity ${liquidity}</span>
+          <span class="risk-badge ${riskClass}">${riskText} RISK</span>
+        </div>
+        <div class="stats" style="margin-top: 8px;">
+          <span>📈 Spread <strong style="color:#00ff99">${opp.spread}%</strong></span>
+          <span>🔄 <span class="${tradableClass}" style="padding:2px 8px; border-radius:30px;">${tradableText}</span></span>
+        </div>
+      `;
+      card.onclick = () => showDetail(opp.id);
+      container.appendChild(card);
     }
-  } catch (err) {
-    document.getElementById("authStatus").innerText = "Server error";
   }
-}
 
-async function loginAccount(){
-  const email=document.getElementById("email").value;
-  const password=document.getElementById("password").value;
-  
-  try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    
-    if(res.ok){
-      currentUser = data.user;
-      localStorage.setItem("arbimineUserId", currentUser.id);
-      openApp();
-    } else {
-      document.getElementById("authStatus").innerText = data.error;
-    }
-  } catch (err) {
-    document.getElementById("authStatus").innerText = "Server error";
-  }
-}
-
-async function openApp(){
-  document.getElementById("authPage").style.display="none";
-  document.getElementById("appPage").style.display="block";
-  
-  if(!currentUser){
-    const userId = localStorage.getItem("arbimineUserId");
-    if(userId){
-      const res = await fetch(`/api/user/${userId}`);
-      currentUser = await res.json();
+  async function showDetail(oppId) {
+    const modal = document.getElementById('detailModal');
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = '<div class="loading">Loading details...</div>';
+    modal.style.display = 'block';
+    if (currentChart) { if (typeof currentChart.destroy === 'function') currentChart.destroy(); currentChart = null; }
+    try {
+      const res = await fetch(`/api/opportunity/${oppId}/details`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      displayDetailModal(data);
+    } catch (err) {
+      modalBody.innerHTML = `<div style="color:#ff8a8a; padding:20px;">Failed to load: ${err.message}</div>`;
     }
   }
-  
-  document.getElementById("profileName").innerText=currentUser.username;
-  document.getElementById("profileEmail").innerText=currentUser.email;
-  document.getElementById("profileMobile").innerText=currentUser.mobile;
-  
-  renderOpportunities();
-  showPage('homePage');
-}
 
-function renderOpportunities(){
-  const container=document.getElementById("opportunitiesContainer");
-  container.innerHTML="";
-  tradableOpps=opportunities
-   .filter(o=>o.withdrawOpen && o.depositOpen)
-   .sort((a,b)=>b.spread-a.spread);
+  function displayDetailModal(opp) {
+    const modalBody = document.getElementById('modalBody');
+    const hasBuyNetworkData = opp.buyNetworks && Object.keys(opp.buyNetworks).length > 0;
+    const hasSellNetworkData = opp.sellNetworks && Object.keys(opp.sellNetworks).length > 0;
+    const hasAnyNetworkData = hasBuyNetworkData || hasSellNetworkData;
+    const tradableClass = opp.tradable ? 'badge-tradable' : (!hasAnyNetworkData ? 'badge-unverified' : 'badge-untradable');
+    const tradableText = opp.tradable ? 'TRADABLE ✅' : (!hasAnyNetworkData ? 'UNVERIFIED ❓' : 'NOT TRADABLE ❌');
 
-  document.getElementById("oppCount").innerText = `Showing ${tradableOpps.length} tradable opportunities`;
-
-  const start = (currentPage-1)*perPage;
-  const end = start + perPage;
-  const pageOpps = tradableOpps.slice(start,end);
-
-  pageOpps.forEach((opp,index)=>{
-    const realIndex = start + index;
-    container.innerHTML+=`
-    <div class="card glow p-5 opportunity-card"
-    onclick="openDetails(${realIndex})">
-    <div class="flex justify-between items-start">
-    <div>
-    <div class="flex items-center gap-2">
-    <h2 class="text-2xl font-bold">${opp.coin}</h2>
-    <div class="bg-green-500/20 text-green-400 px-2 py-1 rounded-lg text-xs">LIVE</div>
-    </div>
-    <p class="text-slate-400 mt-1">${opp.buyExchange} → ${opp.sellExchange}</p>
-    <div class="flex gap-4 mt-4 text-sm">
-    <div><div class="text-slate-400">Buy</div><div>$${opp.buyPrice}</div></div>
-    <div><div class="text-slate-400">Sell</div><div>$${opp.sellPrice}</div></div>
-    <div><div class="text-slate-400">Liquidity</div><div>${opp.buyLiquidity}</div></div>
-    </div></div>
-    <div class="text-right">
-    <div class="text-4xl font-bold green">${opp.spread}%</div>
-    <div class="text-slate-400 text-sm mt-1">Spread</div>
-    <div class="mt-3"><span class="${opp.risk==="LOW"?"text-green-400":"text-yellow-400"}">${opp.risk} RISK</span></div>
-    </div></div></div>`;
-  });
-  renderPagination();
-}
-
-function renderPagination(){
-  const totalPages = Math.ceil(tradableOpps.length / perPage);
-  const container = document.getElementById("paginationContainer");
-  container.innerHTML = "";
-  if(totalPages <= 1) return;
-  for(let i=1;i<=totalPages;i++){
-    container.innerHTML += `<button onclick="goToPage(${i})" class="px-4 py-2 rounded-xl ${i===currentPage?'bg-blue-600':'bg-slate-800 hover:bg-slate-700'} text-sm">${i}</button>`;
-  }
-}
-
-function goToPage(page){
-  currentPage = page;
-  renderOpportunities();
-  window.scrollTo(0,0);
-}
-
-function openDetails(index){
-  const opp=tradableOpps[index];
-  showPage("detailPage");
-  document.getElementById("detailCoin").innerText=opp.coin;
-  document.getElementById("buyExchange").innerText=opp.buyExchange;
-  document.getElementById("sellExchange").innerText=opp.sellExchange;
-  document.getElementById("buyPrice").innerText=`$${opp.buyPrice}`;
-  document.getElementById("sellPrice").innerText=`$${opp.sellPrice}`;
-  document.getElementById("detailSpread").innerText=`${opp.spread}%`;
-  document.getElementById("totalLiquidity").innerText=opp.buyLiquidity;
-  document.getElementById("arrivalTime").innerText="3 mins";
-  document.getElementById("riskBadge").innerText=opp.risk + " RISK";
-  document.getElementById("riskText").innerText=opp.riskText;
-  
-  const withdrawContainer=document.getElementById("withdrawNetworks");
-  const depositContainer=document.getElementById("depositNetworks");
-  withdrawContainer.innerHTML="";
-  depositContainer.innerHTML="";
-  
-  opp.networks.forEach(net=>{
-    const html = `
-    <div class="network-box">
-    <div class="flex justify-between items-center">
-    <div class="font-bold">${net.name}</div>
-    <div class="text-green-400 text-sm">${net.status}</div>
-    </div>
-    <div class="mt-2 space-y-1 text-sm">
-    <div class="flex justify-between"><span class="text-slate-400">Fee:</span><span>${net.fee}</span></div>
-    <div class="flex justify-between"><span class="text-slate-400">ETA:</span><span>${net.arrival}</span></div>
-    </div></div>`;
-    if(net.type === 'withdraw') withdrawContainer.innerHTML += html;
-    else depositContainer.innerHTML += html;
-  });
-  
-  drawChart(opp.trend);
-}
-
-function drawChart(data){
-  const ctx=document.getElementById("trendChart");
-  if(chartInstance){chartInstance.destroy();}
-  chartInstance=new Chart(ctx,{
-    type:"line",
-    data:{
-      labels:data.map((_,i)=>i+1),
-      datasets:[{
-        label:"Spread %",
-        data:data,
-        borderColor:"#10b981",
-        backgroundColor:"rgba(16,185,129,.1)",
-        fill:true,
-        tension:.4
-      }]
-    },
-    options:{
-      responsive:true,
-      plugins:{legend:{labels:{color:"white"}}},
-      scales:{
-        x:{ticks:{color:"white"}},
-        y:{ticks:{color:"white"}}
+    function getNetworkStatusClass(status) {
+      if (status === true) return 'status-open';
+      if (status === false) return 'status-closed';
+      return 'status-unverified';
+    }
+    function getNetworkStatusText(status) {
+      if (status === true) return 'OPEN';
+      if (status === false) return 'CLOSED';
+      return 'Unverified';
+    }
+    function buildNetworkTable(networks, side, exchange) {
+      const hasData = networks && Object.keys(networks).length > 0;
+      const title = side === 'buy' ? `Withdraw Networks (Buy: ${exchange})` : `Deposit Networks (Sell: ${exchange})`;
+      if (!hasData) {
+        return `<div class="network-section"><h4>${title}</h4><div class="network-table"><div class="network-row">No network data available – check manually</div></div></div>`;
       }
+      let html = `<div class="network-section"><h4>${title}</h4><div class="network-table">`;
+      for (const net of Object.values(networks)) {
+        let depositStatus = net.deposit;
+        let withdrawStatus = net.withdraw;
+        let depClass = getNetworkStatusClass(depositStatus);
+        let depText = getNetworkStatusText(depositStatus);
+        let wdClass = getNetworkStatusClass(withdrawStatus);
+        let wdText = getNetworkStatusText(withdrawStatus);
+        html += `
+          <div class="network-row">
+            <div class="network-name">${net.name}</div>
+            <div class="network-details">
+              Fee: ${typeof net.fee === 'number' ? net.fee + (net.name.includes('ETH') ? ' ETH' : '') : net.fee || 'variable'}<br>
+              ETA: ${net.arrivalTime || 'N/A'}
+            </div>
+            <div>
+              <span class="network-status ${depClass}">Deposit: ${depText}</span>
+              <span class="network-status ${wdClass}">Withdraw: ${wdText}</span>
+            </div>
+          </div>
+        `;
+      }
+      html += '</div></div>';
+      return html;
     }
-  });
-}
 
-function backHome(){showPage("homePage");}
-
-function showPage(page){
-  document.getElementById("homePage").style.display="none";
-  document.getElementById("detailPage").style.display="none";
-  document.getElementById("profilePage").style.display="none";
-  document.getElementById("proPage").style.display="none";
-  document.getElementById(page).style.display="block";
-  document.querySelectorAll(".tab-btn").forEach(btn=>{btn.classList.remove("active");});
-  if(page==="homePage")document.getElementById("homeBtn").classList.add("active");
-  if(page==="profilePage")document.getElementById("profileBtn").classList.add("active");
-  if(page==="proPage")document.getElementById("proBtn").classList.add("active");
-}
-
-function selectPlan(plan){
-  const statusEl = document.getElementById("paymentStatus");
-  const mpesaNum = plan === 'weekly'? document.getElementById("mpesaWeekly").value : document.getElementById("mpesaMonthly").value;
-  statusEl.innerText = "Please wait as you are being directed to payment channel...";
-  let url = plan === 'weekly'? 
-    `https://paystack.com/pay/arbimine-pro-weekly?email=${currentUser.email}&phone=${mpesaNum}` :
-    `https://paystack.com/pay/arbimine-pro-monthly?email=${currentUser.email}&phone=${mpesaNum}`;
-  setTimeout(()=>{window.location.href = url;}, 1500);
-}
-
-function logout(){
-  localStorage.removeItem("arbimineUserId");
-  currentUser = null;
-  location.reload();
-}
-
-window.onload=async()=>{
-  const userId = localStorage.getItem("arbimineUserId");
-  if(userId){
-    const res = await fetch(`/api/user/${userId}`);
-    if(res.ok){
-      currentUser = await res.json();
-      openApp();
+    const buyNetworksHtml = buildNetworkTable(opp.buyNetworks, 'buy', opp.buyExchange);
+    const sellNetworksHtml = buildNetworkTable(opp.sellNetworks, 'sell', opp.sellExchange);
+    const spreadNum = parseFloat(opp.spread);
+    let stability = Math.max(0, Math.min(100, 100 - (spreadNum * 5) + (opp.risk === 'low' ? 20 : opp.risk === 'high' ? -20 : 0)));
+    let liquidityScore = opp.liquidity ? Math.min(100, Math.floor((parseFloat(opp.liquidity) / 5000000) * 100)) : 65;
+    let transferSuccess = (opp.tradable ? 98 : (hasAnyNetworkData ? 45 : 20));
+    let volatility = spreadNum > 10 ? 85 : spreadNum > 5 ? 55 : 25;
+    stability = Math.min(100, Math.max(0, stability));
+    liquidityScore = Math.min(100, Math.max(0, liquidityScore));
+    transferSuccess = Math.min(100, Math.max(0, transferSuccess));
+    volatility = Math.min(100, Math.max(0, volatility));
+    const riskTextMap = {
+      low: 'AI analyzed spread volatility, liquidity and transfer networks. Low risk opportunity.',
+      medium: 'Moderate spread and acceptable liquidity. Medium risk.',
+      high: 'High spread or poor network support. High risk.'
+    };
+    const riskDescription = riskTextMap[opp.risk] || riskTextMap.medium;
+    const riskLevelClass = opp.risk === 'low' ? 'low' : (opp.risk === 'medium' ? 'medium' : 'high');
+    let chartLabels = ['1', '2', '3', '4', '5', '6'];
+    let chartData;
+    if (opp.history && opp.history.length >= 2) {
+      const hist = opp.history.slice(-6);
+      chartData = hist.map(h => parseFloat(h.spread));
+      if (chartData.length < 6) while (chartData.length < 6) chartData.unshift(chartData[0]);
+    } else {
+      const base = spreadNum;
+      chartData = [base * 0.6, base * 0.7, base * 0.85, base * 0.9, base * 0.95, base];
     }
+
+    modalBody.innerHTML = `
+      <div class="back-button" onclick="closeDetail()">← Back</div>
+      <div class="detail-symbol">${opp.symbol}</div>
+      <div class="detail-exchange-row">
+        <div class="detail-box"><div class="title">BUY</div><div class="exchange-name">${opp.buyExchange}</div><div class="price">$${opp.buyPrice}</div></div>
+        <div class="detail-box"><div class="title">SELL</div><div class="exchange-name">${opp.sellExchange}</div><div class="price">$${opp.sellPrice}</div></div>
+      </div>
+      <div class="detail-stats-row">
+        <div class="stat-item"><div class="stat-label">Spread</div><div class="stat-value">${opp.spread}%</div></div>
+        <div class="stat-item"><div class="stat-label">Liquidity</div><div class="stat-value">$${(parseFloat(opp.liquidity)/1000000).toFixed(1)}M</div></div>
+        <div class="stat-item"><div class="stat-label">Arrival Time</div><div class="stat-value">${(opp.buyNetworks && Object.values(opp.buyNetworks)[0]?.arrivalTime) || '3 mins'}</div></div>
+      </div>
+      <div><span class="${tradableClass}" style="padding:4px 12px; border-radius:40px; display:inline-block;">${tradableText}</span></div>
+      ${buyNetworksHtml}
+      ${sellNetworksHtml}
+      <div class="ai-card">
+        <div class="ai-header">🧠 AI Risk Analysis</div>
+        <div class="risk-level-container">
+          <div class="risk-level-row"><div class="risk-level-text ${riskLevelClass}">${opp.risk.toUpperCase()} RISK</div><div class="w-5 h-5 rounded-full bg-${opp.risk === 'low' ? 'green' : (opp.risk === 'medium' ? 'yellow' : 'red')}-400 animate-pulse"></div></div>
+          <div class="risk-description">${riskDescription}</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="label">Spread Stability</div><div class="score green">${stability}%</div></div>
+          <div class="stat-card"><div class="label">Liquidity Score</div><div class="score blue">${liquidityScore}%</div></div>
+          <div class="stat-card"><div class="label">Transfer Success</div><div class="score green">${transferSuccess}%</div></div>
+          <div class="stat-card"><div class="label">Volatility</div><div class="score red">${volatility}%</div></div>
+        </div>
+      </div>
+      <div class="trend-container">
+        <div class="trend-header"><div class="trend-title"><h3>Spread Trend</h3><p>AI spread movement analysis</p></div><div class="current-spread"><div class="small">Current Spread</div><div class="big">${opp.spread}%</div></div></div>
+        <div><canvas id="trendChart" width="600" height="300" style="max-height:320px; width:100%"></canvas></div>
+      </div>
+    `;
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (currentChart) currentChart.destroy();
+    currentChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: chartLabels, datasets: [{ label: 'Spread %', data: chartData, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.18)', fill: true, tension: 0.4, borderWidth: 5, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#22c55e', pointBorderColor: '#22c55e' }] },
+      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: 'white', font: { size: 14 } } } }, scales: { x: { title: { display: true, text: 'X Axis • Time Updates', color: 'white', font: { size: 14, weight: 'bold' } }, ticks: { color: 'white', font: { size: 12 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { title: { display: true, text: 'Y Axis • Spread %', color: 'white', font: { size: 14, weight: 'bold' } }, ticks: { color: 'white', font: { size: 12 } }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
+    });
   }
-};
+
+  function closeDetail() {
+    document.getElementById('detailModal').style.display = 'none';
+    if (currentChart && typeof currentChart.destroy === 'function') currentChart.destroy();
+    currentChart = null;
+  }
+
+  async function loadProfile() {
+    const container = document.getElementById('profileCard');
+    container.innerHTML = '<div class="loading">Loading...</div>';
+    if (countdownInterval) clearInterval(countdownInterval);
+    try {
+      const [userRes, subRes] = await Promise.all([ fetch('/api/me', { headers: { Authorization: token } }), fetch('/api/user/subscription', { headers: { Authorization: token } }) ]);
+      const user = await userRes.json();
+      const sub = await subRes.json();
+      if (user.error || sub.error) throw new Error();
+      let tierHtml = '', countdownHtml = '';
+      if (sub.active && sub.plan) {
+        const planName = sub.plan === 'weekly' ? 'Weekly Pro' : 'Monthly Pro';
+        const tierClass = sub.plan === 'weekly' ? 'tier-weekly' : 'tier-monthly';
+        tierHtml = `<span class="tier-badge ${tierClass}">${planName}</span>`;
+        const expires = new Date(sub.expiresAt);
+        const diff = expires - new Date();
+        if (diff > 0) {
+          const days = Math.floor(diff / (86400000));
+          const hours = Math.floor((diff % 86400000) / 3600000);
+          countdownHtml = `<div class="countdown">⏳ Expires in: ${days}d ${hours}h</div>`;
+          countdownInterval = setInterval(() => {
+            const diff2 = expires - new Date();
+            if (diff2 <= 0) { clearInterval(countdownInterval); loadProfile(); }
+            else { const d = Math.floor(diff2 / 86400000), h = Math.floor((diff2 % 86400000) / 3600000); const cd = document.getElementById('countdownDisplay'); if (cd) cd.innerText = `⏳ Expires in: ${d}d ${h}h`; }
+          }, 60000);
+        } else countdownHtml = `<div class="countdown" style="color:#ff8a8a;">Expired</div>`;
+      } else {
+        tierHtml = `<span class="tier-badge tier-free">Free</span>`;
+        countdownHtml = `<div class="countdown">Upgrade to Pro for full access</div>`;
+      }
+      container.innerHTML = `<div class="profile-card"><div class="profile-row"><span>👤 Username:</span><span>${user.username}</span></div><div class="profile-row"><span>📧 Email:</span><span>${user.email}</span></div><div class="profile-row"><span>📱 Mobile:</span><span>${user.mpesa}</span></div><div class="profile-row"><span>💎 Tier:</span><span>${tierHtml}</span></div><div id="countdownDisplay">${countdownHtml}</div></div>`;
+    } catch { container.innerHTML = '<div class="loading">Session expired. Please login again.</div>'; }
+  }
+
+  async function payPro(plan, amount) {
+    if (!token) { alert('Please login first'); return; }
+    const phoneInput = plan === 'weekly' ? document.getElementById('weeklyPhone') : document.getElementById('monthlyPhone');
+    const phone = phoneInput.value.trim();
+    try {
+      const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ plan, amount }) });
+      const data = await res.json();
+      if (data.success && data.authorizationUrl) { window.location.href = data.authorizationUrl; }
+      else { alert(data.error || 'Payment initiation failed'); }
+    } catch (err) { alert('Payment request failed. Try again.'); }
+  }
 </script>
 </body>
 </html>

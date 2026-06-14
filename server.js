@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
@@ -8,7 +9,6 @@ const ccxt = require('ccxt');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MongoDB connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/arbimine';
 mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
@@ -17,12 +17,17 @@ mongoose.connect(MONGO_URI)
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Schemas
+// Schemas with subscription
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   mpesa: { type: String, required: true },
   passwordHash: { type: String, required: true },
+  subscription: {
+    active: { type: Boolean, default: false },
+    plan: { type: String, enum: ['weekly', 'monthly', null], default: null },
+    expiresAt: { type: Date, default: null }
+  },
   createdAt: { type: Date, default: Date.now }
 });
 const sessionSchema = new mongoose.Schema({
@@ -36,7 +41,6 @@ const Session = mongoose.model('Session', sessionSchema);
 const hashPassword = p => crypto.createHash('sha256').update(p).digest('hex');
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
-// Helper to format phone
 function formatPhone(phone) {
   let cleaned = phone.replace(/\D/g, '');
   if (cleaned.startsWith('0')) cleaned = '254' + cleaned.slice(1);
@@ -46,11 +50,11 @@ function formatPhone(phone) {
   return cleaned;
 }
 
-// ---------- Build authenticated CCXT exchanges (optional) ----------
 function buildExchange(exchangeId, apiKey, secret) {
   const exchangeMap = {
     binance: ccxt.binance, kucoin: ccxt.kucoin, htx: ccxt.huobi, gateio: ccxt.gateio,
-    mexc: ccxt.mexc, bingx: ccxt.bingx, bitmart: ccxt.bitmart, okx: ccxt.okx, bybit: ccxt.bybit
+    mexc: ccxt.mexc, bingx: ccxt.bingx, bitmart: ccxt.bitmart, okx: ccxt.okx, bybit: ccxt.bybit,
+    cryptocom: ccxt.cryptocom
   };
   const ExchangeClass = exchangeMap[exchangeId];
   if (!ExchangeClass) return null;
@@ -59,14 +63,14 @@ function buildExchange(exchangeId, apiKey, secret) {
   return new ExchangeClass(config);
 }
 
-// Load API keys from environment
 const EXCHANGE_CREDENTIALS = {
   binance: { apiKey: process.env.BINANCE_API_KEY, secret: process.env.BINANCE_SECRET },
   kucoin: { apiKey: process.env.KUCOIN_API_KEY, secret: process.env.KUCOIN_SECRET },
   htx: { apiKey: process.env.HTX_API_KEY, secret: process.env.HTX_SECRET },
   gateio: { apiKey: process.env.GATEIO_API_KEY, secret: process.env.GATEIO_SECRET },
   mexc: { apiKey: process.env.MEXC_API_KEY, secret: process.env.MEXC_SECRET },
-  bingx: { apiKey: process.env.BINGX_API_KEY, secret: process.env.BINGX_SECRET }
+  bingx: { apiKey: process.env.BINGX_API_KEY, secret: process.env.BINGX_SECRET },
+  cryptocom: { apiKey: process.env.CRYPTOCOM_API_KEY, secret: process.env.CRYPTOCOM_SECRET }
 };
 const exchangeInstances = {};
 for (const [id, cred] of Object.entries(EXCHANGE_CREDENTIALS)) {
@@ -74,7 +78,6 @@ for (const [id, cred] of Object.entries(EXCHANGE_CREDENTIALS)) {
   if (ex) exchangeInstances[id] = ex;
 }
 
-// ---------- Fast ticker fetch ----------
 async function safeGet(url, name) {
   try {
     const res = await axios.get(url, { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -124,15 +127,14 @@ function extractSymbol(exchange, symbol, t) {
   } catch { return null; }
 }
 
-// ---------- Caches ----------
-let cachedOpportunities = [];        // basic opportunities (price spread only)
-let detailedCache = new Map();       // id -> full details (networks, liquidity, etc.)
+let cachedOpportunities = [];
+let detailedCache = new Map();
 let lastFastScan = 0;
 let lastDetailScan = 0;
-const FAST_SCAN_INTERVAL = 60000;    // 1 minute
-const DETAIL_SCAN_INTERVAL = 600000; // 10 minutes
+const FAST_SCAN_INTERVAL = 60000;      // 1 minute
+const DETAIL_SCAN_INTERVAL = 300000;   // 5 minutes (was 10)
+const DETAIL_OPP_LIMIT = 500;          // cache top 500 opportunities
 
-// ---------- Fetch real network data (using API keys if available) ----------
 async function fetchRealNetworks(exchangeId, coin) {
   const key = exchangeId.toLowerCase();
   let ex = exchangeInstances[key];
@@ -182,7 +184,6 @@ async function fetchLiquidity(exchangeId, symbol) {
   }
 }
 
-// ---------- Fast scan: price spreads only ----------
 async function fastScan() {
   console.log('🔄 Fast scan (prices)...');
   const start = Date.now();
@@ -247,11 +248,20 @@ async function fastScan() {
   }
 }
 
-// ---------- Detail scan: networks & liquidity for top N opportunities ----------
+function computeTradable(buyNetworks, sellNetworks) {
+  if (!buyNetworks || !sellNetworks) return false;
+  for (const [netName, netInfo] of Object.entries(buyNetworks)) {
+    if (sellNetworks[netName] && netInfo.withdraw === true && sellNetworks[netName].deposit === true) {
+      return true;
+    }
+  }
+  return false;
+}
+
 async function detailScan() {
-  console.log('🔍 Detail scan (networks & liquidity)...');
+  console.log('🔍 Detail scan (networks & liquidity) – caching top', DETAIL_OPP_LIMIT, 'opportunities...');
   const start = Date.now();
-  const topOps = cachedOpportunities.slice(0, 100); // limit to 100 to avoid rate limits
+  const topOps = cachedOpportunities.slice(0, DETAIL_OPP_LIMIT);
   let updated = 0;
   for (const opp of topOps) {
     const coin = opp.symbol;
@@ -264,7 +274,7 @@ async function detailScan() {
         fetchLiquidity(buyEx, opp.symbol),
         fetchLiquidity(sellEx, opp.symbol)
       ]);
-      const tradable = buyNet?.canWithdraw === true && sellNet?.canDeposit === true;
+      const tradable = computeTradable(buyNet?.networks, sellNet?.networks);
       const spreadNum = parseFloat(opp.spread);
       let risk = 'medium';
       if (!tradable) risk = 'high';
@@ -283,7 +293,6 @@ async function detailScan() {
         sellDeposit: sellNet?.canDeposit || false
       });
       updated++;
-      // Small delay to avoid hitting rate limits
       await new Promise(r => setTimeout(r, 200));
     } catch (err) {
       console.log(`Detail scan failed for ${opp.id}:`, err.message);
@@ -293,17 +302,12 @@ async function detailScan() {
   console.log(`✅ Detail scan: updated ${updated} opportunities in ${Date.now() - start}ms`);
 }
 
-// Start background scanners
 fastScan();
 setInterval(fastScan, FAST_SCAN_INTERVAL);
-setInterval(() => {
-  if (cachedOpportunities.length > 0) detailScan();
-}, DETAIL_SCAN_INTERVAL);
-
-// Run first detail scan 30 seconds after fast scan
+setInterval(() => { if (cachedOpportunities.length > 0) detailScan(); }, DETAIL_SCAN_INTERVAL);
 setTimeout(() => { if (cachedOpportunities.length > 0) detailScan(); }, 30000);
 
-// ---------- Auth Routes ----------
+// Routes
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -323,10 +327,9 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   try {
-    const { email, username, password } = req.body;
-    const loginId = email || username;
-    if (!loginId || !password) return res.status(400).json({ error: 'Email/Username and password required' });
-    const user = await User.findOne({ $or: [{ email: loginId }, { username: loginId }] });
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    const user = await User.findOne({ email });
     if (!user || user.passwordHash !== hashPassword(password))
       return res.status(401).json({ error: 'Invalid credentials' });
     const token = generateToken();
@@ -353,31 +356,36 @@ app.get('/api/me', async (req, res) => {
   }
 });
 
-// ---------- Opportunities endpoint (returns cached details if available) ----------
+app.get('/api/user/subscription', async (req, res) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const session = await Session.findOne({ token });
+    if (!session) return res.status(401).json({ error: 'Invalid session' });
+    const user = await User.findOne({ username: session.username });
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    const now = new Date();
+    const isActive = user.subscription.active && user.subscription.expiresAt && user.subscription.expiresAt > now;
+    res.json({ active: isActive, plan: user.subscription.plan, expiresAt: user.subscription.expiresAt });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.get('/api/opportunities', (req, res) => {
   const withDetails = cachedOpportunities.map(opp => {
     const detailed = detailedCache.get(opp.id);
     if (detailed) return detailed;
-    // fallback to basic with unknown status
-    return {
-      ...opp,
-      tradable: false,
-      risk: 'unknown',
-      buyNetworks: {},
-      sellNetworks: {},
-      buyWithdraw: false,
-      sellDeposit: false
-    };
+    return { ...opp, tradable: false, risk: 'medium', buyNetworks: {}, sellNetworks: {}, buyWithdraw: false, sellDeposit: false };
   });
   res.json({ count: withDetails.length, opportunities: withDetails, lastScan: lastFastScan });
 });
 
-// ---------- Individual detail endpoint (for real-time refresh) ----------
 app.get('/api/opportunity/:id/details', async (req, res) => {
   const { id } = req.params;
   const cached = detailedCache.get(id);
   if (cached) return res.json(cached);
-  // Fallback: fetch on the fly
   const opp = cachedOpportunities.find(o => o.id === id);
   if (!opp) return res.status(404).json({ error: 'Not found' });
   const coin = opp.symbol;
@@ -389,7 +397,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
     fetchLiquidity(buyEx, opp.symbol),
     fetchLiquidity(sellEx, opp.symbol)
   ]);
-  const tradable = buyNet?.canWithdraw === true && sellNet?.canDeposit === true;
+  const tradable = computeTradable(buyNet?.networks, sellNet?.networks);
   const spreadNum = parseFloat(opp.spread);
   let risk = 'medium';
   if (!tradable) risk = 'high';
@@ -411,28 +419,21 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   res.json(result);
 });
 
-// ---------- PAYSTACK PAYMENT (real, using test keys) ----------
+// Paystack payment (same as before)
 app.post('/api/pesapal/pay', async (req, res) => {
   const { plan } = req.body;
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: 'No token' });
-
   try {
     const session = await Session.findOne({ token });
     if (!session) return res.status(401).json({ error: 'Invalid session' });
     const user = await User.findOne({ username: session.username });
     if (!user) return res.status(401).json({ error: 'User not found' });
-
-    let amountInKobo = 0;
-    if (plan === 'weekly') amountInKobo = 100 * 100;
-    if (plan === 'monthly') amountInKobo = 350 * 100;
-
+    let amountInKobo = plan === 'weekly' ? 100 * 100 : 350 * 100;
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
     if (!paystackSecretKey) return res.status(500).json({ error: 'Payment not configured' });
-
     const reference = `arbimine_${user.username}_${Date.now()}`;
     const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
-
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email: user.email,
       amount: amountInKobo,
@@ -443,7 +444,6 @@ app.post('/api/pesapal/pay', async (req, res) => {
     }, {
       headers: { Authorization: `Bearer ${paystackSecretKey}`, 'Content-Type': 'application/json' }
     });
-
     if (response.data.status) {
       res.json({ success: true, authorizationUrl: response.data.data.authorization_url, reference });
     } else {
@@ -455,24 +455,33 @@ app.post('/api/pesapal/pay', async (req, res) => {
   }
 });
 
-app.get('/api/payment/callback', (req, res) => {
+app.get('/api/payment/callback', async (req, res) => {
   const { reference } = req.query;
-  console.log('Payment callback:', reference);
-  res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
-});
-
-app.post('/api/payment/webhook', (req, res) => {
-  console.log('Webhook:', req.body);
-  res.json({ status: 'received' });
-});
-
-// Debug IP endpoint
-app.get('/api/debug/ip', async (req, res) => {
+  if (!reference) return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
   try {
-    const response = await axios.get('https://api.ipify.org?format=json');
-    res.json({ serverIp: response.data.ip });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    const verification = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${secretKey}` }
+    });
+    if (verification.data.status && verification.data.data.status === 'success') {
+      const meta = verification.data.data.metadata;
+      const plan = meta?.plan;
+      const username = meta?.username;
+      if (username && plan) {
+        const days = plan === 'weekly' ? 7 : 30;
+        const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+        await User.findOneAndUpdate(
+          { username },
+          { 'subscription.active': true, 'subscription.plan': plan, 'subscription.expiresAt': expiresAt }
+        );
+      }
+      return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success`);
+    } else {
+      return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
+    }
+  } catch (err) {
+    console.error('Verification error:', err);
+    return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
   }
 });
 
