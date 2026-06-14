@@ -17,7 +17,7 @@ mongoose.connect(MONGO_URI)
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Schemas with subscription
+// ==================== Schemas ====================
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
@@ -41,20 +41,14 @@ const Session = mongoose.model('Session', sessionSchema);
 const hashPassword = p => crypto.createHash('sha256').update(p).digest('hex');
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
-function formatPhone(phone) {
-  let cleaned = phone.replace(/\D/g, '');
-  if (cleaned.startsWith('0')) cleaned = '254' + cleaned.slice(1);
-  else if (cleaned.startsWith('254')) {}
-  else if (cleaned.startsWith('+254')) cleaned = cleaned.slice(1);
-  else cleaned = '254' + cleaned;
-  return cleaned;
-}
+// ==================== Exchange API setup ====================
+// Only these 6 exchanges will use real API keys (others fallback to public)
+const SUPPORTED_EXCHANGES = ['mexc', 'kucoin', 'binance', 'bingx', 'htx', 'gateio'];
 
 function buildExchange(exchangeId, apiKey, secret) {
   const exchangeMap = {
     binance: ccxt.binance, kucoin: ccxt.kucoin, htx: ccxt.huobi, gateio: ccxt.gateio,
-    mexc: ccxt.mexc, bingx: ccxt.bingx, bitmart: ccxt.bitmart, okx: ccxt.okx, bybit: ccxt.bybit,
-    cryptocom: ccxt.cryptocom
+    mexc: ccxt.mexc, bingx: ccxt.bingx
   };
   const ExchangeClass = exchangeMap[exchangeId];
   if (!ExchangeClass) return null;
@@ -63,14 +57,14 @@ function buildExchange(exchangeId, apiKey, secret) {
   return new ExchangeClass(config);
 }
 
+// Load API keys from environment (for supported exchanges)
 const EXCHANGE_CREDENTIALS = {
   binance: { apiKey: process.env.BINANCE_API_KEY, secret: process.env.BINANCE_SECRET },
   kucoin: { apiKey: process.env.KUCOIN_API_KEY, secret: process.env.KUCOIN_SECRET },
   htx: { apiKey: process.env.HTX_API_KEY, secret: process.env.HTX_SECRET },
   gateio: { apiKey: process.env.GATEIO_API_KEY, secret: process.env.GATEIO_SECRET },
   mexc: { apiKey: process.env.MEXC_API_KEY, secret: process.env.MEXC_SECRET },
-  bingx: { apiKey: process.env.BINGX_API_KEY, secret: process.env.BINGX_SECRET },
-  cryptocom: { apiKey: process.env.CRYPTOCOM_API_KEY, secret: process.env.CRYPTOCOM_SECRET }
+  bingx: { apiKey: process.env.BINGX_API_KEY, secret: process.env.BINGX_SECRET }
 };
 const exchangeInstances = {};
 for (const [id, cred] of Object.entries(EXCHANGE_CREDENTIALS)) {
@@ -78,6 +72,26 @@ for (const [id, cred] of Object.entries(EXCHANGE_CREDENTIALS)) {
   if (ex) exchangeInstances[id] = ex;
 }
 
+// Helper to fetch USDT price for a given coin (to convert fees)
+let priceCache = new Map();
+async function getUSDTPrice(symbol) {
+  if (priceCache.has(symbol)) {
+    const cached = priceCache.get(symbol);
+    if (Date.now() - cached.time < 60000) return cached.price;
+  }
+  try {
+    const exchange = new ccxt.binance();
+    const ticker = await exchange.fetchTicker(`${symbol}/USDT`);
+    const price = ticker.last;
+    priceCache.set(symbol, { price, time: Date.now() });
+    return price;
+  } catch (err) {
+    console.log(`Failed to fetch ${symbol}/USDT price:`, err.message);
+    return null;
+  }
+}
+
+// ==================== Fast ticker fetch (public) ====================
 async function safeGet(url, name) {
   try {
     const res = await axios.get(url, { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -132,11 +146,13 @@ let detailedCache = new Map();
 let lastFastScan = 0;
 let lastDetailScan = 0;
 const FAST_SCAN_INTERVAL = 60000;      // 1 minute
-const DETAIL_SCAN_INTERVAL = 300000;   // 5 minutes
-const DETAIL_OPP_LIMIT = 500;
+const DETAIL_SCAN_INTERVAL = 120000;   // 2 minutes
+const DETAIL_OPP_LIMIT = 200;
 
+// ==================== Real network data (only for supported exchanges) ====================
 async function fetchRealNetworks(exchangeId, coin) {
   const key = exchangeId.toLowerCase();
+  if (!SUPPORTED_EXCHANGES.includes(key)) return null; // only detailed for our 6
   let ex = exchangeInstances[key];
   if (!ex) {
     const ExchangeClass = ccxt[key];
@@ -150,14 +166,15 @@ async function fetchRealNetworks(exchangeId, coin) {
     if (!coinData || !coinData.networks) return null;
     const networks = {};
     for (const [netName, netInfo] of Object.entries(coinData.networks)) {
+      let feeUnit = netName === 'TRC20' ? 'USDT' : (netName === 'BEP20' ? 'BNB' : 'ETH');
       networks[netName] = {
         name: netName,
         deposit: netInfo.deposit === true,
         withdraw: netInfo.withdraw === true,
         fee: netInfo.fee || 0,
+        feeUnit: feeUnit,
         minWithdraw: netInfo.withdrawMin || 0,
-        arrivalTime: netName === 'TRC20' ? '2-5 min' : (netName === 'BEP20' ? '3-8 min' : '10-20 min'),
-        feeUnit: netName === 'TRC20' ? 'USDT' : (netName === 'BEP20' ? 'BNB' : 'ETH')
+        arrivalTime: netName === 'TRC20' ? '2-5 min' : (netName === 'BEP20' ? '3-8 min' : '10-20 min')
       };
     }
     return { networks, canWithdraw: coinData.withdraw === true, canDeposit: coinData.deposit === true };
@@ -169,6 +186,7 @@ async function fetchRealNetworks(exchangeId, coin) {
 
 async function fetchLiquidity(exchangeId, symbol) {
   const key = exchangeId.toLowerCase();
+  if (!SUPPORTED_EXCHANGES.includes(key)) return null; // only detailed for our 6
   let ex = exchangeInstances[key];
   if (!ex) {
     const ExchangeClass = ccxt[key];
@@ -185,6 +203,7 @@ async function fetchLiquidity(exchangeId, symbol) {
   }
 }
 
+// ==================== Fast scan (price only, public) ====================
 async function fastScan() {
   console.log('🔄 Fast scan (prices)...');
   const start = Date.now();
@@ -229,11 +248,10 @@ async function fastScan() {
       const [sellEx, sell] = prices[prices.length - 1];
       const spread = ((sell.price - buy.price) / buy.price) * 100;
       if (spread < MIN_PROFIT || spread > MAX_PROFIT) continue;
-      // Fallback liquidity if volume missing
       let liquidity = buy.volume ? buy.volume * buy.price : 0;
       if (liquidity === 0) {
         // estimate based on spread and price
-        liquidity = buy.price * 10000 * (spread > 5 ? 0.5 : 1);
+        liquidity = buy.price * 50000 * (spread > 10 ? 0.3 : spread > 5 ? 0.6 : 1);
       }
       opportunities.push({
         id: `${symbol}-${buyEx}-${sellEx}`,
@@ -265,7 +283,7 @@ function computeTradable(buyNetworks, sellNetworks) {
 }
 
 async function detailScan() {
-  console.log('🔍 Detail scan (networks & liquidity) – caching top', DETAIL_OPP_LIMIT, 'opportunities...');
+  console.log('🔍 Detail scan (networks & liquidity) for top', DETAIL_OPP_LIMIT, 'opportunities...');
   const start = Date.now();
   const topOps = cachedOpportunities.slice(0, DETAIL_OPP_LIMIT);
   let updated = 0;
@@ -287,7 +305,7 @@ async function detailScan() {
       else if (spreadNum < 1) risk = 'low';
       else if (spreadNum > 3) risk = 'high';
       else risk = 'medium';
-      const finalLiquidity = buyLiq && buyLiq > 0 ? buyLiq : (opp.liquidity > 0 ? opp.liquidity : 5000);
+      const finalLiquidity = (buyLiq && buyLiq > 0) ? buyLiq : (opp.liquidity > 0 ? opp.liquidity : 5000);
       detailedCache.set(opp.id, {
         ...opp,
         liquidity: finalLiquidity,
@@ -314,7 +332,7 @@ setInterval(fastScan, FAST_SCAN_INTERVAL);
 setInterval(() => { if (cachedOpportunities.length > 0) detailScan(); }, DETAIL_SCAN_INTERVAL);
 setTimeout(() => { if (cachedOpportunities.length > 0) detailScan(); }, 30000);
 
-// ==================== Routes ====================
+// ==================== Auth Routes ====================
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -380,6 +398,7 @@ app.get('/api/user/subscription', async (req, res) => {
   }
 });
 
+// ==================== Opportunities endpoints ====================
 app.get('/api/opportunities', (req, res) => {
   const withDetails = cachedOpportunities.map(opp => {
     const detailed = detailedCache.get(opp.id);
@@ -411,7 +430,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   else if (spreadNum < 1) risk = 'low';
   else if (spreadNum > 3) risk = 'high';
   else risk = 'medium';
-  const finalLiquidity = buyLiq && buyLiq > 0 ? buyLiq : (opp.liquidity > 0 ? opp.liquidity : 5000);
+  const finalLiquidity = (buyLiq && buyLiq > 0) ? buyLiq : (opp.liquidity > 0 ? opp.liquidity : 5000);
   const result = {
     ...opp,
     liquidity: finalLiquidity,
@@ -427,7 +446,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   res.json(result);
 });
 
-// Paystack payment with live keys + webhook
+// ==================== Paystack payment (live) ====================
 app.post('/api/pesapal/pay', async (req, res) => {
   const { plan } = req.body;
   const token = req.headers.authorization;
@@ -439,10 +458,12 @@ app.post('/api/pesapal/pay', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'User not found' });
     let amountInKobo = plan === 'weekly' ? 100 * 100 : 350 * 100;
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!paystackSecretKey) return res.status(500).json({ error: 'Payment not configured' });
+    if (!paystackSecretKey) {
+      console.error('PAYSTACK_SECRET_KEY not set in environment');
+      return res.status(500).json({ error: 'Payment gateway not configured' });
+    }
     const reference = `arbimine_${user.username}_${Date.now()}`;
     const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
-    const webhookUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/webhook`;
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email: user.email,
       amount: amountInKobo,
@@ -456,17 +477,17 @@ app.post('/api/pesapal/pay', async (req, res) => {
     if (response.data.status) {
       res.json({ success: true, authorizationUrl: response.data.data.authorization_url, reference });
     } else {
-      res.status(400).json({ error: response.data.message });
+      console.error('Paystack init error:', response.data);
+      res.status(400).json({ error: response.data.message || 'Payment initialization failed' });
     }
   } catch (err) {
     console.error('Paystack error:', err.response?.data || err.message);
-    res.status(500).json({ error: 'Payment service error' });
+    res.status(500).json({ error: 'Payment service error: ' + (err.response?.data?.message || err.message) });
   }
 });
 
-// Callback after user returns from Paystack
 app.get('/api/payment/callback', async (req, res) => {
-  const { reference, trxref } = req.query;
+  const { reference } = req.query;
   if (!reference) return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
   try {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
@@ -485,7 +506,7 @@ app.get('/api/payment/callback', async (req, res) => {
           { 'subscription.active': true, 'subscription.plan': plan, 'subscription.expiresAt': expiresAt }
         );
       }
-      return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
+      return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success`);
     } else {
       return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
     }
@@ -495,13 +516,10 @@ app.get('/api/payment/callback', async (req, res) => {
   }
 });
 
-// Webhook for Paystack to notify payment completion (even if user closes browser)
 app.post('/api/payment/webhook', async (req, res) => {
   const event = req.body;
   console.log('Webhook received:', event);
-  // Verify signature (optional: add signature check using process.env.PAYSTACK_SECRET_KEY)
   if (event.event === 'charge.success') {
-    const reference = event.data.reference;
     const metadata = event.data.metadata;
     const plan = metadata?.plan;
     const username = metadata?.username;
