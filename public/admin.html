@@ -1,207 +1,929 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <title>ArbiMine Admin</title>
+
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0c15; font-family: 'Inter', system-ui, sans-serif; color: #eef2ff; padding: 16px; }
-    .container { max-width: 100%; margin: 0 auto; }
-    h1, h2 { margin-bottom: 16px; font-size: 1.5rem; }
-    .card { background: #111827; border-radius: 20px; padding: 16px; margin-bottom: 24px; border: 1px solid #1f2937; overflow-x: auto; }
-    table { width: 100%; min-width: 600px; border-collapse: collapse; }
-    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #1f2937; font-size: 14px; }
-    th { color: #00ff99; font-weight: 600; }
-    button { background: #334155; border: none; color: white; padding: 6px 12px; border-radius: 8px; cursor: pointer; margin: 4px; font-size: 12px; transition: 0.2s; }
-    button.danger { background: #5a1a1a; color: #ff8a8a; }
-    button.success { background: #0f5132; color: #00ff99; }
-    input, select { background: #1f2937; border: 1px solid #374151; padding: 10px; border-radius: 12px; color: white; margin: 6px 0; width: 100%; font-size: 16px; }
-    .login-container { max-width: 90%; margin: 20% auto; background: #111827; padding: 24px; border-radius: 28px; }
-    .hidden { display: none; }
-    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1f2937; padding: 12px 20px; border-radius: 40px; border-left: 4px solid; z-index: 1000; font-size: 14px; white-space: nowrap; }
-    .toast.success { border-left-color: #00ff99; color: #00ff99; }
-    .toast.error { border-left-color: #ff4d4d; color: #ff4d4d; }
-    .stats-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
-    .stat-card { background: #0f172a; border-radius: 16px; padding: 16px; flex: 1; min-width: 120px; text-align: center; }
-    .stat-value { font-size: 28px; font-weight: bold; color: #00ff99; }
-    .stat-label { font-size: 12px; color: #9ca3af; margin-top: 6px; }
-    @media (max-width: 640px) {
-      body { padding: 12px; }
-      .card { padding: 12px; }
-      th, td { font-size: 12px; padding: 8px 6px; }
-      button { padding: 8px 10px; font-size: 11px; }
-      .stat-value { font-size: 22px; }
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    body{
+      background:#0a0c15;
+      font-family:Inter,system-ui,sans-serif;
+      color:#eef2ff;
+      padding:12px;
+      overflow-x:hidden;
+    }
+
+    .container{
+      width:100%;
+      max-width:1400px;
+      margin:auto;
+    }
+
+    h1{
+      font-size:28px;
+      margin-bottom:20px;
+      color:#00ff99;
+    }
+
+    h2{
+      font-size:18px;
+      margin-bottom:16px;
+      color:#fff;
+    }
+
+    .card{
+      background:#111827;
+      border:1px solid #1f2937;
+      border-radius:20px;
+      padding:16px;
+      margin-bottom:18px;
+      overflow:hidden;
+      box-shadow:0 0 18px rgba(0,0,0,0.25);
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:20px;
+      flex-wrap:wrap;
+    }
+
+    .logout-btn{
+      background:#5a1a1a;
+      color:#ff8a8a;
+      border:none;
+      padding:10px 16px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+      gap:14px;
+    }
+
+    .stat-box{
+      background:#0f172a;
+      border:1px solid #1f2937;
+      padding:16px;
+      border-radius:16px;
+    }
+
+    .stat-box h3{
+      font-size:13px;
+      color:#94a3b8;
+      margin-bottom:8px;
+    }
+
+    .stat-box p{
+      font-size:22px;
+      font-weight:700;
+      color:#00ff99;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:850px;
+    }
+
+    th,td{
+      text-align:left;
+      padding:12px;
+      border-bottom:1px solid #1f2937;
+      font-size:14px;
+      vertical-align:top;
+    }
+
+    th{
+      color:#00ff99;
+      background:#0f172a;
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+
+    .table-wrapper{
+      width:100%;
+      overflow-x:auto;
+      border-radius:14px;
+    }
+
+    button{
+      border:none;
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:600;
+      margin:4px 4px 4px 0;
+    }
+
+    .success{
+      background:#0f5132;
+      color:#00ff99;
+    }
+
+    .danger{
+      background:#5a1a1a;
+      color:#ff8a8a;
+    }
+
+    .refresh{
+      background:#1d4ed8;
+      color:white;
+    }
+
+    input{
+      width:100%;
+      background:#1f2937;
+      border:1px solid #374151;
+      color:white;
+      padding:14px;
+      border-radius:14px;
+      margin-top:10px;
+      font-size:15px;
+      outline:none;
+    }
+
+    .login-container{
+      width:100%;
+      max-width:380px;
+      margin:80px auto;
+      background:#111827;
+      border:1px solid #1f2937;
+      padding:28px 22px;
+      border-radius:24px;
+      box-shadow:0 0 25px rgba(0,0,0,0.35);
+    }
+
+    .login-container h2{
+      text-align:center;
+      margin-bottom:20px;
+      color:#00ff99;
+    }
+
+    .login-btn{
+      width:100%;
+      margin-top:14px;
+      padding:14px;
+      border-radius:14px;
+      background:#00ff99;
+      color:#000;
+      font-weight:700;
+      font-size:15px;
+    }
+
+    .hidden{
+      display:none;
+    }
+
+    .badge{
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      display:inline-block;
+    }
+
+    .badge-success{
+      background:rgba(0,255,153,0.15);
+      color:#00ff99;
+    }
+
+    .badge-failed{
+      background:rgba(255,77,77,0.15);
+      color:#ff8a8a;
+    }
+
+    .badge-pending{
+      background:rgba(255,204,0,0.15);
+      color:#ffcc00;
+    }
+
+    .toast{
+      position:fixed;
+      bottom:18px;
+      left:50%;
+      transform:translateX(-50%);
+      background:#111827;
+      color:white;
+      padding:14px 18px;
+      border-radius:14px;
+      border-left:4px solid;
+      z-index:9999;
+      min-width:220px;
+      text-align:center;
+      animation:fadeIn .3s ease;
+    }
+
+    .toast.success{
+      border-left-color:#00ff99;
+    }
+
+    .toast.error{
+      border-left-color:#ff4d4d;
+    }
+
+    @keyframes fadeIn{
+      from{
+        opacity:0;
+        transform:translateX(-50%) translateY(20px);
+      }
+      to{
+        opacity:1;
+        transform:translateX(-50%) translateY(0);
+      }
+    }
+
+    @media(max-width:768px){
+
+      body{
+        padding:10px;
+      }
+
+      h1{
+        font-size:22px;
+      }
+
+      .card{
+        padding:14px;
+        border-radius:18px;
+      }
+
+      table{
+        min-width:720px;
+      }
+
+      th,td{
+        font-size:13px;
+        padding:10px;
+      }
+
+      .topbar{
+        align-items:flex-start;
+      }
+
+      .logout-btn{
+        width:100%;
+      }
+
+      button{
+        width:100%;
+      }
+
+      .action-buttons{
+        display:flex;
+        flex-direction:column;
+      }
+
+      .stats-grid{
+        grid-template-columns:1fr 1fr;
+      }
+    }
+
+    @media(max-width:480px){
+
+      .stats-grid{
+        grid-template-columns:1fr;
+      }
+
+      h1{
+        font-size:20px;
+      }
+
+      .login-container{
+        margin-top:60px;
+      }
     }
   </style>
 </head>
+
 <body>
+
 <div id="loginDiv" class="login-container">
-  <h2>🔐 Admin Login</h2>
-  <input type="text" id="adminUser" placeholder="Username" autocomplete="off">
-  <input type="password" id="adminPass" placeholder="Password">
-  <button onclick="adminLogin()" style="width:100%; margin-top:12px;">Login</button>
+  <h2>ArbiMine Admin</h2>
+
+  <input
+    type="text"
+    id="adminUser"
+    placeholder="Username"
+    value="admin"
+  >
+
+  <input
+    type="password"
+    id="adminPass"
+    placeholder="Password"
+  >
+
+  <button class="login-btn" onclick="adminLogin()">
+    Login
+  </button>
 </div>
 
 <div id="dashboardDiv" class="container hidden">
-  <h1>📊 ArbiMine Admin</h1>
-  <div class="card" style="overflow-x: auto;">
-    <h2>👥 Users</h2>
-    <div style="overflow-x: auto;">
-      <table id="usersTable">
-        <thead><tr><th>Username</th><th>Email</th><th>Mobile</th><th>Tier</th><th>Expires</th><th>Actions</th></tr></thead>
-        <tbody></tbody>
-       </table>
+
+  <div class="topbar">
+    <div>
+      <h1>ArbiMine Admin Dashboard</h1>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="refresh" onclick="refreshAll()">
+        Refresh
+      </button>
+
+      <button class="logout-btn" onclick="logoutAdmin()">
+        Logout
+      </button>
     </div>
   </div>
-  <div class="card" style="overflow-x: auto;">
-    <h2>💳 Transactions</h2>
-    <div style="overflow-x: auto;">
-      <table id="transactionsTable">
-        <thead><tr><th>Ref</th><th>User</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody></tbody>
-       </table>
-    </div>
-  </div>
+
   <div class="card">
-    <h2>📈 Stats</h2>
-    <div id="stats" class="stats-grid"></div>
+    <h2>Platform Stats</h2>
+
+    <div class="stats-grid" id="statsGrid"></div>
   </div>
+
+  <div class="card">
+    <h2>Users</h2>
+
+    <div class="table-wrapper">
+      <table id="usersTable">
+
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Mobile</th>
+            <th>Tier</th>
+            <th>Expires</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody></tbody>
+
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Payment Transactions</h2>
+
+    <div class="table-wrapper">
+      <table id="transactionsTable">
+
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>User</th>
+            <th>Plan</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+
+        <tbody></tbody>
+
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <script>
-  let adminToken = localStorage.getItem('adminToken');
-  if (adminToken) showDashboard();
 
-  async function adminLogin() {
-    const username = document.getElementById('adminUser').value;
-    const password = document.getElementById('adminPass').value;
-    try {
-      const res = await fetch('/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (data.token) {
-        localStorage.setItem('adminToken', data.token);
-        showDashboard();
-      } else {
-        alert('Invalid credentials');
+let adminToken = localStorage.getItem("adminToken");
+
+if(adminToken){
+  showDashboard();
+}
+
+async function adminLogin(){
+
+  const username =
+  document.getElementById("adminUser").value;
+
+  const password =
+  document.getElementById("adminPass").value;
+
+  try{
+
+    const res = await fetch("/admin/login",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        username,
+        password
+      })
+    });
+
+    const data = await res.json();
+
+    if(data.token){
+
+      localStorage.setItem(
+        "adminToken",
+        data.token
+      );
+
+      showToast(
+        "Login successful",
+        "success"
+      );
+
+      showDashboard();
+
+    }else{
+
+      showToast(
+        "Invalid login",
+        "error"
+      );
+
+    }
+
+  }catch(err){
+
+    showToast(
+      "Server error",
+      "error"
+    );
+
+  }
+
+}
+
+async function showDashboard(){
+
+  document.getElementById(
+    "loginDiv"
+  ).style.display = "none";
+
+  document.getElementById(
+    "dashboardDiv"
+  ).classList.remove("hidden");
+
+  await refreshAll();
+
+}
+
+async function refreshAll(){
+
+  await Promise.all([
+    loadUsers(),
+    loadTransactions(),
+    loadStats()
+  ]);
+
+}
+
+function logoutAdmin(){
+
+  localStorage.removeItem(
+    "adminToken"
+  );
+
+  location.reload();
+
+}
+
+async function loadUsers(){
+
+  try{
+
+    const token =
+    localStorage.getItem("adminToken");
+
+    const res = await fetch(
+      "/admin/users",
+      {
+        headers:{
+          "Authorization":token
+        }
       }
-    } catch (err) {
-      alert('Login error');
-    }
-  }
+    );
 
-  async function showDashboard() {
-    document.getElementById('loginDiv').style.display = 'none';
-    document.getElementById('dashboardDiv').classList.remove('hidden');
-    await Promise.all([loadUsers(), loadTransactions(), loadStats()]);
-  }
+    const users =
+    await res.json();
 
-  async function loadUsers() {
-    const token = localStorage.getItem('adminToken');
-    const res = await fetch('/admin/users', { headers: { 'Authorization': token } });
-    const users = await res.json();
-    const tbody = document.querySelector('#usersTable tbody');
-    tbody.innerHTML = '';
+    const tbody =
+    document.querySelector(
+      "#usersTable tbody"
+    );
+
+    tbody.innerHTML = "";
+
     users.forEach(user => {
-      const row = tbody.insertRow();
-      row.insertCell(0).innerText = user.username;
-      row.insertCell(1).innerText = user.email.length > 20 ? user.email.substring(0, 18) + '…' : user.email;
-      row.insertCell(2).innerText = user.mpesa;
-      row.insertCell(3).innerText = user.subscription?.active ? (user.subscription.plan || 'Active') : 'Free';
-      row.insertCell(4).innerText = user.subscription?.expiresAt ? new Date(user.subscription.expiresAt).toLocaleDateString() : 'N/A';
-      const actions = row.insertCell(5);
-      const activateBtn = document.createElement('button');
-      activateBtn.innerText = user.subscription?.active ? 'Deactivate' : 'Activate';
-      activateBtn.onclick = () => updateSubscription(user._id, !user.subscription?.active, 'weekly', null);
-      const deleteBtn = document.createElement('button');
-      deleteBtn.innerText = 'Delete';
-      deleteBtn.className = 'danger';
-      deleteBtn.onclick = () => deleteUser(user._id);
-      actions.appendChild(activateBtn);
-      actions.appendChild(deleteBtn);
+
+      const row =
+      tbody.insertRow();
+
+      row.insertCell(0).innerText =
+      user.username || "N/A";
+
+      row.insertCell(1).innerText =
+      user.email || "N/A";
+
+      row.insertCell(2).innerText =
+      user.mpesa || "N/A";
+
+      row.insertCell(3).innerHTML =
+      user.subscription?.active
+      ? `<span class="badge badge-success">${user.subscription.plan || "ACTIVE"}</span>`
+      : `<span class="badge badge-failed">FREE</span>`;
+
+      row.insertCell(4).innerText =
+      user.subscription?.expiresAt
+      ? new Date(user.subscription.expiresAt).toLocaleString()
+      : "N/A";
+
+      const actions =
+      row.insertCell(5);
+
+      actions.className =
+      "action-buttons";
+
+      const activateBtn =
+      document.createElement("button");
+
+      activateBtn.className =
+      "success";
+
+      activateBtn.innerText =
+      user.subscription?.active
+      ? "Deactivate"
+      : "Activate Weekly";
+
+      activateBtn.onclick = () =>
+      updateSubscription(
+        user._id,
+        !user.subscription?.active,
+        "weekly",
+        null
+      );
+
+      const deleteBtn =
+      document.createElement("button");
+
+      deleteBtn.className =
+      "danger";
+
+      deleteBtn.innerText =
+      "Delete";
+
+      deleteBtn.onclick = () =>
+      deleteUser(user._id);
+
+      actions.appendChild(
+        activateBtn
+      );
+
+      actions.appendChild(
+        deleteBtn
+      );
+
     });
+
+  }catch(err){
+
+    showToast(
+      "Failed loading users",
+      "error"
+    );
+
   }
 
-  async function updateSubscription(userId, active, plan, expiresAt) {
-    const token = localStorage.getItem('adminToken');
-    const res = await fetch(`/admin/user/${userId}/update-subscription`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': token },
-      body: JSON.stringify({ active, plan, expiresAt })
-    });
-    if (res.ok) {
-      showToast('Subscription updated', 'success');
+}
+
+async function updateSubscription(
+  userId,
+  active,
+  plan,
+  expiresAt
+){
+
+  try{
+
+    const token =
+    localStorage.getItem(
+      "adminToken"
+    );
+
+    const res = await fetch(
+      `/admin/user/${userId}/update-subscription`,
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization":token
+        },
+        body:JSON.stringify({
+          active,
+          plan,
+          expiresAt
+        })
+      }
+    );
+
+    if(res.ok){
+
+      showToast(
+        "Subscription updated",
+        "success"
+      );
+
       loadUsers();
       loadStats();
-    } else {
-      showToast('Update failed', 'error');
+
+    }else{
+
+      showToast(
+        "Update failed",
+        "error"
+      );
+
     }
+
+  }catch(err){
+
+    showToast(
+      "Server error",
+      "error"
+    );
+
   }
 
-  async function deleteUser(userId) {
-    if (!confirm('Delete user? All data will be removed.')) return;
-    const token = localStorage.getItem('adminToken');
-    const res = await fetch(`/admin/user/${userId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': token }
-    });
-    if (res.ok) {
-      showToast('User deleted', 'success');
+}
+
+async function deleteUser(userId){
+
+  const confirmDelete =
+  confirm(
+    "Delete this user permanently?"
+  );
+
+  if(!confirmDelete) return;
+
+  try{
+
+    const token =
+    localStorage.getItem(
+      "adminToken"
+    );
+
+    const res = await fetch(
+      `/admin/user/${userId}`,
+      {
+        method:"DELETE",
+        headers:{
+          "Authorization":token
+        }
+      }
+    );
+
+    if(res.ok){
+
+      showToast(
+        "User deleted",
+        "success"
+      );
+
       loadUsers();
       loadStats();
-    } else {
-      showToast('Delete failed', 'error');
+
+    }else{
+
+      showToast(
+        "Delete failed",
+        "error"
+      );
+
     }
+
+  }catch(err){
+
+    showToast(
+      "Server error",
+      "error"
+    );
+
   }
 
-  async function loadTransactions() {
-    const token = localStorage.getItem('adminToken');
-    const res = await fetch('/admin/transactions', { headers: { 'Authorization': token } });
-    const transactions = await res.json();
-    const tbody = document.querySelector('#transactionsTable tbody');
-    tbody.innerHTML = '';
-    transactions.slice(0, 50).forEach(tx => {
-      const row = tbody.insertRow();
-      row.insertCell(0).innerText = tx.reference.slice(-12);
-      row.insertCell(1).innerText = tx.user;
-      row.insertCell(2).innerText = tx.plan;
-      row.insertCell(3).innerText = `${tx.amount} KES`;
-      row.insertCell(4).innerHTML = `<span style="color:${tx.status === 'success' ? '#00ff99' : (tx.status === 'failed' ? '#ff8a8a' : '#ffcc00')}">${tx.status}</span>`;
-      row.insertCell(5).innerText = new Date(tx.createdAt).toLocaleDateString();
+}
+
+async function loadTransactions(){
+
+  try{
+
+    const token =
+    localStorage.getItem(
+      "adminToken"
+    );
+
+    const res = await fetch(
+      "/admin/transactions",
+      {
+        headers:{
+          "Authorization":token
+        }
+      }
+    );
+
+    const transactions =
+    await res.json();
+
+    const tbody =
+    document.querySelector(
+      "#transactionsTable tbody"
+    );
+
+    tbody.innerHTML = "";
+
+    transactions.forEach(tx => {
+
+      const row =
+      tbody.insertRow();
+
+      row.insertCell(0).innerText =
+      tx.reference || "N/A";
+
+      row.insertCell(1).innerText =
+      tx.user || "N/A";
+
+      row.insertCell(2).innerText =
+      tx.plan || "N/A";
+
+      row.insertCell(3).innerText =
+      `KES ${tx.amount || 0}`;
+
+      let badgeClass =
+      "badge-pending";
+
+      if(tx.status === "success"){
+        badgeClass = "badge-success";
+      }
+
+      if(tx.status === "failed"){
+        badgeClass = "badge-failed";
+      }
+
+      row.insertCell(4).innerHTML =
+      `<span class="badge ${badgeClass}">
+        ${tx.status || "pending"}
+      </span>`;
+
+      row.insertCell(5).innerText =
+      tx.createdAt
+      ? new Date(tx.createdAt).toLocaleString()
+      : "N/A";
+
     });
+
+  }catch(err){
+
+    showToast(
+      "Failed loading transactions",
+      "error"
+    );
+
   }
 
-  async function loadStats() {
-    const token = localStorage.getItem('adminToken');
-    const [usersRes, txRes] = await Promise.all([
-      fetch('/admin/users', { headers: { 'Authorization': token } }),
-      fetch('/admin/transactions', { headers: { 'Authorization': token } })
+}
+
+async function loadStats(){
+
+  try{
+
+    const token =
+    localStorage.getItem(
+      "adminToken"
+    );
+
+    const [usersRes, txRes] =
+    await Promise.all([
+
+      fetch("/admin/users",{
+        headers:{
+          "Authorization":token
+        }
+      }),
+
+      fetch("/admin/transactions",{
+        headers:{
+          "Authorization":token
+        }
+      })
+
     ]);
-    const users = await usersRes.json();
-    const transactions = await txRes.json();
-    const totalUsers = users.length;
-    const activeSubs = users.filter(u => u.subscription?.active).length;
-    const totalSuccess = transactions.filter(t => t.status === 'success').reduce((sum, t) => sum + (t.amount || 0), 0);
-    const totalFailed = transactions.filter(t => t.status === 'failed').length;
-    document.getElementById('stats').innerHTML = `
-      <div class="stat-card"><div class="stat-value">${totalUsers}</div><div class="stat-label">Total Users</div></div>
-      <div class="stat-card"><div class="stat-value">${activeSubs}</div><div class="stat-label">Active Subscriptions</div></div>
-      <div class="stat-card"><div class="stat-value">KES ${totalSuccess}</div><div class="stat-label">Successful Payments</div></div>
-      <div class="stat-card"><div class="stat-value">${totalFailed}</div><div class="stat-label">Failed Payments</div></div>
+
+    const users =
+    await usersRes.json();
+
+    const transactions =
+    await txRes.json();
+
+    const totalUsers =
+    users.length;
+
+    const activeSubs =
+    users.filter(
+      u => u.subscription?.active
+    ).length;
+
+    const successfulPayments =
+    transactions.filter(
+      t => t.status === "success"
+    );
+
+    const totalRevenue =
+    successfulPayments.reduce(
+      (sum,t) => sum + Number(t.amount || 0),
+      0
+    );
+
+    const failedPayments =
+    transactions.filter(
+      t => t.status === "failed"
+    ).length;
+
+    document.getElementById(
+      "statsGrid"
+    ).innerHTML = `
+
+      <div class="stat-box">
+        <h3>Total Users</h3>
+        <p>${totalUsers}</p>
+      </div>
+
+      <div class="stat-box">
+        <h3>Active Subs</h3>
+        <p>${activeSubs}</p>
+      </div>
+
+      <div class="stat-box">
+        <h3>Total Revenue</h3>
+        <p>KES ${totalRevenue}</p>
+      </div>
+
+      <div class="stat-box">
+        <h3>Failed Payments</h3>
+        <p>${failedPayments}</p>
+      </div>
+
     `;
+
+  }catch(err){
+
+    showToast(
+      "Failed loading stats",
+      "error"
+    );
+
   }
 
-  function showToast(msg, type) {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerText = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-  }
+}
+
+function showToast(msg,type){
+
+  const toast =
+  document.createElement("div");
+
+  toast.className =
+  `toast ${type}`;
+
+  toast.innerText = msg;
+
+  document.body.appendChild(
+    toast
+  );
+
+  setTimeout(() => {
+
+    toast.remove();
+
+  },3000);
+
+}
+
 </script>
+
 </body>
 </html>
