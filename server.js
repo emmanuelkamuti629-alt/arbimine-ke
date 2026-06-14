@@ -9,6 +9,7 @@ const ccxt = require('ccxt');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// MongoDB connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/arbimine';
 mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
@@ -35,8 +36,18 @@ const sessionSchema = new mongoose.Schema({
   username: { type: String, required: true },
   createdAt: { type: Date, default: Date.now, expires: '7d' }
 });
+const transactionSchema = new mongoose.Schema({
+  reference: { type: String, required: true, unique: true },
+  user: { type: String, required: true }, // username
+  plan: { type: String, enum: ['weekly', 'monthly'] },
+  amount: Number,
+  status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
+  paystackResponse: mongoose.Schema.Types.Mixed,
+  createdAt: { type: Date, default: Date.now }
+});
 const User = mongoose.model('User', userSchema);
 const Session = mongoose.model('Session', sessionSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema);
 
 const hashPassword = p => crypto.createHash('sha256').update(p).digest('hex');
 const generateToken = () => crypto.randomBytes(32).toString('hex');
@@ -314,7 +325,7 @@ setInterval(fastScan, FAST_SCAN_INTERVAL);
 setInterval(() => { if (cachedOpportunities.length > 0) detailScan(); }, DETAIL_SCAN_INTERVAL);
 setTimeout(() => { if (cachedOpportunities.length > 0) detailScan(); }, 30000);
 
-// ==================== Auth Routes ====================
+// ==================== User Auth Routes ====================
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -380,6 +391,7 @@ app.get('/api/user/subscription', async (req, res) => {
   }
 });
 
+// ==================== Opportunities endpoints ====================
 app.get('/api/opportunities', (req, res) => {
   const withDetails = cachedOpportunities.map(opp => {
     const detailed = detailedCache.get(opp.id);
@@ -427,10 +439,8 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   res.json(result);
 });
 
-// ==================== Paystack payment (with sanitized reference) ====================
+// ==================== Payment (with transaction logging) ====================
 function sanitizeReference(str) {
-  // Replace any character that is not alphanumeric, dash, underscore, or dot with underscore
-  // Also replace spaces with underscore
   return str.replace(/[^a-zA-Z0-9_\-\.]/g, '_').replace(/\s/g, '_');
 }
 
@@ -445,13 +455,8 @@ app.post('/api/pesapal/pay', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'User not found' });
     let amountInKobo = plan === 'weekly' ? 100 * 100 : 350 * 100;
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!paystackSecretKey) {
-      console.error('PAYSTACK_SECRET_KEY not set in environment');
-      return res.status(500).json({ error: 'Payment gateway not configured' });
-    }
-    // Sanitize reference
-    const rawUsername = user.username;
-    const cleanUsername = sanitizeReference(rawUsername);
+    if (!paystackSecretKey) return res.status(500).json({ error: 'Payment not configured' });
+    const cleanUsername = sanitizeReference(user.username);
     const reference = `arbimine_${cleanUsername}_${Date.now()}`;
     const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
     console.log(`Creating Paystack transaction with reference: ${reference}`);
@@ -465,18 +470,23 @@ app.post('/api/pesapal/pay', async (req, res) => {
     }, {
       headers: { Authorization: `Bearer ${paystackSecretKey}`, 'Content-Type': 'application/json' }
     });
+    // Save transaction as pending
+    await Transaction.create({
+      reference,
+      user: user.username,
+      plan,
+      amount: amountInKobo / 100,
+      status: 'pending',
+      paystackResponse: response.data
+    });
     if (response.data.status) {
       res.json({ success: true, authorizationUrl: response.data.data.authorization_url, reference });
     } else {
-      console.error('Paystack init error:', response.data);
       res.status(400).json({ error: response.data.message || 'Payment initialization failed' });
     }
   } catch (err) {
     console.error('Paystack error:', err.response?.data || err.message);
-    let errorMsg = 'Payment service error';
-    if (err.response?.data?.message) errorMsg = err.response.data.message;
-    else if (err.message) errorMsg = err.message;
-    res.status(500).json({ error: errorMsg });
+    res.status(500).json({ error: 'Payment service error' });
   }
 });
 
@@ -488,6 +498,12 @@ app.get('/api/payment/callback', async (req, res) => {
     const verification = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
       headers: { Authorization: `Bearer ${secretKey}` }
     });
+    const transaction = await Transaction.findOne({ reference });
+    if (transaction) {
+      transaction.status = verification.data.data.status === 'success' ? 'success' : 'failed';
+      transaction.paystackResponse = verification.data;
+      await transaction.save();
+    }
     if (verification.data.status && verification.data.data.status === 'success') {
       const meta = verification.data.data.metadata;
       const plan = meta?.plan;
@@ -500,7 +516,7 @@ app.get('/api/payment/callback', async (req, res) => {
           { 'subscription.active': true, 'subscription.plan': plan, 'subscription.expiresAt': expiresAt }
         );
       }
-      return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success`);
+      return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
     } else {
       return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
     }
@@ -514,6 +530,13 @@ app.post('/api/payment/webhook', async (req, res) => {
   const event = req.body;
   console.log('Webhook received:', event);
   if (event.event === 'charge.success') {
+    const reference = event.data.reference;
+    const transaction = await Transaction.findOne({ reference });
+    if (transaction) {
+      transaction.status = 'success';
+      transaction.paystackResponse = event;
+      await transaction.save();
+    }
     const metadata = event.data.metadata;
     const plan = metadata?.plan;
     const username = metadata?.username;
@@ -530,4 +553,60 @@ app.post('/api/payment/webhook', async (req, res) => {
   res.json({ status: 'received' });
 });
 
+// ==================== Admin Routes (protected by simple password) ====================
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+
+app.post('/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    const token = crypto.randomBytes(32).toString('hex');
+    // store in memory for simplicity (or Redis). We'll use a simple map.
+    if (!global.adminTokens) global.adminTokens = new Set();
+    global.adminTokens.add(token);
+    res.json({ success: true, token });
+  } else {
+    res.status(401).json({ error: 'Invalid admin credentials' });
+  }
+});
+
+function adminAuth(req, res, next) {
+  const token = req.headers.authorization;
+  if (!token || !global.adminTokens || !global.adminTokens.has(token)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+// Admin endpoints
+app.get('/admin/users', adminAuth, async (req, res) => {
+  const users = await User.find({}, '-passwordHash');
+  res.json(users);
+});
+
+app.get('/admin/transactions', adminAuth, async (req, res) => {
+  const transactions = await Transaction.find().sort({ createdAt: -1 });
+  res.json(transactions);
+});
+
+app.post('/admin/user/:id/update-subscription', adminAuth, async (req, res) => {
+  const { active, plan, expiresAt } = req.body;
+  const updates = { 'subscription.active': active };
+  if (plan) updates['subscription.plan'] = plan;
+  if (expiresAt) updates['subscription.expiresAt'] = new Date(expiresAt);
+  await User.findByIdAndUpdate(req.params.id, updates);
+  res.json({ success: true });
+});
+
+app.delete('/admin/user/:id', adminAuth, async (req, res) => {
+  await User.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
+});
+
+// Serve admin HTML
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// ==================== Start server ====================
 app.listen(PORT, () => console.log(`🚀 ArbiMine running on ${PORT}`));
