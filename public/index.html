@@ -6,7 +6,6 @@
   <title>ArbiMine • Live Arbitrage</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* (same CSS as before – keep all styles) */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0a0c15; font-family: 'Inter', system-ui, sans-serif; color: #eef2ff; padding-bottom: 70px; }
     .auth-container { max-width: 420px; margin: 60px auto; padding: 24px; background: #111827; border-radius: 32px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
@@ -179,10 +178,6 @@
       <button class="btn-pro" id="monthlyPayBtn" onclick="payPro('monthly', 350)">Pay with M-Pesa</button>
       <div id="monthlyMessage" class="payment-message"></div>
     </div>
-    <div class="pro-card" style="margin-top: 10px; padding: 16px;">
-      <button class="btn-pro" id="checkPaymentBtn" onclick="checkPaymentManually()" style="background:#334155;">Check Payment Status</button>
-      <div id="manualCheckMessage" class="payment-message"></div>
-    </div>
   </div>
 
   <div id="profile" class="section">
@@ -204,8 +199,6 @@
   let allOpportunities = [];
   let currentChart = null;
   let countdownInterval = null;
-  let lastPaymentReference = null;
-  let paymentPollInterval = null;
 
   window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); checkPaymentStatus(); };
 
@@ -223,11 +216,12 @@
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('payment_status')) {
       const status = urlParams.get('payment_status');
-      const ref = urlParams.get('reference');
       if (status === 'success') {
         showToast('✅ Payment successful! Your Pro plan is now active.', 'success');
+        // Refresh profile and switch to profile tab
         if (token) {
           loadProfile();
+          // Switch to profile tab after 1 second
           setTimeout(() => {
             const profileTab = document.querySelector('.nav-item[onclick*="profile"]');
             if (profileTab) profileTab.click();
@@ -240,53 +234,354 @@
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
-    // Also poll subscription status for 60 seconds after page load (in case webhook already updated)
-    if (token) {
-      let pollCount = 0;
-      const pollInterval = setInterval(() => {
-        if (pollCount >= 12) clearInterval(pollInterval);
-        pollCount++;
-        fetch('/api/user/subscription', { headers: { Authorization: token } })
-          .then(res => res.json())
-          .then(sub => {
-            if (sub.active) {
-              showToast('✅ Subscription activated! Your Pro plan is now active.', 'success');
-              clearInterval(pollInterval);
-              loadProfile();
-              setTimeout(() => switchTab('profile'), 1500);
-            }
-          })
-          .catch(() => {});
-      }, 5000);
+  }
+
+  function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+  function isValidPhone(phone) { const d=phone.replace(/\D/g,''); return d.length>=9 && d.length<=12 && /^(0|254)/.test(d); }
+
+  async function verifyAndShowDashboard() {
+    try {
+      const res = await fetch('/api/me', { headers: { Authorization: token } });
+      const data = await res.json();
+      if (data.username) {
+        document.getElementById('authContainer').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        loadOpps();
+        loadProfile();
+      } else throw new Error();
+    } catch { localStorage.removeItem('token'); token = null; showAuth(); }
+  }
+
+  function showAuth() { document.getElementById('authContainer').style.display = 'block'; document.getElementById('dashboard').style.display = 'none'; }
+  function showRegister() { document.getElementById('loginPanel').style.display = 'none'; document.getElementById('registerPanel').style.display = 'block'; }
+  function showLogin() { document.getElementById('registerPanel').style.display = 'none'; document.getElementById('loginPanel').style.display = 'block'; }
+
+  async function register() {
+    const username = document.getElementById('regUsername').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const mpesa = document.getElementById('regMpesa').value.trim();
+    const password = document.getElementById('regPassword').value;
+    if (!username || !email || !mpesa || !password) { alert('All fields required'); return; }
+    if (!isValidEmail(email)) { alert('Valid email required'); return; }
+    if (!isValidPhone(mpesa)) { alert('Valid Kenyan phone required (e.g., 0712345678)'); return; }
+    if (password.length < 4) { alert('Password min 4 chars'); return; }
+    try {
+      const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, mpesa, password }) });
+      const data = await res.json();
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error);
+    } catch { alert('Server error'); }
+  }
+
+  async function login() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!email || !password) { alert('Email and password required'); return; }
+    try {
+      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const data = await res.json();
+      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
+      else alert(data.error || 'Invalid credentials');
+    } catch { alert('Login error'); }
+  }
+
+  function logout() { localStorage.removeItem('token'); location.reload(); }
+
+  function switchTab(tabId, event) {
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+    if (event?.target) event.target.closest('.nav-item').classList.add('active');
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    if (tabId === 'home') loadOpps();
+    if (tabId === 'profile') loadProfile();
+  }
+
+  async function refreshOpportunities() { await loadOpps(); }
+
+  async function loadOpps() {
+    const container = document.getElementById('oppList');
+    container.innerHTML = '<div class="loading">Loading opportunities...</div>';
+    try {
+      const res = await fetch('/api/opportunities');
+      const data = await res.json();
+      if (!data.opportunities || data.opportunities.length === 0) { container.innerHTML = '<div class="loading">No spreads >0.2% found.</div>'; return; }
+      allOpportunities = data.opportunities;
+      loadAndRender();
+    } catch { container.innerHTML = '<div class="loading">Failed to load. Try again.</div>'; }
+  }
+
+  function loadAndRender() {
+    let filtered = [...allOpportunities];
+    const sortBy = document.getElementById('sortSelect').value;
+    if (sortBy === 'spreadDesc') filtered.sort((a,b) => parseFloat(b.spread) - parseFloat(a.spread));
+    else if (sortBy === 'symbolAsc') filtered.sort((a,b) => a.symbol.localeCompare(b.symbol));
+    else if (sortBy === 'tradableFirst') filtered.sort((a,b) => (b.tradable === true) - (a.tradable === true) || parseFloat(b.spread) - parseFloat(a.spread));
+    renderOppsList(filtered);
+  }
+
+  function getRiskClass(risk) {
+    if (risk === 'low') return 'risk-low';
+    if (risk === 'medium') return 'risk-medium';
+    return 'risk-high';
+  }
+
+  function getTradableClass(tradable, hasNetworkData) {
+    if (tradable) return 'badge-tradable';
+    if (!hasNetworkData) return 'badge-unverified';
+    return 'badge-untradable';
+  }
+
+  function getTradableText(tradable, hasNetworkData) {
+    if (tradable) return 'TRADABLE ✅';
+    if (!hasNetworkData) return 'UNVERIFIED ❓';
+    return 'NOT TRADABLE ❌';
+  }
+
+  function renderOppsList(opps) {
+    const container = document.getElementById('oppList');
+    container.innerHTML = '';
+    for (const opp of opps) {
+      const riskClass = getRiskClass(opp.risk || 'medium');
+      const riskText = (opp.risk || 'MEDIUM').toUpperCase();
+      const liquidity = opp.liquidity ? `$${(parseFloat(opp.liquidity)/1000).toFixed(0)}K` : 'N/A';
+      const hasNetworkData = (opp.buyNetworks && Object.keys(opp.buyNetworks).length > 0) || (opp.sellNetworks && Object.keys(opp.sellNetworks).length > 0);
+      const tradableClass = getTradableClass(opp.tradable, hasNetworkData);
+      const tradableText = getTradableText(opp.tradable, hasNetworkData);
+      const card = document.createElement('div');
+      card.className = 'opp-card';
+      card.innerHTML = `
+        <div class="card-header">
+          <span class="symbol">${opp.symbol}</span>
+          <span class="badge-live">LIVE</span>
+        </div>
+        <div class="exchange-pair">
+          <div class="buy-sell">
+            <div class="label">BUY</div>
+            <div class="exchange">${opp.buyExchange}</div>
+            <div class="price">$${opp.buyPrice}</div>
+          </div>
+          <div class="buy-sell">
+            <div class="label">SELL</div>
+            <div class="exchange">${opp.sellExchange}</div>
+            <div class="price">$${opp.sellPrice}</div>
+          </div>
+        </div>
+        <div class="stats">
+          <span>💧 Liquidity ${liquidity}</span>
+          <span class="risk-badge ${riskClass}">${riskText} RISK</span>
+        </div>
+        <div class="stats" style="margin-top: 8px;">
+          <span>📈 Spread <strong style="color:#00ff99">${opp.spread}%</strong></span>
+          <span>🔄 <span class="${tradableClass}" style="padding:2px 8px; border-radius:30px;">${tradableText}</span></span>
+        </div>
+      `;
+      card.onclick = () => showDetail(opp.id);
+      container.appendChild(card);
     }
   }
 
-  async function checkPaymentManually() {
-    const msgDiv = document.getElementById('manualCheckMessage');
-    msgDiv.innerText = 'Checking subscription status...';
+  async function showDetail(oppId) {
+    const modal = document.getElementById('detailModal');
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = '<div class="loading">Loading details...</div>';
+    modal.style.display = 'block';
+    if (currentChart) { if (typeof currentChart.destroy === 'function') currentChart.destroy(); currentChart = null; }
     try {
-      const res = await fetch('/api/user/subscription', { headers: { Authorization: token } });
-      const sub = await res.json();
-      if (sub.active) {
-        msgDiv.innerText = '✅ Active Pro subscription found!';
-        showToast('✅ Your Pro subscription is active.', 'success');
-        loadProfile();
-        setTimeout(() => switchTab('profile'), 1000);
+      const res = await fetch(`/api/opportunity/${oppId}/details`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      displayDetailModal(data);
+    } catch (err) {
+      modalBody.innerHTML = `<div style="color:#ff8a8a; padding:20px;">Failed to load: ${err.message}</div>`;
+    }
+  }
+
+  function displayDetailModal(opp) {
+    const modalBody = document.getElementById('modalBody');
+    const hasBuyNetworkData = opp.buyNetworks && Object.keys(opp.buyNetworks).length > 0;
+    const hasSellNetworkData = opp.sellNetworks && Object.keys(opp.sellNetworks).length > 0;
+    const hasAnyNetworkData = hasBuyNetworkData || hasSellNetworkData;
+    const tradableClass = opp.tradable ? 'badge-tradable' : (!hasAnyNetworkData ? 'badge-unverified' : 'badge-untradable');
+    const tradableText = opp.tradable ? 'TRADABLE ✅' : (!hasAnyNetworkData ? 'UNVERIFIED ❓' : 'NOT TRADABLE ❌');
+
+    function getNetworkStatusClass(status) {
+      if (status === true) return 'status-open';
+      if (status === false) return 'status-closed';
+      return 'status-unverified';
+    }
+    function getNetworkStatusText(status) {
+      if (status === true) return 'OPEN';
+      if (status === false) return 'CLOSED';
+      return 'Unverified';
+    }
+    function buildNetworkTable(networks, side, exchange) {
+      const hasData = networks && Object.keys(networks).length > 0;
+      const title = side === 'buy' ? `Withdraw Networks (Buy: ${exchange})` : `Deposit Networks (Sell: ${exchange})`;
+      if (!hasData) {
+        return `<div class="network-section"><h4>${title}</h4><div class="network-table"><div class="network-row">No network data available – check manually</div></div></div>`;
+      }
+      let html = `<div class="network-section"><h4>${title}</h4><div class="network-table">`;
+      for (const net of Object.values(networks)) {
+        let feeText = '';
+        if (typeof net.fee === 'number' && net.fee > 0) {
+          feeText = `${net.fee} ${net.feeUnit}`;
+        } else {
+          feeText = net.fee || 'variable';
+        }
+        html += `
+          <div class="network-row">
+            <div class="network-name">${net.name}</div>
+            <div class="network-details">
+              Fee: ${feeText}<br>
+              ETA: ${net.arrivalTime || 'N/A'}
+            </div>
+            <div>
+              <span class="network-status ${getNetworkStatusClass(net.deposit)}">Deposit: ${getNetworkStatusText(net.deposit)}</span>
+              <span class="network-status ${getNetworkStatusClass(net.withdraw)}">Withdraw: ${getNetworkStatusText(net.withdraw)}</span>
+            </div>
+          </div>
+        `;
+      }
+      html += '</div></div>';
+      return html;
+    }
+
+    const buyNetworksHtml = buildNetworkTable(opp.buyNetworks, 'buy', opp.buyExchange);
+    const sellNetworksHtml = buildNetworkTable(opp.sellNetworks, 'sell', opp.sellExchange);
+    const spreadNum = parseFloat(opp.spread);
+    let stability = Math.max(0, Math.min(100, 100 - (spreadNum * 5) + (opp.risk === 'low' ? 20 : opp.risk === 'high' ? -20 : 0)));
+    let liquidityScore = opp.liquidity ? Math.min(100, Math.floor((parseFloat(opp.liquidity) / 5000000) * 100)) : 65;
+    let transferSuccess = (opp.tradable ? 98 : (hasAnyNetworkData ? 45 : 20));
+    let volatility = spreadNum > 10 ? 85 : spreadNum > 5 ? 55 : 25;
+    stability = Math.min(100, Math.max(0, stability));
+    liquidityScore = Math.min(100, Math.max(0, liquidityScore));
+    transferSuccess = Math.min(100, Math.max(0, transferSuccess));
+    volatility = Math.min(100, Math.max(0, volatility));
+    const riskTextMap = {
+      low: 'AI analyzed spread volatility, liquidity and transfer networks. Low risk opportunity.',
+      medium: 'Moderate spread and acceptable liquidity. Medium risk.',
+      high: 'High spread or poor network support. High risk.'
+    };
+    const riskDescription = riskTextMap[opp.risk] || riskTextMap.medium;
+    const riskLevelClass = opp.risk === 'low' ? 'low' : (opp.risk === 'medium' ? 'medium' : 'high');
+    let chartLabels = ['1', '2', '3', '4', '5', '6'];
+    let chartData;
+    if (opp.history && opp.history.length >= 2) {
+      const hist = opp.history.slice(-6);
+      chartData = hist.map(h => parseFloat(h.spread));
+      if (chartData.length < 6) while (chartData.length < 6) chartData.unshift(chartData[0]);
+    } else {
+      const base = spreadNum;
+      chartData = [base * 0.6, base * 0.7, base * 0.85, base * 0.9, base * 0.95, base];
+    }
+
+    modalBody.innerHTML = `
+      <div class="back-button" onclick="closeDetail()">← Back</div>
+      <div class="detail-symbol">${opp.symbol}</div>
+      <div class="detail-exchange-row">
+        <div class="detail-box"><div class="title">BUY</div><div class="exchange-name">${opp.buyExchange}</div><div class="price">$${opp.buyPrice}</div></div>
+        <div class="detail-box"><div class="title">SELL</div><div class="exchange-name">${opp.sellExchange}</div><div class="price">$${opp.sellPrice}</div></div>
+      </div>
+      <div class="detail-stats-row">
+        <div class="stat-item"><div class="stat-label">Spread</div><div class="stat-value">${opp.spread}%</div></div>
+        <div class="stat-item"><div class="stat-label">Liquidity</div><div class="stat-value">$${(parseFloat(opp.liquidity)/1000000).toFixed(1)}M</div></div>
+        <div class="stat-item"><div class="stat-label">Arrival Time</div><div class="stat-value">${(opp.buyNetworks && Object.values(opp.buyNetworks)[0]?.arrivalTime) || '3 mins'}</div></div>
+      </div>
+      <div><span class="${tradableClass}" style="padding:4px 12px; border-radius:40px; display:inline-block;">${tradableText}</span></div>
+      ${buyNetworksHtml}
+      ${sellNetworksHtml}
+      <div class="ai-card">
+        <div class="ai-header">🧠 AI Risk Analysis</div>
+        <div class="risk-level-container">
+          <div class="risk-level-row"><div class="risk-level-text ${riskLevelClass}">${opp.risk.toUpperCase()} RISK</div><div class="w-5 h-5 rounded-full bg-${opp.risk === 'low' ? 'green' : (opp.risk === 'medium' ? 'yellow' : 'red')}-400 animate-pulse"></div></div>
+          <div class="risk-description">${riskDescription}</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="label">Spread Stability</div><div class="score green">${stability}%</div></div>
+          <div class="stat-card"><div class="label">Liquidity Score</div><div class="score blue">${liquidityScore}%</div></div>
+          <div class="stat-card"><div class="label">Transfer Success</div><div class="score green">${transferSuccess}%</div></div>
+          <div class="stat-card"><div class="label">Volatility</div><div class="score red">${volatility}%</div></div>
+        </div>
+      </div>
+      <div class="trend-container">
+        <div class="trend-header"><div class="trend-title"><h3>Spread Trend</h3><p>AI spread movement analysis</p></div><div class="current-spread"><div class="small">Current Spread</div><div class="big">${opp.spread}%</div></div></div>
+        <div><canvas id="trendChart" width="600" height="300" style="max-height:320px; width:100%"></canvas></div>
+      </div>
+    `;
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (currentChart) currentChart.destroy();
+    currentChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: chartLabels, datasets: [{ label: 'Spread %', data: chartData, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.18)', fill: true, tension: 0.4, borderWidth: 5, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#22c55e', pointBorderColor: '#22c55e' }] },
+      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: 'white', font: { size: 14 } } } }, scales: { x: { title: { display: true, text: 'X Axis • Time Updates', color: 'white', font: { size: 14, weight: 'bold' } }, ticks: { color: 'white', font: { size: 12 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { title: { display: true, text: 'Y Axis • Spread %', color: 'white', font: { size: 14, weight: 'bold' } }, ticks: { color: 'white', font: { size: 12 } }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
+    });
+  }
+
+  function closeDetail() {
+    document.getElementById('detailModal').style.display = 'none';
+    if (currentChart && typeof currentChart.destroy === 'function') currentChart.destroy();
+    currentChart = null;
+  }
+
+  async function loadProfile() {
+    const container = document.getElementById('profileCard');
+    container.innerHTML = '<div class="loading">Loading...</div>';
+    if (countdownInterval) clearInterval(countdownInterval);
+    try {
+      const [userRes, subRes] = await Promise.all([ fetch('/api/me', { headers: { Authorization: token } }), fetch('/api/user/subscription', { headers: { Authorization: token } }) ]);
+      const user = await userRes.json();
+      const sub = await subRes.json();
+      if (user.error || sub.error) throw new Error();
+      let tierHtml = '', countdownHtml = '';
+      if (sub.active && sub.plan) {
+        const planName = sub.plan === 'weekly' ? 'Weekly Pro' : 'Monthly Pro';
+        const tierClass = sub.plan === 'weekly' ? 'tier-weekly' : 'tier-monthly';
+        tierHtml = `<span class="tier-badge ${tierClass}">${planName}</span>`;
+        const expires = new Date(sub.expiresAt);
+        const diff = expires - new Date();
+        if (diff > 0) {
+          const days = Math.floor(diff / (86400000));
+          const hours = Math.floor((diff % 86400000) / 3600000);
+          countdownHtml = `<div class="countdown">⏳ Expires in: ${days}d ${hours}h</div>`;
+          countdownInterval = setInterval(() => {
+            const diff2 = expires - new Date();
+            if (diff2 <= 0) { clearInterval(countdownInterval); loadProfile(); }
+            else { const d = Math.floor(diff2 / 86400000), h = Math.floor((diff2 % 86400000) / 3600000); const cd = document.getElementById('countdownDisplay'); if (cd) cd.innerText = `⏳ Expires in: ${d}d ${h}h`; }
+          }, 60000);
+        } else countdownHtml = `<div class="countdown" style="color:#ff8a8a;">Expired</div>`;
       } else {
-        msgDiv.innerText = '❌ No active subscription. Please complete payment.';
-        showToast('❌ No active subscription found.', 'error');
+        tierHtml = `<span class="tier-badge tier-free">Free</span>`;
+        countdownHtml = `<div class="countdown">Upgrade to Pro for full access</div>`;
+      }
+      container.innerHTML = `<div class="profile-card"><div class="profile-row"><span>👤 Username:</span><span>${user.username}</span></div><div class="profile-row"><span>📧 Email:</span><span>${user.email}</span></div><div class="profile-row"><span>📱 Mobile:</span><span>${user.mpesa}</span></div><div class="profile-row"><span>💎 Tier:</span><span>${tierHtml}</span></div><div id="countdownDisplay">${countdownHtml}</div></div>`;
+    } catch { container.innerHTML = '<div class="loading">Session expired. Please login again.</div>'; }
+  }
+
+  async function payPro(plan, amount) {
+    if (!token) { alert('Please login first'); return; }
+    const phoneInput = plan === 'weekly' ? document.getElementById('weeklyPhone') : document.getElementById('monthlyPhone');
+    const phone = phoneInput.value.trim();
+    const btnId = plan === 'weekly' ? 'weeklyPayBtn' : 'monthlyPayBtn';
+    const msgDivId = plan === 'weekly' ? 'weeklyMessage' : 'monthlyMessage';
+    const btn = document.getElementById(btnId);
+    const msgDiv = document.getElementById(msgDivId);
+    btn.disabled = true;
+    msgDiv.innerText = '⏳ Please wait... Initializing payment.';
+    try {
+      const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ plan, amount }) });
+      const data = await res.json();
+      if (data.success && data.authorizationUrl) {
+        msgDiv.innerText = 'Redirecting to Paystack...';
+        window.location.href = data.authorizationUrl;
+      } else {
+        msgDiv.innerText = '❌ Payment initiation failed: ' + (data.error || 'Unknown error');
+        btn.disabled = false;
       }
     } catch (err) {
-      msgDiv.innerText = 'Error checking status. Try again.';
+      msgDiv.innerText = '❌ Network error. Please try again.';
+      btn.disabled = false;
     }
   }
-
-  // (rest of the existing functions: isValidEmail, isValidPhone, verifyAndShowDashboard, showAuth, register, login, logout, switchTab, refreshOpportunities, loadOpps, loadAndRender, getRiskClass, getTradableClass, getTradableText, renderOppsList, showDetail, displayDetailModal, closeDetail, loadProfile, payPro)
-  // ... (keep all those exactly as in the previous working version)
-  // For brevity, I'm not repeating them here – but your existing file already contains them.
-  // Make sure to copy the full script from the previous answer that includes all these functions.
-  // The only additions are the toast, manual check, and polling.
-
 </script>
 </body>
 </html>
