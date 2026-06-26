@@ -57,7 +57,13 @@
     .ai-score-card .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
     .loading-skeleton { height: 120px; border-radius: 20px; margin-top: 16px; background: linear-gradient(90deg, #111827 20%, #1f2937 50%, #111827 80%); background-size: 200% 100%; animation: load 1.3s infinite; }
     @keyframes load { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    @media (max-width: 640px) { .exchange-row { flex-direction: column; } .ai-score-grid { grid-template-columns: 1fr 1fr; } }
+    .calculator-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .calc-item { background: rgba(255,255,255,.03); border-radius: 16px; padding: 12px; text-align: center; }
+    .calc-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: .3px; }
+    .calc-value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+    .profit-positive { color: #22c55e; }
+    .profit-negative { color: #ef4444; }
+    @media (max-width: 640px) { .exchange-row { flex-direction: column; } .ai-score-grid { grid-template-columns: 1fr 1fr; } .calculator-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -152,7 +158,7 @@
     </div>
   </div>
 
-  <!-- Opportunities List -->
+  <!-- Opportunities List – only buy/sell and price -->
   <div id="opportunities" class="mt-4">
     <div class="loading-skeleton"></div>
     <div class="loading-skeleton"></div>
@@ -176,6 +182,29 @@
     <div class="glass p-4"><div class="text-slate-400 text-sm">Sell Price</div><div id="detailSellPrice" class="text-2xl font-bold mt-1">$0</div></div>
     <div class="glass p-4"><div class="text-slate-400 text-sm">Price Diff</div><div id="detailPriceDiff" class="text-2xl font-bold mt-1 text-green-400">$0</div></div>
     <div class="glass p-4"><div class="text-slate-400 text-sm">Est. Profit</div><div id="detailProfit" class="text-2xl font-bold mt-1 text-green-400">$0</div></div>
+  </div>
+
+  <!-- ===== PROFIT CALCULATOR ===== -->
+  <div class="glass p-5 mt-4">
+    <h3 class="text-xl font-bold mb-3">💹 Profit Calculator</h3>
+    <div class="flex flex-col sm:flex-row gap-3">
+      <div class="flex-1">
+        <label class="text-slate-400 text-sm">Investment (USD)</label>
+        <input id="investmentInput" type="number" value="100" step="1" min="1" class="w-full bg-slate-900 rounded-2xl p-3 border border-slate-700 text-white outline-none" oninput="calculateProfit()">
+      </div>
+      <div class="flex-1">
+        <label class="text-slate-400 text-sm">Estimated Coin Amount</label>
+        <div id="coinAmount" class="text-2xl font-bold mt-1 text-blue-400">0</div>
+      </div>
+    </div>
+    <div class="calculator-grid mt-4">
+      <div class="calc-item"><div class="calc-label">Gross Profit</div><div id="calcGrossProfit" class="calc-value profit-positive">$0.00</div></div>
+      <div class="calc-item"><div class="calc-label">Trading Fees</div><div id="calcTradingFees" class="calc-value text-yellow-400">$0.00</div></div>
+      <div class="calc-item"><div class="calc-label">Network Fees</div><div id="calcNetworkFees" class="calc-value text-yellow-400">$0.00</div></div>
+      <div class="calc-item"><div class="calc-label">Total Fees</div><div id="calcTotalFees" class="calc-value text-red-400">$0.00</div></div>
+      <div class="calc-item"><div class="calc-label">Net Profit</div><div id="calcNetProfit" class="calc-value profit-positive">$0.00</div></div>
+      <div class="calc-item"><div class="calc-label">ROI</div><div id="calcROI" class="calc-value profit-positive">0.00%</div></div>
+    </div>
   </div>
 
   <!-- AI Score Cards -->
@@ -258,6 +287,7 @@
   let pendingReference = localStorage.getItem('pendingReference');
   let pollInterval = null;
   let autoRefreshInterval = null;
+  let currentDetailOpp = null;
 
   // ========== AUTH UI ==========
   function showLogin() {
@@ -346,7 +376,6 @@
     if (map[page] !== undefined) document.querySelectorAll('.bottom-nav button')[map[page]].classList.add('active');
     if (page === 'home') loadOpportunities();
     if (page === 'profile') loadProfile();
-    if (page === 'details') { /* already there */ }
   }
 
   // ========== PAYMENT POLLING ==========
@@ -371,7 +400,6 @@
     else showLogin();
     checkPaymentStatus();
     if (pendingReference) startPolling(pendingReference);
-    // Auto-refresh every 30 seconds
     if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     autoRefreshInterval = setInterval(() => {
       if (document.getElementById('home').classList.contains('active')) loadOpportunities();
@@ -503,29 +531,23 @@
     if (!opps.length) { container.innerHTML = '<div class="text-slate-400 text-center py-10">No opportunities match filters.</div>'; return; }
     let html = '';
     opps.slice(0, 50).forEach(o => {
-      const profit = (parseFloat(o.sellPrice) - parseFloat(o.buyPrice)) * 100; // approximate
-      const aiConf = Math.min(95, 70 + Math.random() * 25); // mock
-      const riskLabel = o.risk || 'medium';
-      const riskBadge = riskLabel === 'low' ? 'badge-green' : (riskLabel === 'high' ? 'badge-red' : 'badge-yellow');
       html += `
         <div class="opp-card" onclick="openOpportunity('${o.id}')">
           <div class="flex justify-between items-start">
-            <div><h2 class="text-2xl font-bold">${o.symbol}</h2><span class="text-slate-400 text-sm">${o.buyExchange} → ${o.sellExchange}</span></div>
+            <div><h2 class="text-2xl font-bold">${o.symbol}</h2></div>
             <div class="text-right"><div class="text-3xl font-bold text-green-400">${o.spread}%</div><div class="text-slate-400 text-xs">Spread</div></div>
           </div>
           <div class="exchange-row">
-            <div class="exchange-box"><div class="text-slate-400 text-xs">BUY</div><div class="font-bold">${o.buyPrice}</div></div>
-            <div class="exchange-box"><div class="text-slate-400 text-xs">SELL</div><div class="font-bold">${o.sellPrice}</div></div>
-          </div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-sm">
-            <div><span class="text-slate-400">Profit:</span> <span class="text-green-400">$${profit.toFixed(2)}</span></div>
-            <div><span class="text-slate-400">Liquidity:</span> <span>$${Number(o.liquidity).toLocaleString()}</span></div>
-            <div><span class="text-slate-400">Confidence:</span> <span class="text-yellow-400">${Math.round(aiConf)}%</span></div>
-            <div><span class="text-slate-400">Risk:</span> <span class="badge ${riskBadge}">${riskLabel.toUpperCase()}</span></div>
-          </div>
-          <div class="mt-2 text-xs text-slate-400 flex justify-between">
-            <span>🕒 Updated: just now</span>
-            <span>📊 Volume: ${(Math.random()*100+10).toFixed(1)}k</span>
+            <div class="exchange-box">
+              <div class="text-slate-400 text-xs">BUY</div>
+              <div class="font-bold text-green-400">${o.buyExchange}</div>
+              <div class="text-white">$${o.buyPrice}</div>
+            </div>
+            <div class="exchange-box">
+              <div class="text-slate-400 text-xs">SELL</div>
+              <div class="font-bold text-red-400">${o.sellExchange}</div>
+              <div class="text-white">$${o.sellPrice}</div>
+            </div>
           </div>
         </div>
       `;
@@ -539,6 +561,7 @@
     try {
       const res = await fetch(`/api/opportunity/${id}/details`);
       const opp = await res.json();
+      currentDetailOpp = opp;
       displayDetails(opp);
     } catch (e) { showToast('Failed to load details', 'error'); }
   }
@@ -599,8 +622,85 @@
     drawChart('priceChart', 'Price', priceData, '#3b82f6');
     const liqData = [opp.liquidity*0.8, opp.liquidity*0.9, opp.liquidity, opp.liquidity*0.95, opp.liquidity*0.85, opp.liquidity];
     drawChart('liquidityChart', 'Liquidity', liqData, '#8b5cf6');
+
+    // Calculator
+    document.getElementById('investmentInput').value = 100;
+    calculateProfit();
   }
 
+  // ========== PROFIT CALCULATOR ==========
+  function calculateProfit() {
+    if (!currentDetailOpp) return;
+    const opp = currentDetailOpp;
+    const buyPrice = parseFloat(opp.buyPrice);
+    const sellPrice = parseFloat(opp.sellPrice);
+    const investment = parseFloat(document.getElementById('investmentInput').value) || 0;
+    if (investment <= 0 || buyPrice <= 0) {
+      document.getElementById('coinAmount').innerText = '0';
+      document.getElementById('calcGrossProfit').innerText = '$0.00';
+      document.getElementById('calcTradingFees').innerText = '$0.00';
+      document.getElementById('calcNetworkFees').innerText = '$0.00';
+      document.getElementById('calcTotalFees').innerText = '$0.00';
+      document.getElementById('calcNetProfit').innerText = '$0.00';
+      document.getElementById('calcROI').innerText = '0.00%';
+      return;
+    }
+    const coinAmount = investment / buyPrice;
+    document.getElementById('coinAmount').innerText = coinAmount.toFixed(6);
+    const grossProfit = (sellPrice - buyPrice) * coinAmount;
+    const tradeFeeRate = 0.001;
+    const buyTradeFee = investment * tradeFeeRate;
+    const sellTradeFee = (coinAmount * sellPrice) * tradeFeeRate;
+    const totalTradingFees = buyTradeFee + sellTradeFee;
+    let withdrawalFee = 0, depositFee = 0;
+    const buyNets = Object.values(opp.buyNetworks || {});
+    const sellNets = Object.values(opp.sellNetworks || {});
+    if (buyNets.length) {
+      const net = buyNets[0];
+      withdrawalFee = net.withdraw ? (typeof net.fee === 'number' ? net.fee : 0) : 0;
+    }
+    if (sellNets.length) {
+      const net = sellNets[0];
+      depositFee = net.deposit ? (typeof net.fee === 'number' ? net.fee : 0) : 0;
+    }
+    let withdrawalFeeUSD = 0, depositFeeUSD = 0;
+    if (buyNets.length && buyNets[0].feeUnit) {
+      const unit = buyNets[0].feeUnit;
+      if (unit === 'USDT' || unit === 'USD') {
+        withdrawalFeeUSD = withdrawalFee;
+      } else {
+        withdrawalFeeUSD = withdrawalFee * buyPrice;
+      }
+    } else {
+      withdrawalFeeUSD = withdrawalFee * buyPrice;
+    }
+    if (sellNets.length && sellNets[0].feeUnit) {
+      const unit = sellNets[0].feeUnit;
+      if (unit === 'USDT' || unit === 'USD') {
+        depositFeeUSD = depositFee;
+      } else {
+        depositFeeUSD = depositFee * sellPrice;
+      }
+    } else {
+      depositFeeUSD = depositFee * sellPrice;
+    }
+    const totalNetworkFees = withdrawalFeeUSD + depositFeeUSD;
+    const totalFees = totalTradingFees + totalNetworkFees;
+    const netProfit = grossProfit - totalFees;
+    const roi = investment > 0 ? (netProfit / investment) * 100 : 0;
+
+    document.getElementById('calcGrossProfit').innerText = '$' + grossProfit.toFixed(2);
+    document.getElementById('calcGrossProfit').className = 'calc-value ' + (grossProfit >= 0 ? 'profit-positive' : 'profit-negative');
+    document.getElementById('calcTradingFees').innerText = '$' + totalTradingFees.toFixed(2);
+    document.getElementById('calcNetworkFees').innerText = '$' + totalNetworkFees.toFixed(2);
+    document.getElementById('calcTotalFees').innerText = '$' + totalFees.toFixed(2);
+    document.getElementById('calcNetProfit').innerText = '$' + netProfit.toFixed(2);
+    document.getElementById('calcNetProfit').className = 'calc-value ' + (netProfit >= 0 ? 'profit-positive' : 'profit-negative');
+    document.getElementById('calcROI').innerText = roi.toFixed(2) + '%';
+    document.getElementById('calcROI').className = 'calc-value ' + (roi >= 0 ? 'profit-positive' : 'profit-negative');
+  }
+
+  // ========== CHARTS ==========
   function drawChart(id, label, data, color) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
@@ -627,7 +727,6 @@
       document.getElementById('profileUsername').innerText = u.username;
       document.getElementById('profileEmail').innerText = u.email;
       document.getElementById('profilePhone').innerText = u.mpesa;
-      // Subscription
       const subRes = await fetch('/api/user/subscription', { headers: { Authorization: token } });
       const sub = await subRes.json();
       if (sub.active) {
