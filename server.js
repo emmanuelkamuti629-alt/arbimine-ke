@@ -18,7 +18,7 @@ mongoose.connect(MONGO_URI)
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ==================== Email setup ====================
+// ==================== Email ====================
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = process.env.SMTP_PORT || 587;
 const SMTP_USER = process.env.SMTP_USER;
@@ -110,7 +110,7 @@ function formatPhone(phone) {
   return cleaned;
 }
 
-// ==================== Exchange API setup ====================
+// ==================== Exchange API ====================
 const SUPPORTED_EXCHANGES = ['mexc', 'kucoin', 'binance', 'bingx', 'htx', 'gateio'];
 
 function buildExchange(exchangeId, apiKey, secret) {
@@ -374,7 +374,7 @@ setInterval(fastScan, FAST_SCAN_INTERVAL);
 setInterval(() => { if (cachedOpportunities.length > 0) detailScan(); }, DETAIL_SCAN_INTERVAL);
 setTimeout(() => { if (cachedOpportunities.length > 0) detailScan(); }, 30000);
 
-// ==================== User Auth Routes ====================
+// ==================== Auth Routes ====================
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -450,7 +450,7 @@ app.get('/api/user/subscription', async (req, res) => {
   }
 });
 
-// ==================== Messaging (Support Chat) ====================
+// ==================== Messaging ====================
 app.post('/api/messages', async (req, res) => {
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: 'No token' });
@@ -459,7 +459,6 @@ app.post('/api/messages', async (req, res) => {
     if (!session) return res.status(401).json({ error: 'Invalid session' });
     const { content } = req.body;
     if (!content || !content.trim()) return res.status(400).json({ error: 'Message required' });
-    // Check if blocked
     const blocked = await BlockedUser.findOne({ username: session.username });
     if (blocked) return res.status(403).json({ error: 'You have been blocked from sending messages' });
     const msg = new Message({ user: session.username, isAdmin: false, content: content.trim() });
@@ -485,7 +484,7 @@ app.get('/api/messages', async (req, res) => {
   }
 });
 
-// ==================== Admin Messaging Endpoints ====================
+// ==================== Admin Messaging ====================
 app.get('/admin/messages', adminAuth, async (req, res) => {
   try {
     const users = await Message.distinct('user');
@@ -519,7 +518,6 @@ app.post('/admin/messages', adminAuth, async (req, res) => {
     if (!userId || !content) return res.status(400).json({ error: 'User and content required' });
     const msg = new Message({ user: userId, isAdmin: true, content: content.trim() });
     await msg.save();
-    // Send email notification to user if they have an email
     const user = await User.findOne({ username: userId });
     if (user) {
       sendEmailAsync(
@@ -535,14 +533,34 @@ app.post('/admin/messages', adminAuth, async (req, res) => {
   }
 });
 
+app.delete('/admin/message/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Message.findByIdAndDelete(id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.put('/admin/message/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+    if (!content) return res.status(400).json({ error: 'Content required' });
+    const msg = await Message.findByIdAndUpdate(id, { content: content.trim() }, { new: true });
+    res.json({ success: true, message: msg });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.post('/admin/block/:username', adminAuth, async (req, res) => {
   try {
     const { username } = req.params;
-    await BlockedUser.findOneAndUpdate(
-      { username },
-      { username },
-      { upsert: true }
-    );
+    await BlockedUser.findOneAndUpdate({ username }, { username }, { upsert: true });
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -561,7 +579,7 @@ app.post('/admin/unblock/:username', adminAuth, async (req, res) => {
   }
 });
 
-// ==================== Opportunities endpoints ====================
+// ==================== Opportunities ====================
 app.get('/api/opportunities', (req, res) => {
   const withDetails = cachedOpportunities.map(opp => {
     const detailed = detailedCache.get(opp.id);
@@ -609,36 +627,54 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   res.json(result);
 });
 
-// ==================== Payment (with transaction logging & async email) ====================
+// ==================== Payment (with all improvements) ====================
 function sanitizeReference(str) {
   return str.replace(/[^a-zA-Z0-9_\-\.]/g, '_').replace(/\s/g, '_');
 }
 
-app.post('/api/pesapal/pay', async (req, res) => {
+// 1. Renamed route to /api/paystack/pay
+app.post('/api/paystack/pay', async (req, res) => {
   const { plan } = req.body;
   const token = req.headers.authorization;
   if (!token) return res.status(401).json({ error: 'No token' });
+
+  // 5. Validate plan
+  if (!["weekly", "monthly"].includes(plan)) {
+    return res.status(400).json({ error: 'Invalid subscription plan' });
+  }
+
   try {
     const session = await Session.findOne({ token });
     if (!session) return res.status(401).json({ error: 'Invalid session' });
     const user = await User.findOne({ username: session.username });
     if (!user) return res.status(401).json({ error: 'User not found' });
+
     let amountInKobo = plan === 'weekly' ? 100 * 100 : 350 * 100;
     const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!paystackSecretKey) return res.status(500).json({ error: 'Payment not configured' });
+    if (!paystackSecretKey) {
+      console.error('PAYSTACK_SECRET_KEY missing');
+      return res.status(500).json({ error: 'Payment not configured' });
+    }
+
     const cleanUsername = sanitizeReference(user.username);
     const reference = `arbimine_${cleanUsername}_${Date.now()}`;
-    const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
+
+    // 6. Improved callback URL
+    const baseUrl = (process.env.APP_URL || 'https://arbimine-ke.onrender.com').replace(/\/$/, '');
+    const callbackUrl = `${baseUrl}/api/payment/callback`;
+
+    console.log(`💰 Initializing Paystack: ${reference} for ${user.email}`);
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email: user.email,
       amount: amountInKobo,
-      currency: 'KES',
+      currency: process.env.PAYSTACK_CURRENCY || 'KES',  // 7. Currency from env
       reference: reference,
       callback_url: callbackUrl,
       metadata: { plan, username: user.username, user_id: user._id.toString() }
     }, {
       headers: { Authorization: `Bearer ${paystackSecretKey}`, 'Content-Type': 'application/json' }
     });
+
     await Transaction.create({
       reference,
       user: user.username,
@@ -647,9 +683,11 @@ app.post('/api/pesapal/pay', async (req, res) => {
       status: 'pending',
       paystackResponse: response.data
     });
+
     if (response.data.status) {
       res.json({ success: true, authorizationUrl: response.data.data.authorization_url, reference });
     } else {
+      console.error('Paystack init error:', response.data);
       res.status(400).json({ error: response.data.message || 'Payment initialization failed' });
     }
   } catch (err) {
@@ -669,15 +707,26 @@ app.get('/api/transaction/:reference', async (req, res) => {
   }
 });
 
+// 4. Prevent duplicate processing in callback
 app.get('/api/payment/callback', async (req, res) => {
   const { reference } = req.query;
   if (!reference) return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
+
   try {
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     const verification = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
       headers: { Authorization: `Bearer ${secretKey}` }
     });
+
     const transaction = await Transaction.findOne({ reference });
+
+    // 4. Duplicate check
+    if (transaction && transaction.status === "success") {
+      return res.redirect(
+        `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`
+      );
+    }
+
     let status = 'failed';
     if (transaction) {
       status = verification.data.data.status === 'success' ? 'success' : 'failed';
@@ -685,6 +734,7 @@ app.get('/api/payment/callback', async (req, res) => {
       transaction.paystackResponse = verification.data;
       await transaction.save();
     }
+
     if (verification.data.status && verification.data.data.status === 'success') {
       const meta = verification.data.data.metadata;
       const plan = meta?.plan;
@@ -726,17 +776,38 @@ app.get('/api/payment/callback', async (req, res) => {
   }
 });
 
+// 2 & 3. Webhook with signature verification and duplicate prevention
 app.post('/api/payment/webhook', async (req, res) => {
+  const signature = req.headers['x-paystack-signature'];
+  const hash = crypto
+    .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+    .update(JSON.stringify(req.body))
+    .digest('hex');
+
+  if (signature !== hash) {
+    console.log("❌ Invalid webhook signature");
+    return res.sendStatus(401);
+  }
+
   const event = req.body;
-  console.log('Webhook received:', event);
+  console.log("Webhook received:", event);
+
   if (event.event === 'charge.success') {
     const reference = event.data.reference;
     const transaction = await Transaction.findOne({ reference });
-    if (transaction) {
-      transaction.status = 'success';
-      transaction.paystackResponse = event;
-      await transaction.save();
+
+    // 3. Prevent duplicate processing
+    if (!transaction) {
+      return res.json({ status: "transaction_not_found" });
     }
+    if (transaction.status === "success") {
+      return res.json({ status: "already_processed" });
+    }
+
+    transaction.status = 'success';
+    transaction.paystackResponse = event;
+    await transaction.save();
+
     const metadata = event.data.metadata;
     const plan = metadata?.plan;
     const username = metadata?.username;
@@ -761,7 +832,7 @@ app.post('/api/payment/webhook', async (req, res) => {
   res.json({ status: 'received' });
 });
 
-// ==================== Admin Routes ====================
+// ==================== Admin ====================
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 
@@ -799,7 +870,12 @@ app.post('/admin/user/:id/update-subscription', adminAuth, async (req, res) => {
   const { active, plan, expiresAt } = req.body;
   const updates = { 'subscription.active': active };
   if (plan) updates['subscription.plan'] = plan;
-  if (expiresAt) updates['subscription.expiresAt'] = new Date(expiresAt);
+  if (active && !expiresAt) {
+    const days = plan === 'weekly' ? 7 : 30;
+    updates['subscription.expiresAt'] = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  } else if (expiresAt) {
+    updates['subscription.expiresAt'] = new Date(expiresAt);
+  }
   await User.findByIdAndUpdate(req.params.id, updates);
   res.json({ success: true });
 });

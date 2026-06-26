@@ -498,7 +498,7 @@
   async function subscribe(plan) {
     if (!token) { showLogin(); return; }
     try {
-      const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ plan }) });
+      const res = await fetch('/api/paystack/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ plan }) });
       const data = await res.json();
       if (data.success && data.authorizationUrl) {
         localStorage.setItem('pendingReference', data.reference);
