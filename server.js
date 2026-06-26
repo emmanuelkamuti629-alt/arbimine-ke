@@ -18,7 +18,7 @@ mongoose.connect(MONGO_URI)
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ==================== Email setup ====================
+// ==================== Email setup (async, non‑blocking) ====================
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = process.env.SMTP_PORT || 587;
 const SMTP_USER = process.env.SMTP_USER;
@@ -39,23 +39,21 @@ if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
 }
 
 async function sendEmail(to, subject, html) {
-  if (!transporter) {
-    console.log('📧 Email not sent (no transporter):', subject);
-    return false;
-  }
+  if (!transporter) return false;
   try {
-    await transporter.sendMail({
-      from: SMTP_FROM,
-      to,
-      subject,
-      html
-    });
+    await transporter.sendMail({ from: SMTP_FROM, to, subject, html });
     console.log(`📧 Email sent to ${to}: ${subject}`);
     return true;
   } catch (err) {
     console.error('Email error:', err.message);
     return false;
   }
+}
+
+// Fire‑and‑forget email (does not block the response)
+function sendEmailAsync(to, subject, html) {
+  // We don't await – just let it run in background
+  sendEmail(to, subject, html).catch(() => {});
 }
 
 // ==================== Schemas ====================
@@ -365,7 +363,7 @@ setInterval(fastScan, FAST_SCAN_INTERVAL);
 setInterval(() => { if (cachedOpportunities.length > 0) detailScan(); }, DETAIL_SCAN_INTERVAL);
 setTimeout(() => { if (cachedOpportunities.length > 0) detailScan(); }, 30000);
 
-// ==================== User Auth Routes ====================
+// ==================== User Auth Routes (fixed) ====================
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -376,8 +374,8 @@ app.post('/api/register', async (req, res) => {
     await user.save();
     const token = generateToken();
     await new Session({ token, username }).save();
-    // Send welcome email
-    await sendEmail(
+    // Fire-and-forget welcome email
+    sendEmailAsync(
       email,
       'Welcome to ArbiMine!',
       `<h2>Welcome ${username}!</h2><p>Thank you for joining ArbiMine.</p><p>You can now start scanning live arbitrage opportunities.</p>`
@@ -392,14 +390,26 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    if (!email || !password) {
+      console.log('Login missing email or password');
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+    console.log(`Login attempt for: ${email}`);
     const user = await User.findOne({ email });
-    if (!user || user.passwordHash !== hashPassword(password))
+    if (!user) {
+      console.log(`User not found: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const valid = user.passwordHash === hashPassword(password);
+    if (!valid) {
+      console.log(`Invalid password for: ${email}`);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
     const token = generateToken();
     await new Session({ token, username: user.username }).save();
-    // Send login alert
-    await sendEmail(
+    console.log(`Login successful: ${user.username}`);
+    // Fire-and-forget login alert
+    sendEmailAsync(
       email,
       '🔐 New login to your ArbiMine account',
       `<p>Your ArbiMine account was just logged into at ${new Date().toLocaleString()}.</p><p>If this was you, ignore this message.</p>`
@@ -491,7 +501,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   res.json(result);
 });
 
-// ==================== Payment (with transaction logging & email) ====================
+// ==================== Payment (with transaction logging & async email) ====================
 function sanitizeReference(str) {
   return str.replace(/[^a-zA-Z0-9_\-\.]/g, '_').replace(/\s/g, '_');
 }
@@ -578,10 +588,9 @@ app.get('/api/payment/callback', async (req, res) => {
           { username },
           { 'subscription.active': true, 'subscription.plan': plan, 'subscription.expiresAt': expiresAt }
         );
-        // Send receipt email
         const user = await User.findOne({ username });
         if (user) {
-          await sendEmail(
+          sendEmailAsync(
             user.email,
             '✅ Payment Successful – ArbiMine Pro Activated',
             `<h2>Thank you for upgrading!</h2><p>Your ${plan} subscription is now active until ${expiresAt.toLocaleString()}.</p><p>Reference: ${reference}</p>`
@@ -590,12 +599,11 @@ app.get('/api/payment/callback', async (req, res) => {
       }
       return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
     } else {
-      // Payment failed – send alert
       const tx = await Transaction.findOne({ reference });
       if (tx && tx.user) {
         const user = await User.findOne({ username: tx.user });
         if (user) {
-          await sendEmail(
+          sendEmailAsync(
             user.email,
             '❌ Payment Failed – ArbiMine',
             `<p>Your payment of KES ${tx.amount} for ${tx.plan} plan failed.</p><p>Reference: ${reference}</p><p>Please try again.</p>`
@@ -633,7 +641,7 @@ app.post('/api/payment/webhook', async (req, res) => {
       );
       const user = await User.findOne({ username });
       if (user) {
-        await sendEmail(
+        sendEmailAsync(
           user.email,
           '✅ Payment Successful – ArbiMine Pro Activated (Webhook)',
           `<h2>Thank you for upgrading!</h2><p>Your ${plan} subscription is now active until ${expiresAt.toLocaleString()}.</p><p>Reference: ${reference}</p>`
