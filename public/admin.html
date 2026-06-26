@@ -13,23 +13,23 @@
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 10px; }
     .glass { background: rgba(255,255,255,.05); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,.08); border-radius: 28px; box-shadow: 0 15px 40px rgba(0,0,0,.35); }
-    .btn { background: linear-gradient(135deg, #22c55e, #16a34a); padding: 12px 20px; border-radius: 16px; font-weight: 600; transition: .3s; cursor: pointer; border: none; color: white; }
+    .btn { background: linear-gradient(135deg, #22c55e, #16a34a); padding: 10px 18px; border-radius: 16px; font-weight: 600; transition: .3s; cursor: pointer; border: none; color: white; font-size: 14px; }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(34,197,94,.3); }
     .logo { font-size: 28px; font-weight: 800; background: linear-gradient(90deg, #22c55e, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    header { position: sticky; top: 0; z-index: 999; background: rgba(7,11,26,.9); backdrop-filter: blur(15px); padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,.05); }
+    header { position: sticky; top: 0; z-index: 999; background: rgba(7,11,26,.9); backdrop-filter: blur(15px); padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .stat-card { padding: 16px; border-radius: 20px; background: #0f172a; border: 1px solid rgba(255,255,255,.04); }
     .stat-card .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
     .card { background: #0f172a; border-radius: 24px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,.04); }
     .table-wrap { overflow-x: auto; border-radius: 20px; }
     table { width: 100%; border-collapse: collapse; min-width: 600px; }
-    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.04); font-size: 14px; }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.04); font-size: 14px; }
     th { color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: .5px; }
     .badge { display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: 600; }
     .badge-green { background: #14532d; color: #4ade80; }
     .badge-red { background: #5a1a1a; color: #ff6b6b; }
     .badge-yellow { background: #5a4a1a; color: #ffb020; }
-    button.action { padding: 6px 14px; border-radius: 12px; border: none; cursor: pointer; font-weight: 600; transition: .2s; font-size: 12px; margin: 2px; }
-    button.action:hover { transform: scale(1.05); }
+    .action { padding: 4px 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; transition: .2s; font-size: 12px; margin: 2px; }
+    .action:hover { transform: scale(1.05); }
     .action-green { background: #14532d; color: #4ade80; }
     .action-red { background: #5a1a1a; color: #ff6b6b; }
     .action-blue { background: #1a2a5a; color: #60a5fa; }
@@ -43,7 +43,23 @@
     .toast.info { border-left-color: #3b82f6; color: #3b82f6; }
     .chart-container { background: #0f172a; border-radius: 20px; padding: 16px; margin-top: 16px; }
     .chart-container canvas { width: 100% !important; height: 260px !important; }
-    @media (max-width: 640px) { .stat-card .value { font-size: 22px; } }
+    .tab { display: inline-block; padding: 8px 16px; border-radius: 40px; cursor: pointer; transition: .2s; font-weight: 500; }
+    .tab.active { background: #22c55e; color: #0a0c15; }
+    .tab:not(.active):hover { background: rgba(255,255,255,.05); }
+    /* Detail modal */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 9999; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
+    .modal.show { display: flex; }
+    .modal-content { max-width: 700px; width: 100%; background: #0f172a; border-radius: 32px; padding: 24px; border: 1px solid rgba(255,255,255,.06); max-height: 90vh; overflow-y: auto; }
+    .modal-content .close { float: right; font-size: 28px; cursor: pointer; color: #94a3b8; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+    .detail-item { background: rgba(255,255,255,.03); border-radius: 16px; padding: 12px; }
+    .detail-item .label { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
+    .detail-item .value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+    .ai-score-grid-admin { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; margin: 12px 0; }
+    .ai-score-card-admin { background: rgba(255,255,255,.03); border-radius: 12px; padding: 10px; text-align: center; }
+    .ai-score-card-admin .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
+    .ai-score-card-admin .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+    @media (max-width: 640px) { .stat-card .value { font-size: 22px; } .detail-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -58,57 +74,83 @@
 
 <!-- ===== DASHBOARD ===== -->
 <div id="dashboardDiv" class="hidden" style="padding: 18px; padding-bottom: 20px;">
-  <header class="flex justify-between items-center mb-6">
+  <header>
     <div class="logo">ArbiMine Admin</div>
-    <div class="flex gap-3">
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <button class="btn text-sm" onclick="refreshAll()">🔄 Refresh</button>
       <button class="btn text-sm" style="background:#334155;" onclick="logoutAdmin()">Logout</button>
     </div>
   </header>
 
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-    <div class="stat-card"><div class="text-slate-400 text-sm">Total Users</div><div id="statTotalUsers" class="value text-green-400">0</div></div>
-    <div class="stat-card"><div class="text-slate-400 text-sm">Active Users</div><div id="statActiveUsers" class="value text-blue-400">0</div></div>
-    <div class="stat-card"><div class="text-slate-400 text-sm">Total Revenue</div><div id="statRevenue" class="value text-green-400">KES 0</div></div>
-    <div class="stat-card"><div class="text-slate-400 text-sm">Failed Payments</div><div id="statFailed" class="value text-red-400">0</div></div>
-    <div class="stat-card"><div class="text-slate-400 text-sm">Opportunities</div><div id="statOpportunities" class="value text-yellow-400">0</div></div>
-    <div class="stat-card"><div class="text-slate-400 text-sm">Tradable</div><div id="statTradable" class="value text-green-400">0</div></div>
+  <!-- Tabs -->
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+    <span class="tab active" onclick="switchTab('dashboard')">Dashboard</span>
+    <span class="tab" onclick="switchTab('users')">Users</span>
+    <span class="tab" onclick="switchTab('transactions')">Transactions</span>
+    <span class="tab" onclick="switchTab('opportunities')">Opportunities</span>
   </div>
 
-  <!-- Charts -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-    <div class="card"><h3 class="text-lg font-bold mb-2">Revenue (Daily)</h3><div class="chart-container"><canvas id="revenueChart"></canvas></div></div>
-    <div class="card"><h3 class="text-lg font-bold mb-2">Spread Distribution</h3><div class="chart-container"><canvas id="spreadChart"></canvas></div></div>
-  </div>
+  <!-- Dashboard Tab -->
+  <div id="tab-dashboard" class="tab-content">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <div class="stat-card"><div class="text-slate-400 text-sm">Total Users</div><div id="statTotalUsers" class="value text-green-400">0</div></div>
+      <div class="stat-card"><div class="text-slate-400 text-sm">Active Users</div><div id="statActiveUsers" class="value text-blue-400">0</div></div>
+      <div class="stat-card"><div class="text-slate-400 text-sm">Total Revenue</div><div id="statRevenue" class="value text-green-400">KES 0</div></div>
+      <div class="stat-card"><div class="text-slate-400 text-sm">Failed Payments</div><div id="statFailed" class="value text-red-400">0</div></div>
+      <div class="stat-card"><div class="text-slate-400 text-sm">Opportunities</div><div id="statOpportunities" class="value text-yellow-400">0</div></div>
+      <div class="stat-card"><div class="text-slate-400 text-sm">Tradable</div><div id="statTradable" class="value text-green-400">0</div></div>
+    </div>
 
-  <!-- Exchange Health -->
-  <div class="card mb-6">
-    <h3 class="text-lg font-bold mb-3">Exchange Health</h3>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="exchangeHealth">
-      <!-- populated by JS -->
+    <!-- Charts -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="card"><h3 class="text-lg font-bold mb-2">Revenue (Daily)</h3><div class="chart-container"><canvas id="revenueChart"></canvas></div></div>
+      <div class="card"><h3 class="text-lg font-bold mb-2">Spread Distribution</h3><div class="chart-container"><canvas id="spreadChart"></canvas></div></div>
+    </div>
+
+    <!-- Exchange Health -->
+    <div class="card mb-6">
+      <h3 class="text-lg font-bold mb-3">Exchange Health</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="exchangeHealth"></div>
     </div>
   </div>
 
-  <!-- Users Table -->
-  <div class="card mb-6">
-    <h3 class="text-lg font-bold mb-3">Users</h3>
-    <div class="table-wrap">
-      <table id="usersTable">
-        <thead><tr><th>Username</th><th>Email</th><th>Mobile</th><th>Tier</th><th>Expires</th><th>Actions</th></tr></thead>
-        <tbody></tbody>
-      </table>
+  <!-- Users Tab -->
+  <div id="tab-users" class="tab-content hidden">
+    <div class="card mb-6">
+      <h3 class="text-lg font-bold mb-3">Users</h3>
+      <div class="table-wrap">
+        <table id="usersTable">
+          <thead><tr><th>Username</th><th>Email</th><th>Mobile</th><th>Tier</th><th>Expires</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Transactions Table -->
-  <div class="card mb-6">
-    <h3 class="text-lg font-bold mb-3">Payment Transactions</h3>
-    <div class="table-wrap">
-      <table id="transactionsTable">
-        <thead><tr><th>Reference</th><th>User</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody></tbody>
-      </table>
+  <!-- Transactions Tab -->
+  <div id="tab-transactions" class="tab-content hidden">
+    <div class="card mb-6">
+      <h3 class="text-lg font-bold mb-3">Payment Transactions</h3>
+      <div class="table-wrap">
+        <table id="transactionsTable">
+          <thead><tr><th>Reference</th><th>User</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Opportunities Tab -->
+  <div id="tab-opportunities" class="tab-content hidden">
+    <div class="card mb-6">
+      <h3 class="text-lg font-bold mb-3">All Opportunities</h3>
+      <div class="table-wrap">
+        <table id="opportunitiesTable">
+          <thead><tr><th>Symbol</th><th>Buy Exchange</th><th>Sell Exchange</th><th>Buy Price</th><th>Sell Price</th><th>Spread</th><th>Tradable</th><th>Risk</th><th>Action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -124,6 +166,14 @@
   </div>
 </div>
 
+<!-- ===== DETAIL MODAL (for opportunities) ===== -->
+<div id="detailModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeDetailModal()">&times;</span>
+    <div id="detailBody">Loading...</div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast" class="toast"></div>
 
@@ -131,6 +181,8 @@
   let adminToken = localStorage.getItem('adminToken');
   let revenueChartInstance = null;
   let spreadChartInstance = null;
+  let allOpportunities = [];
+  let detailChartInstance = null;
 
   // ========== TOAST ==========
   function showToast(msg, type = 'info') {
@@ -176,6 +228,17 @@
     showToast('Logged out', 'info');
   }
 
+  // ========== TABS ==========
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+    if (tab === 'opportunities') loadOpportunitiesTable();
+    if (tab === 'users') loadUsers();
+    if (tab === 'transactions') loadTransactions();
+  }
+
   // ========== INIT ==========
   if (adminToken) {
     document.getElementById('loginDiv').style.display = 'none';
@@ -191,6 +254,9 @@
     await Promise.all([loadUsers(), loadTransactions(), loadOpportunities(), loadStats()]);
     drawRevenueChart();
     drawSpreadChart();
+    renderExchangeHealth();
+    // Switch to dashboard tab
+    switchTab('dashboard');
   }
 
   // ========== LOAD USERS ==========
@@ -277,31 +343,147 @@
     } catch (e) { showToast('Failed to load transactions', 'error'); }
   }
 
-  // ========== LOAD OPPORTUNITIES ==========
+  // ========== LOAD OPPORTUNITIES (for table) ==========
   async function loadOpportunities() {
     try {
       const res = await fetch('/api/opportunities');
       const data = await res.json();
-      const opps = data.opportunities || [];
-      document.getElementById('statOpportunities').innerText = opps.length;
-      const tradable = opps.filter(o => o.tradable).length;
+      allOpportunities = data.opportunities || [];
+      document.getElementById('statOpportunities').innerText = allOpportunities.length;
+      const tradable = allOpportunities.filter(o => o.tradable).length;
       document.getElementById('statTradable').innerText = tradable;
-      // Sys info
       document.getElementById('sysLastScan').innerText = data.lastScan ? new Date(data.lastScan).toLocaleString() : '—';
       const coins = new Set();
       const networks = new Set();
-      opps.forEach(o => {
+      allOpportunities.forEach(o => {
         coins.add(o.symbol);
         if (o.buyNetworks) Object.keys(o.buyNetworks).forEach(n => networks.add(n));
         if (o.sellNetworks) Object.keys(o.sellNetworks).forEach(n => networks.add(n));
       });
       document.getElementById('sysCoins').innerText = coins.size;
       document.getElementById('sysNetworks').innerText = networks.size;
-      return opps;
+      // Also render table if opportunities tab is active
+      if (document.getElementById('tab-opportunities').classList.contains('hidden') === false) {
+        renderOpportunitiesTable();
+      }
+      return allOpportunities;
     } catch (e) { showToast('Failed to load opportunities', 'error'); return []; }
   }
 
-  // ========== LOAD STATS ==========
+  async function loadOpportunitiesTable() {
+    renderOpportunitiesTable();
+  }
+
+  function renderOpportunitiesTable() {
+    const tbody = document.querySelector('#opportunitiesTable tbody');
+    tbody.innerHTML = '';
+    allOpportunities.slice(0, 200).forEach(o => {
+      const row = tbody.insertRow();
+      row.insertCell(0).innerText = o.symbol;
+      row.insertCell(1).innerText = o.buyExchange;
+      row.insertCell(2).innerText = o.sellExchange;
+      row.insertCell(3).innerText = '$' + o.buyPrice;
+      row.insertCell(4).innerText = '$' + o.sellPrice;
+      row.insertCell(5).innerText = o.spread + '%';
+      row.insertCell(6).innerHTML = o.tradable ? '<span class="badge badge-green">YES</span>' : '<span class="badge badge-red">NO</span>';
+      row.insertCell(7).innerHTML = `<span class="badge ${o.risk === 'low' ? 'badge-green' : o.risk === 'high' ? 'badge-red' : 'badge-yellow'}">${(o.risk || 'medium').toUpperCase()}</span>`;
+      const action = row.insertCell(8);
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'action action-blue';
+      viewBtn.innerText = 'View';
+      viewBtn.onclick = () => openDetailModal(o.id);
+      action.appendChild(viewBtn);
+    });
+  }
+
+  // ========== DETAIL MODAL ==========
+  async function openDetailModal(id) {
+    const modal = document.getElementById('detailModal');
+    const body = document.getElementById('detailBody');
+    body.innerHTML = 'Loading...';
+    modal.classList.add('show');
+    try {
+      const res = await fetch(`/api/opportunity/${id}/details`);
+      const opp = await res.json();
+      displayDetailModal(opp);
+    } catch (e) {
+      body.innerHTML = '<div class="text-red-400">Failed to load details</div>';
+    }
+  }
+
+  function displayDetailModal(opp) {
+    const body = document.getElementById('detailBody');
+    const riskLabel = opp.risk || 'medium';
+    const riskColor = riskLabel === 'low' ? 'text-green-400' : riskLabel === 'high' ? 'text-red-400' : 'text-yellow-400';
+    const tradableText = opp.tradable ? '✅ YES' : '❌ NO';
+    const buy = parseFloat(opp.buyPrice);
+    const sell = parseFloat(opp.sellPrice);
+    const diff = (sell - buy).toFixed(8);
+    const profit = ((sell - buy) * 100).toFixed(2);
+
+    let netHtml = '';
+    const nets = { ...(opp.buyNetworks || {}), ...(opp.sellNetworks || {}) };
+    Object.values(nets).slice(0, 6).forEach(n => {
+      netHtml += `
+        <div class="flex justify-between border-b border-slate-700 py-2">
+          <span class="font-medium">${n.name}</span>
+          <span>Fee: ${n.fee || 0} ${n.feeUnit || ''}</span>
+          <span>Withdraw ${n.withdraw ? '✅' : '❌'}</span>
+          <span>Deposit ${n.deposit ? '✅' : '❌'}</span>
+        </div>
+      `;
+    });
+
+    // AI Scores (mock)
+    const stability = Math.min(95, 70 + Math.random()*25);
+    const liqScore = Math.min(95, 60 + Math.random()*30);
+    const transfer = opp.tradable ? 96 : 45;
+    const volatility = parseFloat(opp.spread) * 5 + 5;
+    const confidence = Math.min(98, 60 + Math.random()*30);
+
+    body.innerHTML = `
+      <div class="flex justify-between items-start">
+        <div><h2 class="text-3xl font-bold">${opp.symbol}</h2><p class="text-slate-400">Buy ${opp.buyExchange} → Sell ${opp.sellExchange}</p></div>
+        <div class="text-right"><div class="text-4xl font-bold text-green-400">${opp.spread}%</div><div class="text-slate-400 text-sm">Spread</div></div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="label">Buy Price</div><div class="value">$${opp.buyPrice}</div></div>
+        <div class="detail-item"><div class="label">Sell Price</div><div class="value">$${opp.sellPrice}</div></div>
+        <div class="detail-item"><div class="label">Price Diff</div><div class="value text-green-400">$${diff}</div></div>
+        <div class="detail-item"><div class="label">Est. Profit</div><div class="value text-green-400">$${profit}</div></div>
+        <div class="detail-item"><div class="label">Tradable</div><div class="value">${tradableText}</div></div>
+        <div class="detail-item"><div class="label">Risk</div><div class="value ${riskColor}">${riskLabel.toUpperCase()}</div></div>
+      </div>
+      <div class="ai-score-grid-admin">
+        <div class="ai-score-card-admin"><div class="label">Spread Stability</div><div class="value text-green-400">${Math.round(stability)}%</div></div>
+        <div class="ai-score-card-admin"><div class="label">Liquidity Score</div><div class="value text-blue-400">${Math.round(liqScore)}%</div></div>
+        <div class="ai-score-card-admin"><div class="label">Transfer Success</div><div class="value text-green-400">${transfer}%</div></div>
+        <div class="ai-score-card-admin"><div class="label">Volatility</div><div class="value text-red-400">${Math.round(volatility)}%</div></div>
+        <div class="ai-score-card-admin"><div class="label">Confidence</div><div class="value text-yellow-400">${Math.round(confidence)}%</div></div>
+      </div>
+      <div class="glass p-3 mt-3"><h4 class="font-bold">AI Recommendation</h4><p class="text-slate-300 text-sm">Buy on ${opp.buyExchange}, sell on ${opp.sellExchange}. ${opp.tradable ? 'Transfer using available networks.' : 'No common network found.'} Estimated time: 3-5 min.</p></div>
+      <div class="mt-3"><h4 class="font-bold mb-2">Networks</h4>${netHtml || '<div class="text-slate-400">No network data</div>'}</div>
+      <div class="chart-container mt-3"><canvas id="adminDetailChart" style="height:200px;"></canvas></div>
+      <button class="btn w-full mt-4" onclick="closeDetailModal()">Close</button>
+    `;
+
+    // Draw chart for detail modal
+    const ctx = document.getElementById('adminDetailChart').getContext('2d');
+    if (detailChartInstance) detailChartInstance.destroy();
+    const spreadData = [parseFloat(opp.spread)*0.6, parseFloat(opp.spread)*0.75, parseFloat(opp.spread)*0.9, parseFloat(opp.spread)*1.05, parseFloat(opp.spread)*0.95, parseFloat(opp.spread)];
+    detailChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: { labels: ['1','2','3','4','5','Now'], datasets: [{ label: 'Spread %', data: spreadData, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.2)', fill: true, tension: .4, pointRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'white', font: { size: 10 } } } }, scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,.04)' } } } }
+    });
+  }
+
+  function closeDetailModal() {
+    document.getElementById('detailModal').classList.remove('show');
+    if (detailChartInstance) { detailChartInstance.destroy(); detailChartInstance = null; }
+  }
+
+  // ========== STATS ==========
   async function loadStats() {
     try {
       const [usersRes, txRes] = await Promise.all([
@@ -344,12 +526,10 @@
   async function drawRevenueChart() {
     const ctx = document.getElementById('revenueChart').getContext('2d');
     if (revenueChartInstance) revenueChartInstance.destroy();
-    // Get transactions for revenue
     try {
       const res = await fetch('/admin/transactions', { headers: { Authorization: adminToken } });
       const tx = await res.json();
       const successes = tx.filter(t => t.status === 'success');
-      // Group by date
       const daily = {};
       successes.forEach(t => {
         const date = new Date(t.createdAt).toLocaleDateString();
@@ -373,7 +553,6 @@
       const data = await res.json();
       const opps = data.opportunities || [];
       const spreads = opps.map(o => parseFloat(o.spread)).filter(s => s > 0);
-      // Bin into 5 bins
       const max = Math.max(...spreads);
       const bins = 5;
       const binSize = max / bins;
@@ -391,8 +570,10 @@
     } catch (e) {}
   }
 
-  // Initial render
-  renderExchangeHealth();
+  // Initial render (called if already logged in)
+  if (adminToken) {
+    renderExchangeHealth();
+  }
 </script>
 </body>
 </html>
