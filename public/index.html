@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,6 +16,7 @@
     .glass { background: rgba(255,255,255,.05); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,.08); border-radius: 28px; box-shadow: 0 15px 40px rgba(0,0,0,.35); }
     .btn { background: linear-gradient(135deg, #22c55e, #16a34a); padding: 12px 20px; border-radius: 16px; font-weight: 600; transition: .3s; cursor: pointer; border: none; color: white; }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(34,197,94,.3); }
+    .btn-secondary { background: #334155; }
     .logo { font-size: 32px; font-weight: 800; background: linear-gradient(90deg, #22c55e, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     header { position: sticky; top: 0; z-index: 999; background: rgba(7,11,26,.9); backdrop-filter: blur(15px); padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,.05); }
     .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 72px; background: #071226; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,.05); z-index: 999; }
@@ -63,6 +65,14 @@
     .calc-value { font-size: 22px; font-weight: 700; margin-top: 4px; }
     .profit-positive { color: #22c55e; }
     .profit-negative { color: #ef4444; }
+    /* Chat styles */
+    .chat-message { padding: 8px 14px; border-radius: 16px; margin-bottom: 8px; max-width: 80%; }
+    .chat-message.user { background: #0f172a; align-self: flex-end; }
+    .chat-message.admin { background: #1a2a5a; align-self: flex-start; }
+    .chat-container { display: flex; flex-direction: column; max-height: 400px; overflow-y: auto; padding: 12px; background: #0a0f1f; border-radius: 20px; }
+    .chat-input-row { display: flex; gap: 10px; margin-top: 12px; }
+    .chat-input-row input { flex: 1; padding: 12px; border-radius: 40px; background: #0f172a; border: 1px solid rgba(255,255,255,.06); color: white; outline: none; }
+    .chat-input-row input:focus { border-color: #22c55e; }
     @media (max-width: 640px) { .exchange-row { flex-direction: column; } .ai-score-grid { grid-template-columns: 1fr 1fr; } .calculator-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -158,7 +168,7 @@
     </div>
   </div>
 
-  <!-- Opportunities List – only buy/sell and price -->
+  <!-- Opportunities List -->
   <div id="opportunities" class="mt-4">
     <div class="loading-skeleton"></div>
     <div class="loading-skeleton"></div>
@@ -184,7 +194,7 @@
     <div class="glass p-4"><div class="text-slate-400 text-sm">Est. Profit</div><div id="detailProfit" class="text-2xl font-bold mt-1 text-green-400">$0</div></div>
   </div>
 
-  <!-- ===== PROFIT CALCULATOR ===== -->
+  <!-- Profit Calculator -->
   <div class="glass p-5 mt-4">
     <h3 class="text-xl font-bold mb-3">💹 Profit Calculator</h3>
     <div class="flex flex-col sm:flex-row gap-3">
@@ -240,6 +250,21 @@
   </div>
 </div>
 
+<!-- ===== CHAT PAGE (Support) ===== -->
+<div id="chat" class="page">
+  <div class="glass p-5">
+    <h2 class="text-2xl font-bold">💬 Support Chat</h2>
+    <p class="text-slate-400 text-sm">Ask questions or report issues. Admin will reply.</p>
+    <div id="chatMessages" class="chat-container mt-4" style="max-height:400px; overflow-y:auto;">
+      <div class="text-slate-400 text-center">Loading messages...</div>
+    </div>
+    <div class="chat-input-row">
+      <input id="chatInput" placeholder="Type your message..." class="flex-1">
+      <button class="btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== PRO PAGE ===== -->
 <div id="pro" class="page">
   <div class="glass p-6">
@@ -249,7 +274,7 @@
       <div class="glass p-5"><div class="text-3xl font-bold">KES 100</div><div class="mt-3 text-slate-400">Weekly</div><button class="btn w-full mt-5" onclick="subscribe('weekly')">Subscribe</button></div>
       <div class="glass p-5"><div class="text-3xl font-bold">KES 350</div><div class="mt-3 text-slate-400">Monthly</div><button class="btn w-full mt-5" onclick="subscribe('monthly')">Subscribe</button></div>
     </div>
-    <div class="glass p-4 mt-6 text-center"><button class="btn" style="background:#334155;" onclick="checkPaymentManually()">Check Payment Status</button><div id="manualCheckMessage" class="text-slate-400 mt-3"></div></div>
+    <div class="glass p-4 mt-6 text-center"><button class="btn btn-secondary w-full" onclick="checkPaymentManually()">Check Payment Status</button><div id="manualCheckMessage" class="text-slate-400 mt-3"></div></div>
   </div>
 </div>
 
@@ -264,13 +289,14 @@
       <div><div class="text-slate-400 text-sm">Plan</div><div id="profilePlan" class="text-xl font-bold mt-1 text-green-400">Free</div></div>
       <div><div class="text-slate-400 text-sm">Expires</div><div id="profileExpiry" class="text-xl mt-1">—</div></div>
     </div>
-    <button class="btn w-full mt-8" style="background:#334155;" onclick="logout()">Logout</button>
+    <button class="btn btn-secondary w-full mt-8" onclick="logout()">Logout</button>
   </div>
 </div>
 
-<!-- ===== BOTTOM NAV ===== -->
+<!-- ===== BOTTOM NAV (with Chat) ===== -->
 <div class="bottom-nav">
   <button class="active" onclick="showPage('home')"><span class="text-2xl">🏠</span><span>Home</span></button>
+  <button onclick="showPage('chat')"><span class="text-2xl">💬</span><span>Support</span></button>
   <button onclick="showPage('pro')"><span class="text-2xl">💎</span><span>Pro</span></button>
   <button onclick="showPage('profile')"><span class="text-2xl">👤</span><span>Profile</span></button>
 </div>
@@ -282,12 +308,12 @@
   // ========== STATE ==========
   let token = localStorage.getItem('token');
   let allOpportunities = [];
-  let currentFiltered = [];
   let chartInstances = {};
   let pendingReference = localStorage.getItem('pendingReference');
   let pollInterval = null;
   let autoRefreshInterval = null;
   let currentDetailOpp = null;
+  let chatPollInterval = null;
 
   // ========== AUTH UI ==========
   function showLogin() {
@@ -331,6 +357,7 @@
         closeModal();
         loadProfile();
         loadOpportunities();
+        loadMessages();
         showToast('✅ Login successful', 'success');
       } else {
         showToast('❌ ' + (data.error || 'Login failed'), 'error');
@@ -353,6 +380,7 @@
         closeModal();
         loadProfile();
         loadOpportunities();
+        loadMessages();
         showToast('✅ Registration successful', 'success');
       } else {
         showToast('❌ ' + (data.error || 'Registration failed'), 'error');
@@ -365,6 +393,7 @@
     token = null;
     showLogin();
     showToast('Logged out', 'info');
+    if (chatPollInterval) clearInterval(chatPollInterval);
   }
 
   // ========== PAGE SWITCH ==========
@@ -372,10 +401,11 @@
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(page).classList.add('active');
     document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
-    const map = { home: 0, pro: 1, profile: 2 };
+    const map = { home: 0, chat: 1, pro: 2, profile: 3 };
     if (map[page] !== undefined) document.querySelectorAll('.bottom-nav button')[map[page]].classList.add('active');
     if (page === 'home') loadOpportunities();
     if (page === 'profile') loadProfile();
+    if (page === 'chat') loadMessages();
   }
 
   // ========== PAYMENT POLLING ==========
@@ -396,7 +426,7 @@
     }
   }
   window.onload = () => {
-    if (token) { loadProfile(); loadOpportunities(); }
+    if (token) { loadProfile(); loadOpportunities(); loadMessages(); }
     else showLogin();
     checkPaymentStatus();
     if (pendingReference) startPolling(pendingReference);
@@ -404,6 +434,12 @@
     autoRefreshInterval = setInterval(() => {
       if (document.getElementById('home').classList.contains('active')) loadOpportunities();
     }, 30000);
+    // Chat polling every 10s
+    if (token) {
+      chatPollInterval = setInterval(() => {
+        if (document.getElementById('chat').classList.contains('active')) loadMessages();
+      }, 10000);
+    }
   };
 
   function startPolling(ref) {
@@ -522,7 +558,6 @@
       if (tradableFilter === 'nontradable' && o.tradable) return false;
       return true;
     });
-    currentFiltered = filtered;
     renderOpportunities(filtered);
   }
 
@@ -594,13 +629,11 @@
     document.getElementById('aiRisk').innerText = riskLabel.toUpperCase();
     document.getElementById('aiRisk').className = 'value ' + (riskLabel === 'low' ? 'text-green-400' : riskLabel === 'high' ? 'text-red-400' : 'text-yellow-400');
 
-    // Recommendation
     const rec = `Buy on ${opp.buyExchange} and sell on ${opp.sellExchange}. ` +
                 (opp.tradable ? 'Transfer using available networks. ' : 'No common network found. Check manually. ') +
                 `Estimated completion time: 3-5 minutes. Confidence: ${Math.round(confidence)}%. Risk: ${riskLabel.toUpperCase()}.`;
     document.getElementById('aiRecommendation').innerText = rec;
 
-    // Networks
     let netHtml = '';
     const nets = { ...(opp.buyNetworks || {}), ...(opp.sellNetworks || {}) };
     Object.values(nets).slice(0, 6).forEach(n => {
@@ -615,7 +648,6 @@
     });
     document.getElementById('detailNetworks').innerHTML = netHtml || '<div class="text-slate-400">No network data</div>';
 
-    // Charts
     const spreadData = [parseFloat(opp.spread)*0.6, parseFloat(opp.spread)*0.75, parseFloat(opp.spread)*0.9, parseFloat(opp.spread)*1.05, parseFloat(opp.spread)*0.95, parseFloat(opp.spread)];
     drawChart('spreadChart', 'Spread %', spreadData, '#22c55e');
     const priceData = [parseFloat(opp.buyPrice)*0.98, parseFloat(opp.buyPrice)*0.99, parseFloat(opp.buyPrice), parseFloat(opp.sellPrice)*0.99, parseFloat(opp.sellPrice)*1.01, parseFloat(opp.sellPrice)];
@@ -623,12 +655,10 @@
     const liqData = [opp.liquidity*0.8, opp.liquidity*0.9, opp.liquidity, opp.liquidity*0.95, opp.liquidity*0.85, opp.liquidity];
     drawChart('liquidityChart', 'Liquidity', liqData, '#8b5cf6');
 
-    // Calculator
     document.getElementById('investmentInput').value = 100;
     calculateProfit();
   }
 
-  // ========== PROFIT CALCULATOR ==========
   function calculateProfit() {
     if (!currentDetailOpp) return;
     const opp = currentDetailOpp;
@@ -700,7 +730,6 @@
     document.getElementById('calcROI').className = 'calc-value ' + (roi >= 0 ? 'profit-positive' : 'profit-negative');
   }
 
-  // ========== CHARTS ==========
   function drawChart(id, label, data, color) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
@@ -713,9 +742,50 @@
     });
   }
 
+  // ========== CHAT ==========
+  async function loadMessages() {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/messages', { headers: { Authorization: token } });
+      const msgs = await res.json();
+      const container = document.getElementById('chatMessages');
+      if (!msgs.length) {
+        container.innerHTML = '<div class="text-slate-400 text-center">No messages yet. Send a message to admin.</div>';
+        return;
+      }
+      container.innerHTML = msgs.reverse().map(m => `
+        <div class="chat-message ${m.isAdmin ? 'admin' : 'user'}" style="align-self:${m.isAdmin ? 'flex-start' : 'flex-end'}; background:${m.isAdmin ? '#1a2a5a' : '#0f172a'};">
+          <div class="text-sm">${m.isAdmin ? '🛡️ Admin' : '👤 You'}</div>
+          <div>${m.content}</div>
+          <div class="text-xs text-slate-400 mt-1">${new Date(m.createdAt).toLocaleString()}</div>
+        </div>
+      `).join('');
+    } catch (e) { console.log(e); }
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const content = input.value.trim();
+    if (!content) return;
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token },
+        body: JSON.stringify({ content })
+      });
+      if (res.ok) {
+        input.value = '';
+        loadMessages();
+      } else {
+        const data = await res.json();
+        showToast('❌ ' + (data.error || 'Message failed'), 'error');
+      }
+    } catch (e) { showToast('❌ Network error', 'error'); }
+  }
+
   // ========== PROFILE ==========
   async function loadProfile() {
-    if (!token) { 
+    if (!token) {
       document.getElementById('profileUsername').innerText = 'Not logged in';
       document.getElementById('profilePlan').innerText = 'Free';
       return;
@@ -745,7 +815,7 @@
 
   // ========== INIT ==========
   if (!token) showLogin();
-  else { loadProfile(); loadOpportunities(); }
+  else { loadProfile(); loadOpportunities(); loadMessages(); }
 </script>
 </body>
 </html>
