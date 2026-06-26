@@ -18,7 +18,7 @@ mongoose.connect(MONGO_URI)
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ==================== Email setup (async, non‑blocking) ====================
+// ==================== Email setup ====================
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = process.env.SMTP_PORT || 587;
 const SMTP_USER = process.env.SMTP_USER;
@@ -50,9 +50,7 @@ async function sendEmail(to, subject, html) {
   }
 }
 
-// Fire‑and‑forget email (does not block the response)
 function sendEmailAsync(to, subject, html) {
-  // We don't await – just let it run in background
   sendEmail(to, subject, html).catch(() => {});
 }
 
@@ -83,9 +81,22 @@ const transactionSchema = new mongoose.Schema({
   paystackResponse: mongoose.Schema.Types.Mixed,
   createdAt: { type: Date, default: Date.now }
 });
+const messageSchema = new mongoose.Schema({
+  user: { type: String, required: true },
+  isAdmin: { type: Boolean, default: false },
+  content: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+const blockedUserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  blockedAt: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('User', userSchema);
 const Session = mongoose.model('Session', sessionSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
+const Message = mongoose.model('Message', messageSchema);
+const BlockedUser = mongoose.model('BlockedUser', blockedUserSchema);
 
 const hashPassword = p => crypto.createHash('sha256').update(p).digest('hex');
 const generateToken = () => crypto.randomBytes(32).toString('hex');
@@ -363,7 +374,7 @@ setInterval(fastScan, FAST_SCAN_INTERVAL);
 setInterval(() => { if (cachedOpportunities.length > 0) detailScan(); }, DETAIL_SCAN_INTERVAL);
 setTimeout(() => { if (cachedOpportunities.length > 0) detailScan(); }, 30000);
 
-// ==================== User Auth Routes (fixed) ====================
+// ==================== User Auth Routes ====================
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, mpesa, password } = req.body;
@@ -374,7 +385,6 @@ app.post('/api/register', async (req, res) => {
     await user.save();
     const token = generateToken();
     await new Session({ token, username }).save();
-    // Fire-and-forget welcome email
     sendEmailAsync(
       email,
       'Welcome to ArbiMine!',
@@ -390,25 +400,12 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      console.log('Login missing email or password');
-      return res.status(400).json({ error: 'Email and password required' });
-    }
-    console.log(`Login attempt for: ${email}`);
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
     const user = await User.findOne({ email });
-    if (!user) {
-      console.log(`User not found: ${email}`);
+    if (!user || user.passwordHash !== hashPassword(password))
       return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    const valid = user.passwordHash === hashPassword(password);
-    if (!valid) {
-      console.log(`Invalid password for: ${email}`);
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
     const token = generateToken();
     await new Session({ token, username: user.username }).save();
-    console.log(`Login successful: ${user.username}`);
-    // Fire-and-forget login alert
     sendEmailAsync(
       email,
       '🔐 New login to your ArbiMine account',
@@ -447,6 +444,117 @@ app.get('/api/user/subscription', async (req, res) => {
     const now = new Date();
     const isActive = user.subscription.active && user.subscription.expiresAt && user.subscription.expiresAt > now;
     res.json({ active: isActive, plan: user.subscription.plan, expiresAt: user.subscription.expiresAt });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ==================== Messaging (Support Chat) ====================
+app.post('/api/messages', async (req, res) => {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const session = await Session.findOne({ token });
+    if (!session) return res.status(401).json({ error: 'Invalid session' });
+    const { content } = req.body;
+    if (!content || !content.trim()) return res.status(400).json({ error: 'Message required' });
+    // Check if blocked
+    const blocked = await BlockedUser.findOne({ username: session.username });
+    if (blocked) return res.status(403).json({ error: 'You have been blocked from sending messages' });
+    const msg = new Message({ user: session.username, isAdmin: false, content: content.trim() });
+    await msg.save();
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/messages', async (req, res) => {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).json({ error: 'No token' });
+  try {
+    const session = await Session.findOne({ token });
+    if (!session) return res.status(401).json({ error: 'Invalid session' });
+    const messages = await Message.find({ user: session.username }).sort({ createdAt: -1 });
+    res.json(messages);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ==================== Admin Messaging Endpoints ====================
+app.get('/admin/messages', adminAuth, async (req, res) => {
+  try {
+    const users = await Message.distinct('user');
+    const conversations = [];
+    for (const user of users) {
+      const lastMsg = await Message.findOne({ user }).sort({ createdAt: -1 });
+      const count = await Message.countDocuments({ user });
+      conversations.push({ _id: user, count, lastMessage: lastMsg });
+    }
+    res.json(conversations);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/admin/messages/:user', adminAuth, async (req, res) => {
+  try {
+    const { user } = req.params;
+    const messages = await Message.find({ user }).sort({ createdAt: -1 });
+    res.json(messages);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/admin/messages', adminAuth, async (req, res) => {
+  try {
+    const { userId, content } = req.body;
+    if (!userId || !content) return res.status(400).json({ error: 'User and content required' });
+    const msg = new Message({ user: userId, isAdmin: true, content: content.trim() });
+    await msg.save();
+    // Send email notification to user if they have an email
+    const user = await User.findOne({ username: userId });
+    if (user) {
+      sendEmailAsync(
+        user.email,
+        '📩 Admin Reply from ArbiMine Support',
+        `<p>You have received a new reply from ArbiMine admin:</p><p><em>${content}</em></p><p>Login to your account to view the full conversation.</p>`
+      );
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/admin/block/:username', adminAuth, async (req, res) => {
+  try {
+    const { username } = req.params;
+    await BlockedUser.findOneAndUpdate(
+      { username },
+      { username },
+      { upsert: true }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/admin/unblock/:username', adminAuth, async (req, res) => {
+  try {
+    const { username } = req.params;
+    await BlockedUser.deleteOne({ username });
+    res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
