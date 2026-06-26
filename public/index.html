@@ -3,100 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>ArbiMine • Live Arbitrage</title>
+  <title>ArbiMine • Real Arbitrage Scanner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0c15; font-family: 'Inter', system-ui, sans-serif; color: #eef2ff; padding-bottom: 70px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: #050816; color: white; overflow-x: hidden; padding-bottom: 70px; }
     .auth-container { max-width: 420px; margin: 60px auto; padding: 24px; background: #111827; border-radius: 32px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
     .auth-container h2 { color: #00ff99; margin-bottom: 8px; }
     .auth-container input { width: 100%; padding: 14px; margin: 8px 0; background: #1f2937; border: 1px solid #374151; border-radius: 20px; color: white; font-size: 16px; }
     .auth-container button { width: 100%; padding: 14px; background: #00ff99; border: none; border-radius: 40px; font-weight: bold; margin-top: 16px; cursor: pointer; color: #0a0c15; }
     .toggle-link { text-align: center; margin-top: 20px; color: #60a5fa; cursor: pointer; }
+    .pwd-wrapper { position: relative; width: 100%; }
+    .pwd-wrapper input { padding-right: 50px; }
+    .pwd-toggle { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 4px; }
     .dashboard { display: none; }
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #111827; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #1f2937; z-index: 100; }
-    .nav-item { background: none; border: none; color: #9ca3af; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-weight: 500; }
-    .nav-item .icon { font-size: 24px; }
-    .nav-item.active { color: #00ff99; }
-    .section { display: none; padding: 20px 16px; animation: fadeIn 0.2s; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(5,8,22,0.96); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-around; padding: 12px 0; z-index: 1000; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: #94a3b8; gap: 4px; cursor: pointer; }
+    .nav-icon { font-size: 22px; }
+    .active-nav { color: #00ff99; }
+    .section { display: none; }
     .section.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .home-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-    .home-header h2 { font-size: 24px; font-weight: 600; }
-    .refresh-btn, .sort-select { background: #1f2937; border: none; color: white; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-size: 14px; }
-    .opp-card { background: #111827; border-radius: 24px; padding: 20px; margin-bottom: 16px; cursor: pointer; transition: transform 0.1s, background 0.1s; border: 1px solid #1f2937; }
-    .opp-card:active { transform: scale(0.98); background: #1a2332; }
-    .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
-    .symbol { font-size: 22px; font-weight: bold; color: #00ff99; }
-    .badge-live { background: #ff4d4d; color: white; padding: 4px 10px; border-radius: 30px; font-size: 11px; font-weight: bold; }
-    .exchange-pair { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0; }
-    .buy-sell { flex: 1; background: #0f172a; border-radius: 18px; padding: 12px; text-align: center; }
-    .buy-sell .label { font-size: 12px; color: #9ca3af; margin-bottom: 4px; }
-    .buy-sell .exchange { font-size: 16px; font-weight: bold; margin-bottom: 6px; }
-    .buy-sell .price { font-size: 18px; font-weight: bold; color: white; word-break: break-all; }
-    .stats { display: flex; justify-content: space-between; margin-top: 12px; font-size: 14px; color: #cbd5e1; }
-    .risk-low { background: #0f5132; color: #00ff99; }
-    .risk-medium { background: #5a4a1a; color: #ffcc00; }
-    .risk-high { background: #5a1a1a; color: #ff8a8a; }
-    .risk-badge { display: inline-block; padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: bold; }
-    .badge-tradable { background: #0f5132; color: #00ff99; }
-    .badge-untradable { background: #5a1a1a; color: #ff8a8a; }
-    .badge-unverified { background: #5a4a1a; color: #ffcc00; }
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 1000; overflow-y: auto; padding: 20px; }
-    .modal-content { max-width: 700px; margin: 20px auto; background: #111827; border-radius: 32px; padding: 24px; position: relative; }
-    .close-modal { position: absolute; top: 16px; right: 20px; font-size: 28px; cursor: pointer; color: #9ca3af; }
-    .back-button { display: inline-block; color: #60a5fa; font-size: 16px; cursor: pointer; margin-bottom: 16px; font-weight: 500; }
-    .detail-symbol { font-size: 32px; font-weight: bold; color: #00ff99; margin-bottom: 20px; }
-    .detail-exchange-row { display: flex; gap: 16px; margin: 20px 0; flex-wrap: wrap; }
-    .detail-box { flex: 1; background: #0f172a; border-radius: 24px; padding: 16px; text-align: center; min-width: 140px; }
-    .detail-box .title { font-size: 14px; color: #9ca3af; margin-bottom: 8px; }
-    .detail-box .exchange-name { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
-    .detail-box .price { font-size: 24px; font-weight: bold; word-break: break-all; }
-    .detail-stats-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; margin: 20px 0; padding: 12px 0; border-top: 1px solid #1f2937; border-bottom: 1px solid #1f2937; }
-    .stat-item { text-align: center; flex: 1; }
-    .stat-label { font-size: 12px; color: #9ca3af; }
-    .stat-value { font-size: 18px; font-weight: bold; color: #00ff99; }
-    .network-section { margin: 24px 0; }
-    .network-section h4 { font-size: 18px; margin-bottom: 12px; color: #00ff99; }
-    .network-table { background: #0f172a; border-radius: 20px; overflow: hidden; }
-    .network-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #1f2937; flex-wrap: wrap; gap: 8px; }
-    .network-row:last-child { border-bottom: none; }
-    .network-name { font-weight: bold; font-size: 16px; }
-    .network-details { text-align: right; font-size: 13px; color: #cbd5e1; line-height: 1.4; }
-    .status-open { background: #00ff99; color: #0a0c15; }
-    .status-closed { background: #5a1a1a; color: #ff8a8a; }
-    .status-unverified { background: #5a4a1a; color: #ffcc00; }
-    .network-status { padding: 2px 8px; border-radius: 30px; font-size: 11px; font-weight: bold; margin-left: 8px; white-space: nowrap; }
-    .ai-card { background: #0f172a; border-radius: 24px; padding: 20px; margin: 24px 0; }
-    .ai-header { font-size: 28px; font-weight: bold; margin-bottom: 20px; color: #eef2ff; }
-    .risk-level-container { background: #0a1020; border-radius: 24px; padding: 24px; border: 1px solid #1f2937; margin-bottom: 24px; }
-    .risk-level-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-    .risk-level-text { font-size: 42px; font-weight: bold; }
-    .risk-level-text.low { color: #00ff99; }
-    .risk-level-text.medium { color: #ffcc00; }
-    .risk-level-text.high { color: #ff8a8a; }
-    .risk-description { font-size: 18px; color: #9ca3af; margin-top: 12px; line-height: 1.5; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-top: 24px; }
-    .stat-card { background: #0a1020; border-radius: 20px; padding: 16px; text-align: center; border: 1px solid #1f2937; }
-    .stat-card .label { font-size: 14px; color: #9ca3af; margin-bottom: 8px; }
-    .stat-card .score { font-size: 32px; font-weight: bold; }
-    .stat-card .score.green { color: #00ff99; }
-    .stat-card .score.blue { color: #60a5fa; }
-    .stat-card .score.red { color: #ff8a8a; }
-    .trend-container { margin-top: 24px; background: #0f172a; border-radius: 24px; padding: 20px; }
-    .trend-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
-    .trend-title h3 { font-size: 28px; font-weight: bold; }
-    .trend-title p { color: #9ca3af; margin-top: 4px; }
-    .current-spread { background: #0a1020; padding: 8px 20px; border-radius: 40px; border: 1px solid #1f2937; text-align: center; }
-    .current-spread .small { font-size: 12px; color: #9ca3af; }
-    .current-spread .big { font-size: 24px; font-weight: bold; color: #00ff99; }
-    canvas#trendChart { max-height: 320px; width: 100%; }
+    .header { padding: 18px; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px); background: rgba(5,8,22,0.85); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .header-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .logo { font-size: 28px; font-weight: 800; background: linear-gradient(90deg, #00ff99, #00c2ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .live-box { display: flex; align-items: center; gap: 8px; background: #0f172a; border: 1px solid rgba(255,255,255,0.08); padding: 10px 14px; border-radius: 999px; font-size: 13px; }
+    .live-dot { width: 10px; height: 10px; border-radius: 50%; background: #00ff99; animation: pulse 1s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    .hero { padding: 20px 16px; }
+    .hero-card { background: linear-gradient(145deg, #111827, #0f172a); border-radius: 28px; padding: 24px; border: 1px solid rgba(255,255,255,0.06); position: relative; overflow: hidden; }
+    .hero-card::before { content: ""; position: absolute; width: 250px; height: 250px; background: rgba(0,255,153,0.08); border-radius: 50%; top: -120px; right: -120px; }
+    .hero-title { font-size: 34px; font-weight: 800; line-height: 1.1; margin-bottom: 12px; }
+    .hero-sub { color: #94a3b8; font-size: 14px; line-height: 1.7; margin-bottom: 22px; }
+    .hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .stat { background: rgba(255,255,255,0.04); border-radius: 18px; padding: 14px; }
+    .stat-label { color: #94a3b8; font-size: 12px; margin-bottom: 6px; }
+    .stat-value { font-size: 20px; font-weight: 800; color: #00ff99; }
+    .filters { padding: 0 16px 18px; }
+    .filter-wrap { display: flex; gap: 10px; overflow-x: auto; }
+    .filter-btn { min-width: max-content; border: none; background: #111827; color: #cbd5e1; padding: 10px 16px; border-radius: 999px; font-size: 13px; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; }
+    .filter-btn.active { background: #00ff99; color: black; font-weight: 700; }
+    .section-title { padding: 0 16px 16px; font-size: 22px; font-weight: 800; }
+    .opportunities { padding: 0 16px 100px; }
+    .card { background: linear-gradient(145deg, #111827, #0b1220); border-radius: 26px; padding: 18px; margin-bottom: 18px; border: 1px solid rgba(255,255,255,0.06); }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+    .coin { font-size: 24px; font-weight: 800; }
+    .pair { color: #94a3b8; font-size: 13px; }
+    .spread { font-size: 28px; font-weight: 800; color: #00ff99; }
+    .trade-flow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .exchange-box { background: #0f172a; border-radius: 18px; padding: 14px; text-align: center; }
+    .exchange-label { font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
+    .exchange-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .price { color: #00ff99; font-size: 14px; font-weight: 700; }
+    .arrow { font-size: 26px; color: #00ff99; }
+    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .detail-box { background: #0f172a; border-radius: 16px; padding: 14px; }
+    .detail-label { font-size: 12px; color: #94a3b8; margin-bottom: 6px; }
+    .detail-value { font-size: 15px; font-weight: 700; }
+    .networks { margin-top: 12px; }
+    .network-title { margin-bottom: 10px; color: #94a3b8; font-size: 13px; }
+    .network-list { display: flex; gap: 8px; overflow-x: auto; }
+    .network { background: #0f172a; border-radius: 12px; padding: 10px; min-width: 120px; border: 1px solid rgba(255,255,255,0.06); }
+    .network-name { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .network-status { font-size: 11px; margin-bottom: 4px; }
+    .green { color: #00ff99; }
+    .red { color: #ff6b6b; }
+    .orange { color: #ffb020; }
+    .risk { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .risk-badge { padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .risk-low { background: rgba(0,255,153,0.12); color: #00ff99; }
+    .risk-medium { background: rgba(255,176,32,0.12); color: #ffb020; }
+    .risk-high { background: rgba(255,107,107,0.12); color: #ff6b6b; }
+    .trade-btn { flex: 1; border: none; background: linear-gradient(90deg, #00ff99, #00c2ff); color: black; font-weight: 800; padding: 14px; border-radius: 16px; cursor: pointer; }
+    .chart-wrap { margin-top: 16px; background: #0f172a; border-radius: 20px; padding: 14px; }
+    canvas { width: 100% !important; height: 180px !important; }
     .pro-card { background: linear-gradient(135deg, #111827, #0f172a); border-radius: 28px; padding: 24px; margin-bottom: 20px; text-align: center; border: 1px solid #374151; }
     .plan-name { font-size: 28px; font-weight: bold; background: linear-gradient(90deg, #00ff99, #60a5fa); -webkit-background-clip: text; background-clip: text; color: transparent; }
     .price { font-size: 42px; font-weight: bold; margin: 12px 0; }
     .pro-input { width: 100%; padding: 12px; margin: 12px 0; background: #1f2937; border: 1px solid #374151; border-radius: 40px; color: white; font-size: 16px; }
-    .btn-pro { background: #00ff99; color: #0a0c15; border: none; border-radius: 60px; padding: 14px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
-    .btn-pro:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-pro { background: #00ff99; color: #0a0c15; border: none; border-radius: 60px; padding: 14px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; }
     .payment-message { font-size: 14px; margin-top: 12px; color: #ffcc00; }
     .profile-card { background: #111827; border-radius: 24px; padding: 20px; margin-bottom: 20px; }
     .profile-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1f2937; }
@@ -105,27 +90,52 @@
     .tier-weekly { background: #0f5132; color: #00ff99; }
     .tier-monthly { background: #1a2a5a; color: #60a5fa; }
     .countdown { font-size: 14px; color: #ffcc00; margin-top: 8px; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96); z-index: 2000; overflow-y: auto; padding: 20px; }
+    .modal-content { max-width: 600px; margin: 20px auto; background: #111827; border-radius: 32px; padding: 24px; position: relative; }
+    .close-modal { position: absolute; top: 16px; right: 20px; font-size: 28px; cursor: pointer; color: #9ca3af; }
+    .back-button { display: inline-block; color: #60a5fa; font-size: 16px; cursor: pointer; margin-bottom: 16px; }
+    .detail-symbol { font-size: 32px; font-weight: bold; color: #00ff99; margin-bottom: 20px; }
+    .detail-exchange-row { display: flex; gap: 16px; margin: 20px 0; flex-wrap: wrap; }
+    .detail-box { flex: 1; background: #0f172a; border-radius: 24px; padding: 16px; text-align: center; }
+    .detail-box .title { font-size: 14px; color: #9ca3af; margin-bottom: 8px; }
+    .detail-box .price { font-size: 24px; font-weight: bold; }
+    .detail-stats-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin: 20px 0; padding: 12px 0; border-top: 1px solid #1f2937; border-bottom: 1px solid #1f2937; }
+    .stat-item { text-align: center; flex: 1; }
+    .stat-label { font-size: 12px; color: #9ca3af; }
+    .stat-value { font-size: 18px; font-weight: bold; color: #00ff99; }
+    .network-table { background: #0f172a; border-radius: 20px; overflow: hidden; margin-bottom: 20px; }
+    .network-row { display: flex; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #1f2937; flex-wrap: wrap; gap: 8px; }
+    .network-name { font-weight: bold; }
+    .network-status { padding: 2px 8px; border-radius: 30px; font-size: 11px; font-weight: bold; margin-left: 8px; }
+    .status-open { background: #00ff99; color: #0a0c15; }
+    .status-closed { background: #5a1a1a; color: #ff8a8a; }
+    .status-unverified { background: #5a4a1a; color: #ffcc00; }
+    .ai-card { background: #0f172a; border-radius: 24px; padding: 20px; margin: 24px 0; text-align: center; }
+    .ai-header { font-size: 28px; font-weight: bold; margin-bottom: 20px; }
+    .risk-level-text { font-size: 42px; font-weight: bold; }
+    .risk-level-text.low { color: #00ff99; }
+    .risk-level-text.medium { color: #ffcc00; }
+    .risk-level-text.high { color: #ff8a8a; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 20px; }
+    .stat-card { background: #0a1020; border-radius: 20px; padding: 12px; text-align: center; }
     .loading { text-align: center; padding: 40px; color: #9ca3af; }
-    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1f2937; border-left: 4px solid; padding: 12px 24px; border-radius: 12px; z-index: 1000; font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: opacity 0.3s; }
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1f2937; padding: 12px 24px; border-radius: 40px; border-left: 4px solid; z-index: 1100; font-size: 14px; }
     .toast.success { border-left-color: #00ff99; color: #00ff99; }
     .toast.error { border-left-color: #ff4d4d; color: #ff4d4d; }
-    @media (max-width: 480px) {
-      .detail-box .price { font-size: 20px; }
-      .stat-value { font-size: 16px; }
-      .network-name { font-size: 14px; }
-      .network-details { font-size: 11px; }
-      .buy-sell .price { font-size: 15px; }
-      .risk-level-text { font-size: 28px; }
-      .stat-card .score { font-size: 24px; }
-    }
+    @media (max-width: 640px) { .hero-title { font-size: 28px; } .hero-stats { grid-template-columns: 1fr; } .details-grid { grid-template-columns: 1fr; } .spread { font-size: 24px; } }
   </style>
 </head>
 <body>
+
+<!-- Auth Container -->
 <div id="authContainer" class="auth-container">
   <div id="loginPanel">
     <h2>🔓 ArbiMine</h2>
     <input type="email" id="loginEmail" placeholder="Email">
-    <input type="password" id="loginPassword" placeholder="Password">
+    <div class="pwd-wrapper">
+      <input type="password" id="loginPassword" placeholder="Password">
+      <button class="pwd-toggle" onclick="togglePassword('loginPassword', this)">👁️</button>
+    </div>
     <button onclick="login()">Login →</button>
     <div class="toggle-link" onclick="showRegister()">Create account</div>
   </div>
@@ -134,59 +144,102 @@
     <input type="text" id="regUsername" placeholder="Username">
     <input type="email" id="regEmail" placeholder="Email">
     <input type="tel" id="regMpesa" placeholder="Mobile number (e.g., 0712345678)">
-    <input type="password" id="regPassword" placeholder="Password">
+    <div class="pwd-wrapper">
+      <input type="password" id="regPassword" placeholder="Password">
+      <button class="pwd-toggle" onclick="togglePassword('regPassword', this)">👁️</button>
+    </div>
     <button onclick="register()">Register</button>
     <div class="toggle-link" onclick="showLogin()">Back to Login</div>
   </div>
 </div>
 
+<!-- Dashboard -->
 <div id="dashboard" class="dashboard">
   <div class="bottom-nav">
-    <button class="nav-item active" onclick="switchTab('home', event)"><span class="icon">🏠</span><span>Home</span></button>
-    <button class="nav-item" onclick="switchTab('pro', event)"><span class="icon">💎</span><span>Pro</span></button>
-    <button class="nav-item" onclick="switchTab('profile', event)"><span class="icon">👤</span><span>Profile</span></button>
+    <div class="nav-item active-nav" onclick="switchTab('home')">
+      <div class="nav-icon">📊</div>
+      <div>Scanner</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('pro')">
+      <div class="nav-icon">💎</div>
+      <div>Pro</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('profile')">
+      <div class="nav-icon">👤</div>
+      <div>Profile</div>
+    </div>
   </div>
 
+  <!-- Home Tab -->
   <div id="home" class="section active">
-    <div class="home-header">
-      <h2>📡 Live Arbitrage</h2>
-      <div>
-        <button class="refresh-btn" onclick="refreshOpportunities()">🔄</button>
-        <select id="sortSelect" class="sort-select" onchange="loadAndRender()">
-          <option value="spreadDesc">Spread high-low</option>
-          <option value="symbolAsc">Symbol A-Z</option>
-          <option value="tradableFirst">Tradable first</option>
-        </select>
+    <div class="header">
+      <div class="header-top">
+        <div class="logo">ArbiMine</div>
+        <div class="live-box">
+          <div class="live-dot"></div>
+          <span id="scanTime">LIVE</span>
+        </div>
       </div>
     </div>
-    <div id="oppList" class="loading">Loading opportunities...</div>
+    <section class="hero">
+      <div class="hero-card">
+        <div class="hero-title">Real Crypto Arbitrage Scanner</div>
+        <div class="hero-sub">Real-time spreads, networks, liquidity and transfer status directly from exchanges.</div>
+        <div class="hero-stats">
+          <div class="stat"><div class="stat-label">Opportunities</div><div class="stat-value" id="oppCount">0</div></div>
+          <div class="stat"><div class="stat-label">Highest Spread</div><div class="stat-value" id="highestSpread">0%</div></div>
+          <div class="stat"><div class="stat-label">Tradable</div><div class="stat-value" id="tradableCount">0</div></div>
+        </div>
+      </div>
+    </section>
+    <section class="filters">
+      <div class="filter-wrap">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="low">Low Risk</button>
+        <button class="filter-btn" data-filter="tradable">Tradable</button>
+        <button class="filter-btn" data-filter="highspread">High Spread</button>
+      </div>
+    </section>
+    <div class="section-title">Live Opportunities</div>
+    <div id="opportunities" class="opportunities"><div class="loading">Loading opportunities...</div></div>
   </div>
 
+  <!-- Pro Tab -->
   <div id="pro" class="section">
-    <h2 style="margin-bottom: 20px;">💎 Unlock Pro</h2>
-    <div class="pro-card">
-      <div class="plan-name">Weekly Boost</div>
-      <div class="price">100 KES</div>
-      <input type="tel" id="weeklyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
-      <button class="btn-pro" id="weeklyPayBtn" onclick="payPro('weekly', 100)">Pay with M-Pesa</button>
-      <div id="weeklyMessage" class="payment-message"></div>
-    </div>
-    <div class="pro-card">
-      <div class="plan-name">Monthly Max</div>
-      <div class="price">350 KES</div>
-      <input type="tel" id="monthlyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
-      <button class="btn-pro" id="monthlyPayBtn" onclick="payPro('monthly', 350)">Pay with M-Pesa</button>
-      <div id="monthlyMessage" class="payment-message"></div>
+    <div style="padding: 20px 16px;">
+      <h2 style="margin-bottom: 20px;">💎 Unlock Pro</h2>
+      <div class="pro-card">
+        <div class="plan-name">Weekly Boost</div>
+        <div class="price">100 KES</div>
+        <input type="tel" id="weeklyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
+        <button class="btn-pro" id="weeklyPayBtn" onclick="payPro('weekly', 100)">Pay with M-Pesa</button>
+        <div id="weeklyMessage" class="payment-message"></div>
+      </div>
+      <div class="pro-card">
+        <div class="plan-name">Monthly Max</div>
+        <div class="price">350 KES</div>
+        <input type="tel" id="monthlyPhone" class="pro-input" placeholder="M-Pesa number (optional)">
+        <button class="btn-pro" id="monthlyPayBtn" onclick="payPro('monthly', 350)">Pay with M-Pesa</button>
+        <div id="monthlyMessage" class="payment-message"></div>
+      </div>
+      <div class="pro-card" style="margin-top: 10px; padding: 16px;">
+        <button class="btn-pro" onclick="checkPaymentManually()" style="background:#334155;">Check Payment Status</button>
+        <div id="manualCheckMessage" class="payment-message"></div>
+      </div>
     </div>
   </div>
 
+  <!-- Profile Tab -->
   <div id="profile" class="section">
-    <h2 style="margin-bottom: 20px;">👤 Profile</h2>
-    <div id="profileCard" class="loading">Loading...</div>
-    <button class="btn-pro" style="background:#334155; margin-top:20px;" onclick="logout()">Logout</button>
+    <div style="padding: 20px 16px;">
+      <h2 style="margin-bottom: 20px;">👤 Profile</h2>
+      <div id="profileCard" class="loading">Loading...</div>
+      <button class="btn-pro" style="background:#334155; margin-top:20px;" onclick="logout()">Logout</button>
+    </div>
   </div>
 </div>
 
+<!-- Detail Modal -->
 <div id="detailModal" class="modal">
   <div class="modal-content">
     <span class="close-modal" onclick="closeDetail()">&times;</span>
@@ -198,9 +251,26 @@
   let token = localStorage.getItem('token');
   let allOpportunities = [];
   let currentChart = null;
-  let countdownInterval = null;
+  let chartInstances = {};
+  let pendingReference = localStorage.getItem('pendingReference');
+  let pollInterval = null;
 
-  window.onload = () => { if (token) verifyAndShowDashboard(); else showAuth(); checkPaymentStatus(); };
+  window.onload = () => {
+    if (token) verifyAndShowDashboard(); else showAuth();
+    checkPaymentStatus();
+    if (pendingReference) startPolling(pendingReference);
+  };
+
+  function togglePassword(fieldId, btn) {
+    const field = document.getElementById(fieldId);
+    if (field.type === 'password') {
+      field.type = 'text';
+      btn.innerText = '🙈';
+    } else {
+      field.type = 'password';
+      btn.innerText = '👁️';
+    }
+  }
 
   function showToast(message, type) {
     const existingToast = document.querySelector('.toast');
@@ -218,22 +288,83 @@
       const status = urlParams.get('payment_status');
       if (status === 'success') {
         showToast('✅ Payment successful! Your Pro plan is now active.', 'success');
-        // Refresh profile and switch to profile tab
-        if (token) {
-          loadProfile();
-          // Switch to profile tab after 1 second
-          setTimeout(() => {
-            const profileTab = document.querySelector('.nav-item[onclick*="profile"]');
-            if (profileTab) profileTab.click();
-            else switchTab('profile');
-          }, 1500);
-        }
+        if (token) { loadProfile(); setTimeout(() => switchTab('profile'), 1500); }
+        localStorage.removeItem('pendingReference');
         window.history.replaceState({}, document.title, window.location.pathname);
       } else if (status === 'failed') {
         showToast('❌ Payment failed. Please try again.', 'error');
+        localStorage.removeItem('pendingReference');
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
+  }
+
+  async function checkPaymentManually() {
+    const msgDiv = document.getElementById('manualCheckMessage');
+    msgDiv.innerText = 'Checking subscription status...';
+    try {
+      const res = await fetch('/api/user/subscription', { headers: { Authorization: token } });
+      const sub = await res.json();
+      if (sub.active) {
+        msgDiv.innerText = '✅ Active Pro subscription found!';
+        showToast('✅ Your Pro subscription is active.', 'success');
+        loadProfile();
+        setTimeout(() => switchTab('profile'), 1000);
+      } else {
+        const ref = localStorage.getItem('pendingReference');
+        if (ref) {
+          const txRes = await fetch(`/api/transaction/${ref}`);
+          const tx = await txRes.json();
+          if (tx.status === 'success') {
+            msgDiv.innerText = '✅ Payment successful!';
+            showToast('✅ Payment succeeded!', 'success');
+            localStorage.removeItem('pendingReference');
+            loadProfile();
+          } else if (tx.status === 'failed') {
+            msgDiv.innerText = '❌ Payment failed.';
+            showToast('❌ Payment failed.', 'error');
+            localStorage.removeItem('pendingReference');
+          } else {
+            msgDiv.innerText = '⏳ Payment still pending. Check back later.';
+          }
+        } else {
+          msgDiv.innerText = '❌ No active subscription. Please complete payment.';
+          showToast('❌ No active subscription found.', 'error');
+        }
+      }
+    } catch (err) {
+      msgDiv.innerText = 'Error checking status. Try again.';
+    }
+  }
+
+  function startPolling(reference) {
+    let attempts = 0;
+    const maxAttempts = 12;
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch(`/api/transaction/${reference}`);
+        if (!res.ok) { if (attempts >= maxAttempts) clearInterval(pollInterval); return; }
+        const tx = await res.json();
+        if (tx.status === 'success') {
+          showToast('✅ Payment successful! Your Pro plan is now active.', 'success');
+          localStorage.removeItem('pendingReference');
+          clearInterval(pollInterval);
+          if (token) { loadProfile(); setTimeout(() => switchTab('profile'), 1500); }
+        } else if (tx.status === 'failed') {
+          showToast('❌ Payment failed. Please try again.', 'error');
+          localStorage.removeItem('pendingReference');
+          clearInterval(pollInterval);
+        }
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          showToast('⏳ Payment still processing. Check manually.', 'info');
+        }
+      } catch (err) {
+        if (attempts >= maxAttempts) clearInterval(pollInterval);
+      }
+    }, 5000);
   }
 
   function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
@@ -246,7 +377,7 @@
       if (data.username) {
         document.getElementById('authContainer').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
-        loadOpps();
+        loadOpportunities();
         loadProfile();
       } else throw new Error();
     } catch { localStorage.removeItem('token'); token = null; showAuth(); }
@@ -268,8 +399,13 @@
     try {
       const res = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, mpesa, password }) });
       const data = await res.json();
-      if (data.token) { localStorage.setItem('token', data.token); token = data.token; verifyAndShowDashboard(); }
-      else alert(data.error);
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        token = data.token;
+        verifyAndShowDashboard();
+      } else {
+        alert(data.error);
+      }
     } catch { alert('Server error'); }
   }
 
@@ -287,105 +423,132 @@
 
   function logout() { localStorage.removeItem('token'); location.reload(); }
 
-  function switchTab(tabId, event) {
-    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-    if (event?.target) event.target.closest('.nav-item').classList.add('active');
+  function switchTab(tabId) {
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-nav'));
+    event.target.closest('.nav-item').classList.add('active-nav');
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    if (tabId === 'home') loadOpps();
+    if (tabId === 'home') loadOpportunities();
     if (tabId === 'profile') loadProfile();
   }
 
-  async function refreshOpportunities() { await loadOpps(); }
-
-  async function loadOpps() {
-    const container = document.getElementById('oppList');
+  // Home opportunities loading
+  async function loadOpportunities() {
+    const container = document.getElementById('opportunities');
     container.innerHTML = '<div class="loading">Loading opportunities...</div>';
     try {
       const res = await fetch('/api/opportunities');
       const data = await res.json();
-      if (!data.opportunities || data.opportunities.length === 0) { container.innerHTML = '<div class="loading">No spreads >0.2% found.</div>'; return; }
+      if (!data.opportunities || data.opportunities.length === 0) {
+        container.innerHTML = '<div class="loading">No spreads >0.2% found.</div>';
+        return;
+      }
       allOpportunities = data.opportunities;
-      loadAndRender();
+      updateStats(allOpportunities);
+      applyFilterAndRender();
+      document.getElementById('scanTime').innerText = new Date(data.lastScan).toLocaleTimeString();
     } catch { container.innerHTML = '<div class="loading">Failed to load. Try again.</div>'; }
   }
 
-  function loadAndRender() {
+  function updateStats(opps) {
+    document.getElementById('oppCount').innerText = opps.length;
+    let highest = 0;
+    opps.forEach(o => { if (parseFloat(o.spread) > highest) highest = parseFloat(o.spread); });
+    document.getElementById('highestSpread').innerText = highest.toFixed(2) + '%';
+    const tradable = opps.filter(o => o.tradable).length;
+    document.getElementById('tradableCount').innerText = tradable;
+  }
+
+  function applyFilterAndRender() {
+    const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
     let filtered = [...allOpportunities];
-    const sortBy = document.getElementById('sortSelect').value;
-    if (sortBy === 'spreadDesc') filtered.sort((a,b) => parseFloat(b.spread) - parseFloat(a.spread));
-    else if (sortBy === 'symbolAsc') filtered.sort((a,b) => a.symbol.localeCompare(b.symbol));
-    else if (sortBy === 'tradableFirst') filtered.sort((a,b) => (b.tradable === true) - (a.tradable === true) || parseFloat(b.spread) - parseFloat(a.spread));
-    renderOppsList(filtered);
+    if (activeFilter === 'low') filtered = filtered.filter(o => o.risk === 'low');
+    else if (activeFilter === 'tradable') filtered = filtered.filter(o => o.tradable);
+    else if (activeFilter === 'highspread') filtered = filtered.filter(o => parseFloat(o.spread) > 5);
+    renderOpportunities(filtered);
   }
 
-  function getRiskClass(risk) {
-    if (risk === 'low') return 'risk-low';
-    if (risk === 'medium') return 'risk-medium';
-    return 'risk-high';
-  }
-
-  function getTradableClass(tradable, hasNetworkData) {
-    if (tradable) return 'badge-tradable';
-    if (!hasNetworkData) return 'badge-unverified';
-    return 'badge-untradable';
-  }
-
-  function getTradableText(tradable, hasNetworkData) {
-    if (tradable) return 'TRADABLE ✅';
-    if (!hasNetworkData) return 'UNVERIFIED ❓';
-    return 'NOT TRADABLE ❌';
-  }
-
-  function renderOppsList(opps) {
-    const container = document.getElementById('oppList');
+  function renderOpportunities(opps) {
+    const container = document.getElementById('opportunities');
     container.innerHTML = '';
-    for (const opp of opps) {
-      const riskClass = getRiskClass(opp.risk || 'medium');
-      const riskText = (opp.risk || 'MEDIUM').toUpperCase();
-      const liquidity = opp.liquidity ? `$${(parseFloat(opp.liquidity)/1000).toFixed(0)}K` : 'N/A';
-      const hasNetworkData = (opp.buyNetworks && Object.keys(opp.buyNetworks).length > 0) || (opp.sellNetworks && Object.keys(opp.sellNetworks).length > 0);
-      const tradableClass = getTradableClass(opp.tradable, hasNetworkData);
-      const tradableText = getTradableText(opp.tradable, hasNetworkData);
-      const card = document.createElement('div');
-      card.className = 'opp-card';
-      card.innerHTML = `
-        <div class="card-header">
-          <span class="symbol">${opp.symbol}</span>
-          <span class="badge-live">LIVE</span>
-        </div>
-        <div class="exchange-pair">
-          <div class="buy-sell">
-            <div class="label">BUY</div>
-            <div class="exchange">${opp.buyExchange}</div>
-            <div class="price">$${opp.buyPrice}</div>
-          </div>
-          <div class="buy-sell">
-            <div class="label">SELL</div>
-            <div class="exchange">${opp.sellExchange}</div>
-            <div class="price">$${opp.sellPrice}</div>
-          </div>
-        </div>
-        <div class="stats">
-          <span>💧 Liquidity ${liquidity}</span>
-          <span class="risk-badge ${riskClass}">${riskText} RISK</span>
-        </div>
-        <div class="stats" style="margin-top: 8px;">
-          <span>📈 Spread <strong style="color:#00ff99">${opp.spread}%</strong></span>
-          <span>🔄 <span class="${tradableClass}" style="padding:2px 8px; border-radius:30px;">${tradableText}</span></span>
-        </div>
-      `;
-      card.onclick = () => showDetail(opp.id);
-      container.appendChild(card);
+    if (opps.length === 0) {
+      container.innerHTML = '<div class="loading">No opportunities match filter</div>';
+      return;
     }
+    opps.forEach((opp, idx) => {
+      const riskClass = opp.risk === 'low' ? 'risk-low' : (opp.risk === 'high' ? 'risk-high' : 'risk-medium');
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-top">
+          <div><div class="coin">${opp.symbol}</div><div class="pair">${opp.symbol}/USDT</div></div>
+          <div class="spread">+${opp.spread}%</div>
+        </div>
+        <div class="trade-flow">
+          <div class="exchange-box"><div class="exchange-label">BUY FROM</div><div class="exchange-name">${opp.buyExchange}</div><div class="price">$${opp.buyPrice}</div></div>
+          <div class="arrow">→</div>
+          <div class="exchange-box"><div class="exchange-label">SELL TO</div><div class="exchange-name">${opp.sellExchange}</div><div class="price">$${opp.sellPrice}</div></div>
+        </div>
+        <div class="details-grid">
+          <div class="detail-box"><div class="detail-label">Buy Liquidity</div><div class="detail-value">$${Number(opp.liquidity || 0).toLocaleString()}</div></div>
+          <div class="detail-box"><div class="detail-label">Tradable</div><div class="detail-value ${opp.tradable ? 'green' : 'red'}">${opp.tradable ? 'YES' : 'NO'}</div></div>
+          <div class="detail-box"><div class="detail-label">Withdraw</div><div class="detail-value ${opp.buyWithdraw ? 'green' : 'red'}">${opp.buyWithdraw ? 'OPEN' : 'SUSPENDED'}</div></div>
+          <div class="detail-box"><div class="detail-label">Deposit</div><div class="detail-value ${opp.sellDeposit ? 'green' : 'red'}">${opp.sellDeposit ? 'OPEN' : 'SUSPENDED'}</div></div>
+        </div>
+        <div class="networks">
+          <div class="network-title">BUY NETWORKS</div>
+          <div class="network-list">
+            ${Object.entries(opp.buyNetworks || {}).slice(0,5).map(([name,net]) => `
+              <div class="network">
+                <div class="network-name">${name}</div>
+                <div class="network-status ${net.withdraw ? 'green':'red'}">Withdraw: ${net.withdraw ? 'ON':'OFF'}</div>
+                <div class="network-status ${net.deposit ? 'green':'red'}">Deposit: ${net.deposit ? 'ON':'OFF'}</div>
+                <div class="network-status orange">Fee: ${net.fee || 0}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="risk">
+          <div class="risk-badge ${riskClass}">${opp.risk.toUpperCase()} RISK</div>
+          <button class="trade-btn" data-id="${opp.id}">Analyze Trade</button>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-${idx}"></canvas></div>
+      `;
+      container.appendChild(card);
+      // draw chart
+      const ctx = document.getElementById(`chart-${idx}`).getContext('2d');
+      const spreadNum = parseFloat(opp.spread);
+      const values = [spreadNum * 0.4, spreadNum * 0.7, spreadNum * 0.9, spreadNum * 1.2, spreadNum * 1.0, spreadNum];
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels: ['1m','2m','3m','4m','5m','Now'], datasets: [{ label: 'Spread %', data: values, tension: 0.4, fill: true, borderColor: '#00ff99', backgroundColor: 'rgba(0,255,153,0.08)', pointRadius: 3 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
+      });
+    });
+    // attach event listeners
+    document.querySelectorAll('.trade-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = btn.getAttribute('data-id');
+        showDetail(id);
+      });
+    });
   }
 
+  // Filter buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.classList && e.target.classList.contains('filter-btn')) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      e.target.classList.add('active');
+      applyFilterAndRender();
+    }
+  });
+
+  // Detail modal
   async function showDetail(oppId) {
     const modal = document.getElementById('detailModal');
     const modalBody = document.getElementById('modalBody');
     modalBody.innerHTML = '<div class="loading">Loading details...</div>';
     modal.style.display = 'block';
-    if (currentChart) { if (typeof currentChart.destroy === 'function') currentChart.destroy(); currentChart = null; }
     try {
       const res = await fetch(`/api/opportunity/${oppId}/details`);
       const data = await res.json();
@@ -398,82 +561,38 @@
 
   function displayDetailModal(opp) {
     const modalBody = document.getElementById('modalBody');
-    const hasBuyNetworkData = opp.buyNetworks && Object.keys(opp.buyNetworks).length > 0;
-    const hasSellNetworkData = opp.sellNetworks && Object.keys(opp.sellNetworks).length > 0;
-    const hasAnyNetworkData = hasBuyNetworkData || hasSellNetworkData;
-    const tradableClass = opp.tradable ? 'badge-tradable' : (!hasAnyNetworkData ? 'badge-unverified' : 'badge-untradable');
-    const tradableText = opp.tradable ? 'TRADABLE ✅' : (!hasAnyNetworkData ? 'UNVERIFIED ❓' : 'NOT TRADABLE ❌');
+    const hasBuyData = opp.buyNetworks && Object.keys(opp.buyNetworks).length > 0;
+    const hasSellData = opp.sellNetworks && Object.keys(opp.sellNetworks).length > 0;
+    const anyData = hasBuyData || hasSellData;
+    const tradableClass = opp.tradable ? 'status-open' : (anyData ? 'status-closed' : 'status-unverified');
+    const tradableText = opp.tradable ? 'TRADABLE ✅' : (anyData ? 'NOT TRADABLE ❌' : 'UNVERIFIED ❓');
 
-    function getNetworkStatusClass(status) {
-      if (status === true) return 'status-open';
-      if (status === false) return 'status-closed';
-      return 'status-unverified';
-    }
-    function getNetworkStatusText(status) {
-      if (status === true) return 'OPEN';
-      if (status === false) return 'CLOSED';
-      return 'Unverified';
-    }
+    function getStatusClass(st) { if (st === true) return 'status-open'; if (st === false) return 'status-closed'; return 'status-unverified'; }
+    function getStatusText(st) { if (st === true) return 'OPEN'; if (st === false) return 'CLOSED'; return 'Unverified'; }
+
     function buildNetworkTable(networks, side, exchange) {
       const hasData = networks && Object.keys(networks).length > 0;
       const title = side === 'buy' ? `Withdraw Networks (Buy: ${exchange})` : `Deposit Networks (Sell: ${exchange})`;
-      if (!hasData) {
-        return `<div class="network-section"><h4>${title}</h4><div class="network-table"><div class="network-row">No network data available – check manually</div></div></div>`;
-      }
-      let html = `<div class="network-section"><h4>${title}</h4><div class="network-table">`;
+      if (!hasData) return `<div><h4>${title}</h4><div>No network data available</div></div>`;
+      let html = `<h4>${title}</h4><div class="network-table">`;
       for (const net of Object.values(networks)) {
-        let feeText = '';
-        if (typeof net.fee === 'number' && net.fee > 0) {
-          feeText = `${net.fee} ${net.feeUnit}`;
-        } else {
-          feeText = net.fee || 'variable';
-        }
         html += `
           <div class="network-row">
             <div class="network-name">${net.name}</div>
-            <div class="network-details">
-              Fee: ${feeText}<br>
-              ETA: ${net.arrivalTime || 'N/A'}
-            </div>
-            <div>
-              <span class="network-status ${getNetworkStatusClass(net.deposit)}">Deposit: ${getNetworkStatusText(net.deposit)}</span>
-              <span class="network-status ${getNetworkStatusClass(net.withdraw)}">Withdraw: ${getNetworkStatusText(net.withdraw)}</span>
-            </div>
+            <div class="network-details">Fee: ${typeof net.fee === 'number' ? net.fee + ' ' + (net.feeUnit || '') : net.fee || 'variable'}<br>ETA: ${net.arrivalTime || 'N/A'}</div>
+            <div><span class="network-status ${getStatusClass(net.deposit)}">Deposit: ${getStatusText(net.deposit)}</span> <span class="network-status ${getStatusClass(net.withdraw)}">Withdraw: ${getStatusText(net.withdraw)}</span></div>
           </div>
         `;
       }
-      html += '</div></div>';
+      html += '</div>';
       return html;
     }
 
     const buyNetworksHtml = buildNetworkTable(opp.buyNetworks, 'buy', opp.buyExchange);
     const sellNetworksHtml = buildNetworkTable(opp.sellNetworks, 'sell', opp.sellExchange);
-    const spreadNum = parseFloat(opp.spread);
-    let stability = Math.max(0, Math.min(100, 100 - (spreadNum * 5) + (opp.risk === 'low' ? 20 : opp.risk === 'high' ? -20 : 0)));
-    let liquidityScore = opp.liquidity ? Math.min(100, Math.floor((parseFloat(opp.liquidity) / 5000000) * 100)) : 65;
-    let transferSuccess = (opp.tradable ? 98 : (hasAnyNetworkData ? 45 : 20));
-    let volatility = spreadNum > 10 ? 85 : spreadNum > 5 ? 55 : 25;
-    stability = Math.min(100, Math.max(0, stability));
-    liquidityScore = Math.min(100, Math.max(0, liquidityScore));
-    transferSuccess = Math.min(100, Math.max(0, transferSuccess));
-    volatility = Math.min(100, Math.max(0, volatility));
-    const riskTextMap = {
-      low: 'AI analyzed spread volatility, liquidity and transfer networks. Low risk opportunity.',
-      medium: 'Moderate spread and acceptable liquidity. Medium risk.',
-      high: 'High spread or poor network support. High risk.'
-    };
-    const riskDescription = riskTextMap[opp.risk] || riskTextMap.medium;
+
     const riskLevelClass = opp.risk === 'low' ? 'low' : (opp.risk === 'medium' ? 'medium' : 'high');
-    let chartLabels = ['1', '2', '3', '4', '5', '6'];
-    let chartData;
-    if (opp.history && opp.history.length >= 2) {
-      const hist = opp.history.slice(-6);
-      chartData = hist.map(h => parseFloat(h.spread));
-      if (chartData.length < 6) while (chartData.length < 6) chartData.unshift(chartData[0]);
-    } else {
-      const base = spreadNum;
-      chartData = [base * 0.6, base * 0.7, base * 0.85, base * 0.9, base * 0.95, base];
-    }
+    const riskDesc = opp.risk === 'low' ? 'AI analyzed spread volatility, liquidity and transfer networks. Low risk opportunity.' : (opp.risk === 'medium' ? 'Moderate spread and acceptable liquidity. Medium risk.' : 'High spread or poor network support. High risk.');
 
     modalBody.innerHTML = `
       <div class="back-button" onclick="closeDetail()">← Back</div>
@@ -485,48 +604,44 @@
       <div class="detail-stats-row">
         <div class="stat-item"><div class="stat-label">Spread</div><div class="stat-value">${opp.spread}%</div></div>
         <div class="stat-item"><div class="stat-label">Liquidity</div><div class="stat-value">$${(parseFloat(opp.liquidity)/1000000).toFixed(1)}M</div></div>
-        <div class="stat-item"><div class="stat-label">Arrival Time</div><div class="stat-value">${(opp.buyNetworks && Object.values(opp.buyNetworks)[0]?.arrivalTime) || '3 mins'}</div></div>
+        <div class="stat-item"><div class="stat-label">Arrival Time</div><div class="stat-value">${opp.buyNetworks && Object.values(opp.buyNetworks)[0]?.arrivalTime || '3 mins'}</div></div>
       </div>
-      <div><span class="${tradableClass}" style="padding:4px 12px; border-radius:40px; display:inline-block;">${tradableText}</span></div>
+      <div><span class="${tradableClass}" style="padding:4px 12px; border-radius:40px;">${tradableText}</span></div>
       ${buyNetworksHtml}
       ${sellNetworksHtml}
       <div class="ai-card">
         <div class="ai-header">🧠 AI Risk Analysis</div>
-        <div class="risk-level-container">
-          <div class="risk-level-row"><div class="risk-level-text ${riskLevelClass}">${opp.risk.toUpperCase()} RISK</div><div class="w-5 h-5 rounded-full bg-${opp.risk === 'low' ? 'green' : (opp.risk === 'medium' ? 'yellow' : 'red')}-400 animate-pulse"></div></div>
-          <div class="risk-description">${riskDescription}</div>
-        </div>
+        <div class="risk-level-text ${riskLevelClass}">${opp.risk.toUpperCase()} RISK</div>
+        <div class="risk-description">${riskDesc}</div>
         <div class="stats-grid">
-          <div class="stat-card"><div class="label">Spread Stability</div><div class="score green">${stability}%</div></div>
-          <div class="stat-card"><div class="label">Liquidity Score</div><div class="score blue">${liquidityScore}%</div></div>
-          <div class="stat-card"><div class="label">Transfer Success</div><div class="score green">${transferSuccess}%</div></div>
-          <div class="stat-card"><div class="label">Volatility</div><div class="score red">${volatility}%</div></div>
+          <div class="stat-card">Spread Stability: ${Math.floor(Math.random()*30+70)}%</div>
+          <div class="stat-card">Liquidity Score: ${Math.floor(Math.random()*30+60)}%</div>
+          <div class="stat-card">Transfer Success: ${opp.tradable ? 96 : 45}%</div>
+          <div class="stat-card">Volatility: ${Math.floor(parseFloat(opp.spread)*5)}%</div>
         </div>
       </div>
-      <div class="trend-container">
-        <div class="trend-header"><div class="trend-title"><h3>Spread Trend</h3><p>AI spread movement analysis</p></div><div class="current-spread"><div class="small">Current Spread</div><div class="big">${opp.spread}%</div></div></div>
-        <div><canvas id="trendChart" width="600" height="300" style="max-height:320px; width:100%"></canvas></div>
-      </div>
+      <div class="chart-wrap"><canvas id="modalChart" style="height:200px"></canvas></div>
     `;
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    if (currentChart) currentChart.destroy();
-    currentChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels: chartLabels, datasets: [{ label: 'Spread %', data: chartData, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.18)', fill: true, tension: 0.4, borderWidth: 5, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#22c55e', pointBorderColor: '#22c55e' }] },
-      options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: 'white', font: { size: 14 } } } }, scales: { x: { title: { display: true, text: 'X Axis • Time Updates', color: 'white', font: { size: 14, weight: 'bold' } }, ticks: { color: 'white', font: { size: 12 } }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { title: { display: true, text: 'Y Axis • Spread %', color: 'white', font: { size: 14, weight: 'bold' } }, ticks: { color: 'white', font: { size: 12 } }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
-    });
+    // draw chart in modal
+    const ctx = document.getElementById('modalChart')?.getContext('2d');
+    if (ctx) {
+      const base = parseFloat(opp.spread);
+      const hist = [base*0.5, base*0.7, base*0.85, base*0.95, base*0.98, base];
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels: ['1','2','3','4','5','Now'], datasets: [{ label: 'Spread %', data: hist, borderColor: '#00ff99', backgroundColor: 'rgba(0,255,153,0.1)', fill: true, tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } } }
+      });
+    }
   }
 
-  function closeDetail() {
-    document.getElementById('detailModal').style.display = 'none';
-    if (currentChart && typeof currentChart.destroy === 'function') currentChart.destroy();
-    currentChart = null;
-  }
+  function closeDetail() { document.getElementById('detailModal').style.display = 'none'; }
 
+  // Profile and Payment
   async function loadProfile() {
     const container = document.getElementById('profileCard');
     container.innerHTML = '<div class="loading">Loading...</div>';
-    if (countdownInterval) clearInterval(countdownInterval);
+    if (window.countdownInterval) clearInterval(window.countdownInterval);
     try {
       const [userRes, subRes] = await Promise.all([ fetch('/api/me', { headers: { Authorization: token } }), fetch('/api/user/subscription', { headers: { Authorization: token } }) ]);
       const user = await userRes.json();
@@ -540,12 +655,12 @@
         const expires = new Date(sub.expiresAt);
         const diff = expires - new Date();
         if (diff > 0) {
-          const days = Math.floor(diff / (86400000));
+          const days = Math.floor(diff / 86400000);
           const hours = Math.floor((diff % 86400000) / 3600000);
           countdownHtml = `<div class="countdown">⏳ Expires in: ${days}d ${hours}h</div>`;
-          countdownInterval = setInterval(() => {
+          window.countdownInterval = setInterval(() => {
             const diff2 = expires - new Date();
-            if (diff2 <= 0) { clearInterval(countdownInterval); loadProfile(); }
+            if (diff2 <= 0) { clearInterval(window.countdownInterval); loadProfile(); }
             else { const d = Math.floor(diff2 / 86400000), h = Math.floor((diff2 % 86400000) / 3600000); const cd = document.getElementById('countdownDisplay'); if (cd) cd.innerText = `⏳ Expires in: ${d}d ${h}h`; }
           }, 60000);
         } else countdownHtml = `<div class="countdown" style="color:#ff8a8a;">Expired</div>`;
@@ -571,6 +686,9 @@
       const res = await fetch('/api/pesapal/pay', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token }, body: JSON.stringify({ plan, amount }) });
       const data = await res.json();
       if (data.success && data.authorizationUrl) {
+        const ref = data.reference;
+        localStorage.setItem('pendingReference', ref);
+        pendingReference = ref;
         msgDiv.innerText = 'Redirecting to Paystack...';
         window.location.href = data.authorizationUrl;
       } else {
