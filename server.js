@@ -5,11 +5,11 @@ const path = require('path');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const ccxt = require('ccxt');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MongoDB connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/arbimine';
 mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
@@ -17,6 +17,46 @@ mongoose.connect(MONGO_URI)
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ==================== Email setup ====================
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = process.env.SMTP_PORT || 587;
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
+
+let transporter = null;
+if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+  transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
+  });
+  console.log('✅ Email transporter configured');
+} else {
+  console.log('⚠️ Email not configured – skipping notifications');
+}
+
+async function sendEmail(to, subject, html) {
+  if (!transporter) {
+    console.log('📧 Email not sent (no transporter):', subject);
+    return false;
+  }
+  try {
+    await transporter.sendMail({
+      from: SMTP_FROM,
+      to,
+      subject,
+      html
+    });
+    console.log(`📧 Email sent to ${to}: ${subject}`);
+    return true;
+  } catch (err) {
+    console.error('Email error:', err.message);
+    return false;
+  }
+}
 
 // ==================== Schemas ====================
 const userSchema = new mongoose.Schema({
@@ -38,7 +78,7 @@ const sessionSchema = new mongoose.Schema({
 });
 const transactionSchema = new mongoose.Schema({
   reference: { type: String, required: true, unique: true },
-  user: { type: String, required: true }, // username
+  user: { type: String, required: true },
   plan: { type: String, enum: ['weekly', 'monthly'] },
   amount: Number,
   status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
@@ -336,6 +376,12 @@ app.post('/api/register', async (req, res) => {
     await user.save();
     const token = generateToken();
     await new Session({ token, username }).save();
+    // Send welcome email
+    await sendEmail(
+      email,
+      'Welcome to ArbiMine!',
+      `<h2>Welcome ${username}!</h2><p>Thank you for joining ArbiMine.</p><p>You can now start scanning live arbitrage opportunities.</p>`
+    );
     res.json({ success: true, token, username });
   } catch (err) {
     console.error(err);
@@ -352,6 +398,12 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     const token = generateToken();
     await new Session({ token, username: user.username }).save();
+    // Send login alert
+    await sendEmail(
+      email,
+      '🔐 New login to your ArbiMine account',
+      `<p>Your ArbiMine account was just logged into at ${new Date().toLocaleString()}.</p><p>If this was you, ignore this message.</p>`
+    );
     res.json({ success: true, token, username: user.username });
   } catch (err) {
     console.error(err);
@@ -439,7 +491,7 @@ app.get('/api/opportunity/:id/details', async (req, res) => {
   res.json(result);
 });
 
-// ==================== Payment (with transaction logging) ====================
+// ==================== Payment (with transaction logging & email) ====================
 function sanitizeReference(str) {
   return str.replace(/[^a-zA-Z0-9_\-\.]/g, '_').replace(/\s/g, '_');
 }
@@ -459,7 +511,6 @@ app.post('/api/pesapal/pay', async (req, res) => {
     const cleanUsername = sanitizeReference(user.username);
     const reference = `arbimine_${cleanUsername}_${Date.now()}`;
     const callbackUrl = `${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}/api/payment/callback`;
-    console.log(`Creating Paystack transaction with reference: ${reference}`);
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email: user.email,
       amount: amountInKobo,
@@ -470,7 +521,6 @@ app.post('/api/pesapal/pay', async (req, res) => {
     }, {
       headers: { Authorization: `Bearer ${paystackSecretKey}`, 'Content-Type': 'application/json' }
     });
-    // Save transaction as pending
     await Transaction.create({
       reference,
       user: user.username,
@@ -490,6 +540,17 @@ app.post('/api/pesapal/pay', async (req, res) => {
   }
 });
 
+app.get('/api/transaction/:reference', async (req, res) => {
+  const { reference } = req.params;
+  try {
+    const tx = await Transaction.findOne({ reference });
+    if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+    res.json({ status: tx.status, plan: tx.plan, amount: tx.amount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/payment/callback', async (req, res) => {
   const { reference } = req.query;
   if (!reference) return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
@@ -499,8 +560,10 @@ app.get('/api/payment/callback', async (req, res) => {
       headers: { Authorization: `Bearer ${secretKey}` }
     });
     const transaction = await Transaction.findOne({ reference });
+    let status = 'failed';
     if (transaction) {
-      transaction.status = verification.data.data.status === 'success' ? 'success' : 'failed';
+      status = verification.data.data.status === 'success' ? 'success' : 'failed';
+      transaction.status = status;
       transaction.paystackResponse = verification.data;
       await transaction.save();
     }
@@ -515,9 +578,30 @@ app.get('/api/payment/callback', async (req, res) => {
           { username },
           { 'subscription.active': true, 'subscription.plan': plan, 'subscription.expiresAt': expiresAt }
         );
+        // Send receipt email
+        const user = await User.findOne({ username });
+        if (user) {
+          await sendEmail(
+            user.email,
+            '✅ Payment Successful – ArbiMine Pro Activated',
+            `<h2>Thank you for upgrading!</h2><p>Your ${plan} subscription is now active until ${expiresAt.toLocaleString()}.</p><p>Reference: ${reference}</p>`
+          );
+        }
       }
       return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=success&reference=${reference}`);
     } else {
+      // Payment failed – send alert
+      const tx = await Transaction.findOne({ reference });
+      if (tx && tx.user) {
+        const user = await User.findOne({ username: tx.user });
+        if (user) {
+          await sendEmail(
+            user.email,
+            '❌ Payment Failed – ArbiMine',
+            `<p>Your payment of KES ${tx.amount} for ${tx.plan} plan failed.</p><p>Reference: ${reference}</p><p>Please try again.</p>`
+          );
+        }
+      }
       return res.redirect(`${process.env.APP_URL || 'https://arbimine-ke.onrender.com'}?payment_status=failed`);
     }
   } catch (err) {
@@ -547,13 +631,21 @@ app.post('/api/payment/webhook', async (req, res) => {
         { username },
         { 'subscription.active': true, 'subscription.plan': plan, 'subscription.expiresAt': expiresAt }
       );
+      const user = await User.findOne({ username });
+      if (user) {
+        await sendEmail(
+          user.email,
+          '✅ Payment Successful – ArbiMine Pro Activated (Webhook)',
+          `<h2>Thank you for upgrading!</h2><p>Your ${plan} subscription is now active until ${expiresAt.toLocaleString()}.</p><p>Reference: ${reference}</p>`
+        );
+      }
       console.log(`Subscription updated via webhook for ${username}`);
     }
   }
   res.json({ status: 'received' });
 });
 
-// ==================== Admin Routes (protected by simple password) ====================
+// ==================== Admin Routes ====================
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 
@@ -561,7 +653,6 @@ app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
     const token = crypto.randomBytes(32).toString('hex');
-    // store in memory for simplicity (or Redis). We'll use a simple map.
     if (!global.adminTokens) global.adminTokens = new Set();
     global.adminTokens.add(token);
     res.json({ success: true, token });
@@ -578,7 +669,6 @@ function adminAuth(req, res, next) {
   next();
 }
 
-// Admin endpoints
 app.get('/admin/users', adminAuth, async (req, res) => {
   const users = await User.find({}, '-passwordHash');
   res.json(users);
@@ -603,10 +693,8 @@ app.delete('/admin/user/:id', adminAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// Serve admin HTML
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// ==================== Start server ====================
 app.listen(PORT, () => console.log(`🚀 ArbiMine running on ${PORT}`));
